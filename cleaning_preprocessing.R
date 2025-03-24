@@ -37,6 +37,9 @@ clean_data <- function(data){
   #remove Zero blank row
   data_cleaned <- data_cleaned[-1,]
   
+  #rename column 1 to ID for further processing
+  names(data_cleaned)[1]<- paste("ID")
+  
   return(data_cleaned)
   
 }
@@ -46,44 +49,47 @@ BAS_data_cleaned <- clean_data(BAS_data)
 FAO_data_cleaned <- clean_data(FAO_data)
 
 
-#function to extract participant number "PX", date, time and visit 1 or visit 2
-make_new_columns <- function(data){
-  data <- data %>%
-    #filter out rows starting with NIST_
-    filter(
-      !(str_detect(as.character(data[[1]]), "^NIST_"))
-    ) %>%
+#clean and make new columns
+process_patient_data <- function(df) {
+  df_clean <- df %>%
+    #remove rows where first column starts with "NIST_"
+    filter(!str_detect(.[[1]], "^.*NIST_")) %>%
+  
+    #extract patient info from first column
     mutate(
-      Participant = str_extract(as.character(data[[1]]), "P[0-9]+"), #extract "P" followed by digits
-      Date = str_extract(data[[1]], "[0-9]{6}"), #6 digit date
-      Time = str_extract(data[[1]], "E[0-9]+") %>% str_replace("E", "") #extract number after E to get time
+      ID = .[[1]],  #keep original identifier
+      
+      #extract patient number e.g. "P10"
+      Patient = str_extract(ID, "P\\d+"),
+      
+      #extract numeric part of patient
+      Patient_num = as.numeric(str_remove(Patient, "P")),
+      
+      #extract date in format DDMMYY (e.g. 250222)
+      Date_raw = str_extract(ID, "\\d{6}"),
+      Date = dmy(Date_raw),  #convert
+      
+      #extract time in minutes (after E)
+      Time_min = as.numeric(str_extract(ID, "(?<=E)\\d+")),
+      
+      #format for output
+      Date_formatted = format(Date, "%m/%d/%Y")
     ) %>%
-    mutate(
-      Day = str_sub(Date,1,2), #extract first two digits for day
-      Month = str_sub(Date,3,4), #extract next two digits for month
-      Year = paste0("20", str_sub(Date,5,6)), #extract year in format e.g. 2020
-      Full_Date = as.Date(paste0(Year, "-", Month, "-", Day), format = "%Y-%m-%d"),
-      MonthDay = format(Full_Date, "%m/%d") #format for visualization
-    ) %>%
-    mutate(
-      MonthDaycalc = as.numeric(format(Full_Date, "%m%d")), #numeric sorting
-      Participant_Number = as.numeric(str_extract(Participant, "[0-9]+")) #extract numeric part of Participant for sorting
-    ) %>%
-    arrange(Participant_Number, Full_Date) %>% #sort by date and participant
-    group_by(Participant) %>%
-    select(ID,Participant, MonthDay, Year, Time, Visit, everything()) %>%
-    select(-Date, -Day, -Month, -MonthDaycalc, -Participant_Number, -Full_Date) %>%
     
-    return(data)
+    #sort by patient and full date
+    arrange(Patient_num, Date, Time_min) %>%
+    select(ID, Patient, Date, Time_min, everything(), -Date_raw, -Date_formatted, -Patient_num)
+  
+  return(df_clean)
 }
 
 #call function 
-BAS_data_extended <- make_new_columns(BAS_data_cleaned)
-FAO_data_extended <- make_new_columns(FAO_data_cleaned)
+BAS_data_extended <- process_patient_data(BAS_data_cleaned)
+FAO_data_extended <- process_patient_data(FAO_data_cleaned)
 
 #function to convert data to numeric and remove whole columns with all same vlaue
 convert_columns_to_numeric <- function(data) {
-  data[, 7:ncol(data)] <- lapply(data[, 7:ncol(data)], function(x) {
+  data[, 4:ncol(data)] <- lapply(data[, 4:ncol(data)], function(x) {
     suppressWarnings(as.numeric(x)) #convert to numeric and replace non-numeric values with NA
   })
   
@@ -130,49 +136,41 @@ colnames(intact_lipids_data_copy) <- new_colnames
 #remove first row after merging
 intact_lipids_data_copy <- intact_lipids_data_copy[-1,]
 
-intact_lipids_data_cleaned <- intact_lipids_data_copy %>%
-  mutate( #mutate to create or edit existing columns in a dataframe
-    #extract date from anywhere in the Name column (because not the same)
-    Whole_Date = str_extract(Name, "\\d{8}"), #\\d for matching any digits
-    Whole_Date = as.Date(Whole_Date, format="%Y%m%d"), 
-    Year = year(Whole_Date), 
-    MonthDay = format(Whole_Date, "%m-%d"),
-    
-    #extract only the meaningful part of ID 
-    ID = str_remove(Name, ".*?_NIST_?"),  #remove everything before and including "NIST_"
-    ID = str_remove(ID, "^DI_"),  #remove "DI_" prefix if present, ^ for the beginning 
-    ID = str_remove(ID, "\\d{8}"),  #remove date if it appears again (for the wrongly ordered)
-    ID = str_replace(ID, "^_|_$", ""),  #remove underscores
-    
-    #assign trial numbers based on MonthDay
-    Trial_number = dense_rank(MonthDay),  
-    Trial = paste0("Trial ", Trial_number)  
-  ) %>%
-  select(Name, ID, Year, MonthDay, Trial, everything(),-Whole_Date, -Trial_number)
+#rename column 1 to ID for further processing
+names(intact_lipids_data_copy)[1]<- paste("ID")
+
+#add unique names 
+colnames(intact_lipids_data_copy) <- make.names(colnames(intact_lipids_data_copy), unique = TRUE)
+
+#call function
+intact_lipids_cleaned <- process_patient_data(intact_lipids_data_copy)
+
+intact_lipids_ordered <- intact_lipids_cleaned %>%
+  group_by(Patient) %>%
+  mutate(Visit = ifelse(row_number() == 1, "Visit 1", "Visit 2")) %>%
+  select(ID, Patient, Date, Time_min, Visit, everything())
+
+#now convert to n umeric and renomve columns with same values
+convert_columns_to_numeric_lipids <- function(data) {
+  #take numeric data
+  numeric_data <- data[, 6:ncol(data)]
+  
+  #keep only columns that more than 1 different value
+  cols_to_keep <- sapply(numeric_data, function(col) length(unique(na.omit(col))) > 1)
+  numeric_data <- numeric_data[, cols_to_keep]
+  
+  #convert columns to numeric
+  numeric_data <- lapply(numeric_data, function(x) suppressWarnings(as.numeric(x)))
+  numeric_data <- as.data.frame(numeric_data)
+
+  
+  #combine with metadata
+  data_cleaned <- cbind(data[, 1:5], numeric_data)
+  
+  return(data_cleaned)
+}
+
+#call function
+intact_lipids_final <- convert_columns_to_numeric_lipids(intact_lipids_ordered)
 
 
-# Part 4 ------
-# Convert data columns (keeping metadata unchanged)
-info_cols <- c("Name", "ID", "Year", "MonthDay", "Trial") 
-
-df_data_cleaned24 <- df_data_cleaned24 %>%
-  mutate(across(-all_of(info_cols), ~ {
-    numeric_col <- suppressWarnings(as.numeric(.))
-    ifelse(is.infinite(numeric_col), NA, numeric_col) #put all Inf values to NA 
-  }))
-
-print(df_data_cleaned24)
-
-df_data_cleaned24 <- df_data_cleaned24 %>%
-  arrange(MonthDay) # Orders the data by Trial number
-
-#write new CSV
-write_csv(df_data_cleaned24, "/Users/marcinebessire/Desktop/project/cleaned_data_2024.csv")
-
-# Part 5 ----
-# *optional* remove all the "new" ones (new chip used) started from 09-10 (aka starting from Trial 6)
-cut_df_data_cleaned24 <- df_data_cleaned24 %>%
-  filter(MonthDay < "09-10") 
-
-#save the cut dataset
-write_csv(cut_df_data_cleaned24, "/Users/marcinebessire/Desktop/project/cut_cleaned_data_2024.csv")
