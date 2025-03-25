@@ -21,8 +21,10 @@ The goal of this thesis is to compare different missing data imputation methods 
 ## Imputation Methods
 
 The following imputation methods were implemented and evaluated:
-TBD
+- **TBD**
 
 
 ## Project Structure
+
+
 
