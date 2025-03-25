@@ -79,7 +79,13 @@ process_patient_data <- function(df) {
     
     #sort by patient and full date
     arrange(Patient_num, Date, Time_min) %>%
-    select(ID, Patient, Date, Time_min, everything(), -Date_raw, -Date_formatted, -Patient_num)
+    
+    #assign Visit based on order
+    group_by(Patient) %>%
+    mutate(Visit = if_else(row_number() <= 6, "Visit 1", "Visit 2")) %>%
+    ungroup() %>%
+    
+    select(ID, Patient, Date, Time_min, Visit, everything(), -Date_raw, -Date_formatted, -Patient_num)
   
   return(df_clean)
 }
@@ -90,7 +96,7 @@ FAO_data_extended <- process_patient_data(FAO_data_cleaned)
 
 #function to convert data to numeric and remove whole columns with all same vlaue
 convert_columns_to_numeric <- function(data) {
-  data[, 4:ncol(data)] <- lapply(data[, 4:ncol(data)], function(x) {
+  data[, 6:ncol(data)] <- lapply(data[, 6:ncol(data)], function(x) {
     suppressWarnings(as.numeric(x)) #convert to numeric and replace non-numeric values with NA
   })
   
@@ -196,3 +202,4 @@ intact_lipids_final <- remove_constant_columns(intact_lipids_numeric) #8 removed
 
 #save to csv file 
 write_csv(intact_lipids_final, "/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids_data.csv")
+
