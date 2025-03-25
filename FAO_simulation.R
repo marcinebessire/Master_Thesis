@@ -174,7 +174,7 @@ p10_visit2 <- FAO_data[114:119,]
 
 #function to introduce 1 MCAR per dataframe randomly
 
-#middle values only 
+#middle values only (one missing value)
 MCAR_manipulation_middle <- function(data){
   #copy dataset to avoid modifying the original
   data_copy <- data
@@ -197,13 +197,37 @@ p1_v2_mcar <- MCAR_manipulation_middle(p1_visit2)
 #p2
 p2_v1_mcar <- MCAR_manipulation_middle(p2_visit1)
 p2_v2_mcar <- MCAR_manipulation_middle(p2_visit2)
+#p3
+p3_v1_mcar <- MCAR_manipulation_middle(p3_visit1)
+p3_v2_mcar <- MCAR_manipulation_middle(p3_visit2)
+#p4
+p4_v1_mcar <- MCAR_manipulation_middle(p4_visit1)
+p4_v2_mcar <- MCAR_manipulation_middle(p4_visit2)
+#p5
+p5_v1_mcar <- MCAR_manipulation_middle(p5_visit1)
+p5_v2_mcar <- MCAR_manipulation_middle(p5_visit2)
+#p6
+p6_v1_mcar <- MCAR_manipulation_middle(p6_visit1)
+p6_v2_mcar <- MCAR_manipulation_middle(p6_visit2)
+#p7
+p7_v1_mcar <- MCAR_manipulation_middle(p7_visit1)
+p7_v2_mcar <- MCAR_manipulation_middle(p7_visit2)
+#p8
+p8_v1_mcar <- MCAR_manipulation_middle(p8_visit1)
+p8_v2_mcar <- MCAR_manipulation_middle(p8_visit2)
+#p9
+p9_v1_mcar <- MCAR_manipulation_middle(p9_visit1)
+p9_v2_mcar <- MCAR_manipulation_middle(p9_visit2)
+#p10
+p10_v1_mcar <- MCAR_manipulation_middle(p10_visit1)
+p10_v2_mcar <- MCAR_manipulation_middle(p10_visit2)
 
 # --------------------------------------
 # Part 3.3: MNAR
 # --------------------------------------
 
-#function to introduce 1 MNAR per dataframe
-MNAR_manipulation_balanced <- function(data){
+#function to introduce 1 MNAR per dataframe (one missing value)
+MNAR_manipulation_lowest <- function(data){
   #copy dataset to avoid modifying the original
   data_copy <- data
   
@@ -217,7 +241,36 @@ MNAR_manipulation_balanced <- function(data){
 }
 
 #call function
-p1_v1_mnar <- MNAR_manipulation_balanced(p1_visit1)
+#p1
+p1_v1_mnar <- MNAR_manipulation_lowest(p1_visit1)
+p1_v2_mnar <- MNAR_manipulation_lowest(p1_visit2)
+#p2
+p2_v1_mnar <- MNAR_manipulation_lowest(p2_visit1)
+p2_v2_mnar <- MNAR_manipulation_lowest(p2_visit2)
+#p3
+p3_v1_mnar <- MNAR_manipulation_lowest(p3_visit1)
+p3_v2_mnar <- MNAR_manipulation_lowest(p3_visit2)
+#p4
+p4_v1_mnar <- MNAR_manipulation_lowest(p4_visit1)
+p4_v2_mnar <- MNAR_manipulation_lowest(p4_visit2)
+#p5
+p5_v1_mnar <- MNAR_manipulation_lowest(p5_visit1)
+p5_v2_mnar <- MNAR_manipulation_lowest(p5_visit2)
+#p6
+p6_v1_mnar <- MNAR_manipulation_lowest(p6_visit1)
+p6_v2_mnar <- MNAR_manipulation_lowest(p6_visit2)
+#p7
+p7_v1_mnar <- MNAR_manipulation_lowest(p7_visit1)
+p7_v2_mnar <- MNAR_manipulation_lowest(p7_visit2)
+#p8
+p8_v1_mnar <- MNAR_manipulation_lowest(p8_visit1)
+p8_v2_mnar <- MNAR_manipulation_lowest(p8_visit2)
+#p9
+p9_v1_mnar <- MNAR_manipulation_lowest(p9_visit1)
+p9_v2_mnar <- MNAR_manipulation_lowest(p9_visit2)
+#p10
+p10_v1_mcar <- MNAR_manipulation_lowest(p10_visit1)
+p10_v2_mcar <- MNAR_manipulation_lowest(p10_visit2)
 
 
 # --------------------------------------
