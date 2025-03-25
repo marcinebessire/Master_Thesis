@@ -4,7 +4,7 @@ This repository contains the code and resources for my Master's thesis, which ex
 
 ## Thesis Overview
 
-- **Thesis Title:** *[Your Thesis Title Here]*
+- **Thesis Title:** *Identify optimal Imputation for Missing Data for assessing postprandial Metabolism *
 - **University:** University of Bern
 - **Program:** Bioinformatics and Computational Biology
 - **Author:** Marcine bessire
@@ -24,5 +24,5 @@ The following imputation methods were implemented and evaluated:
 TBD
 
 
-## ⚙Project Structure
+## Project Structure
 
