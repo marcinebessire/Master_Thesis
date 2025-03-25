@@ -193,3 +193,6 @@ remove_constant_columns <- function(df) {
 
 #call function and get final intact lipids dataet
 intact_lipids_final <- remove_constant_columns(intact_lipids_numeric) #8 removed (366 lipids left)
+
+#save to csv file 
+write_csv(intact_lipids_final, "/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids_data.csv")
