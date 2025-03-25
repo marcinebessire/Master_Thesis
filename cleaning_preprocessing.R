@@ -54,6 +54,7 @@ process_patient_data <- function(df) {
   df_clean <- df %>%
     #remove rows where first column starts with "NIST_"
     filter(!str_detect(.[[1]], "^.*NIST_")) %>%
+    filter(!str_detect(.[[1]], "^[A-Z]_NIST")) %>%
   
     #extract patient info from first column
     mutate(
@@ -112,65 +113,83 @@ write_csv(FAO_data_final, "/Users/marcinebessire/Desktop/Master_Thesis/FAO_data.
 # Part 2: Clean dataset for Sheet 4
 # -------------------------------------------
 
-#make copy 
-intact_lipids_data_copy <- intact_lipids_data
+#make copy
+intact_lipids_copy <- intact_lipids_data #total nr of lipids 374
 
 #define the values to ignore
-ignore_values <- c("Species", "NA", "Trial NA", "MS1") 
-new_colnames <- names(intact_lipids_data_copy)
+ignore_values <- c("Species", "NA", "MS1") 
+new_colnames <- names(intact_lipids_copy)
+
+#track already-used names
+used_names <- character()
 
 #loop through each column index
-for (i in seq_along(names(intact_lipids_data_copy))) {
-  first_row_val <- as.character(intact_lipids_data_copy[1, i])  #get first row value
-  column_name <- names(intact_lipids_data_copy)[i]  #get column name
+for (i in seq_along(intact_lipids_copy)) {
+  first_row_val <- as.character(intact_lipids_copy[1, i])
+  column_name <- names(intact_lipids_copy)[i]
   
-  #if the value is not in the ignore list, merge it with column name
   if (!(is.na(first_row_val) || first_row_val %in% ignore_values)) {
-    new_colnames[i] <- paste0(column_name, "_", first_row_val)
+    new_name <- paste0(column_name, "_", first_row_val)
+    
+    #ensure name is unique
+    if (new_name %in% used_names) {
+      suffix <- 1
+      while (paste0(new_name, "_", suffix) %in% used_names) {
+        suffix <- suffix + 1
+      }
+      new_name <- paste0(new_name, "_", suffix)
+    }
+    
+    new_colnames[i] <- new_name
+    used_names <- c(used_names, new_name)
+  } else {
+    used_names <- c(used_names, column_name)
   }
 }
 
 #assign the new names
-colnames(intact_lipids_data_copy) <- new_colnames
+colnames(intact_lipids_copy) <- new_colnames
 
-#remove first row after merging
-intact_lipids_data_copy <- intact_lipids_data_copy[-1,]
+#remove the first row after merging
+intact_lipids_copy <- intact_lipids_copy[-1, ]
 
-#rename column 1 to ID for further processing
-names(intact_lipids_data_copy)[1]<- paste("ID")
+#call processing function
+intact_lipids_cleaned <- process_patient_data(intact_lipids_copy)
 
-#add unique names 
-colnames(intact_lipids_data_copy) <- make.names(colnames(intact_lipids_data_copy), unique = TRUE)
-
-#call function
-intact_lipids_cleaned <- process_patient_data(intact_lipids_data_copy)
-
+#order and reformat
 intact_lipids_ordered <- intact_lipids_cleaned %>%
   group_by(Patient) %>%
   mutate(Visit = ifelse(row_number() == 1, "Visit 1", "Visit 2")) %>%
-  select(ID, Patient, Date, Time_min, Visit, everything())
+  select(ID, Patient, Date, Time_min, Visit, everything(), -Name)
 
-#now convert to n umeric and renomve columns with same values
+#convert to numeric
 convert_columns_to_numeric_lipids <- function(data) {
-  #take numeric data
-  numeric_data <- data[, 6:ncol(data)]
+  metadata <- data[, 1:5]
+  value_data <- data[, 6:ncol(data)]
   
-  #keep only columns that more than 1 different value
-  cols_to_keep <- sapply(numeric_data, function(col) length(unique(na.omit(col))) > 1)
-  numeric_data <- numeric_data[, cols_to_keep]
+  #keep column names
+  value_colnames <- colnames(value_data)
   
-  #convert columns to numeric
-  numeric_data <- lapply(numeric_data, function(x) suppressWarnings(as.numeric(x)))
-  numeric_data <- as.data.frame(numeric_data)
-
+  #convert to numeric
+  value_data_numeric <- lapply(value_data, function(x) suppressWarnings(as.numeric(x)))
+  value_data_numeric <- as.data.frame(value_data_numeric)
+  colnames(value_data_numeric) <- value_colnames  #restore original names explicitly
   
-  #combine with metadata
-  data_cleaned <- cbind(data[, 1:5], numeric_data)
-  
-  return(data_cleaned)
+  #combine without triggering renaming!!!
+  result <- data.frame(metadata, value_data_numeric, check.names = FALSE)
+  return(result)
 }
 
-#call function
-intact_lipids_final <- convert_columns_to_numeric_lipids(intact_lipids_ordered)
+intact_lipids_numeric <- convert_columns_to_numeric_lipids(intact_lipids_ordered)
 
+#remove constant columns
+remove_constant_columns <- function(df) {
+  metadata <- df[, 1:5]
+  value_data <- df[, 6:ncol(df)]
+  cols_to_keep <- sapply(value_data, function(col) length(unique(na.omit(col))) > 1)
+  value_data_cleaned <- value_data[, cols_to_keep]
+  cbind(metadata, value_data_cleaned)
+}
 
+#call function and get final intact lipids dataet
+intact_lipids_final <- remove_constant_columns(intact_lipids_numeric) #8 removed (366 lipids left)
