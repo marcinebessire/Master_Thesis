@@ -180,7 +180,7 @@ prepare_density_data <- function(file_path_mcar, file_path_orig) {
 #call function to prepare for plotting
 density_data <- prepare_density_data(mcar_data, original_data)
 
-#make density plot
+#make density plot (whole FAO data for each patient)
 ggplot(density_data, aes(x = Value, fill = Source, color = Source)) +
   geom_density(alpha = 0.4, adjust = 1.2, na.rm = TRUE) +
   facet_grid(Patient ~ Visit, scales = "free") +
@@ -196,5 +196,44 @@ ggplot(density_data, aes(x = Value, fill = Source, color = Source)) +
   ) +
   xlim(-50,200)
 
+#plot Density for each metabolite and each patient and visit separately 
 
+#output PDF path
+pdf_path <- "/Users/marcinebessire/Desktop/Master_Thesis/Density_original_vs_mcar_all.pdf"
 
+#open pdf 
+pdf(pdf_path, width = 12, height = 6)
+
+#get unique pateint visit 
+combo_list <- density_data %>%
+  distinct(Patient, Visit)
+
+#loop over each Patient + Visit combo and plot
+for (i in 1:nrow(combo_list)) {
+  patient <- combo_list$Patient[i]
+  visit <- combo_list$Visit[i]
+  
+  df_subset <- density_data %>%
+    filter(Patient == patient, Visit == visit)
+  
+  if (nrow(df_subset) == 0) next  # skip if empty
+  
+  p <- ggplot(df_subset, aes(x = Value, fill = Source, color = Source)) +
+    geom_density(alpha = 0.4, adjust = 1.2, na.rm = TRUE) +
+    facet_wrap(~ Metabolite, scales = "free") +
+    labs(
+      title = paste("Patient:", patient, "| Visit:", visit),
+      x = "Value",
+      y = "Density"
+    ) +
+    theme_minimal() +
+    theme(
+      legend.title = element_blank(),
+      strip.text = element_text(size = 9)
+    )
+  
+  print(p)  
+}
+
+#close the PDF device
+dev.off()
