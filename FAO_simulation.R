@@ -3,6 +3,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(tidyverse)
+library(openxlsx)
 
 #load data
 FAO_data <- read.csv("/Users/marcinebessire/Desktop/Master_Thesis/FAO_data.csv", check.names = FALSE) #34 metabolites
@@ -11,44 +12,44 @@ FAO_data <- read.csv("/Users/marcinebessire/Desktop/Master_Thesis/FAO_data.csv",
 # Part 1: Plot kinetic distribution
 # --------------------------------------
 
-#reshape into long format
-FAO_long <- FAO_data %>%
-  pivot_longer(cols=6:ncol(.),
-               names_to = "Metabolite",
-               values_to = "Concentration")
-
-#loop through each patient and metabolite
-unique_patients <- unique(FAO_long$Patient)
-
-for (patient in unique_patients) {
-    
-    plot_data <- FAO_long %>%
-      filter(Patient == patient)
-    
-    p <- ggplot(plot_data, aes(x = Time_min, y = Concentration, color = Visit)) +
-      geom_point(size = 2) +
-      geom_line(aes(group = Visit), linewidth = 1) +
-      facet_wrap(~ Metabolite, scales = "free_y", ncol = 6) +
-      labs(
-        title = paste(patient, ":", "Kinetics of All Metabolites"),
-        subtitle = "Visit 1 vs visit 2",
-        x = "Time [min]",
-        y = "Concentration [µM]"
-      ) +
-      theme_minimal(base_size = 10) +
-      theme(
-        strip.text = element_text(size = 8),
-        legend.position = "bottom", 
-        plot.title = element_text(face = "bold", size = 14)
-      ) +
-      scale_color_manual(values = c("Visit 1" = "lightblue", "Visit 2" = "orange"))
-    
-    #show plot
-    plot(p)
-    
-    #press enter to go to the next plot 
-    readline(prompt = "Press [Enter] to see the next plot")
-}
+# #reshape into long format
+# FAO_long <- FAO_data %>%
+#   pivot_longer(cols=6:ncol(.),
+#                names_to = "Metabolite",
+#                values_to = "Concentration")
+# 
+# #loop through each patient and metabolite
+# unique_patients <- unique(FAO_long$Patient)
+# 
+# for (patient in unique_patients) {
+#     
+#     plot_data <- FAO_long %>%
+#       filter(Patient == patient)
+#     
+#     p <- ggplot(plot_data, aes(x = Time_min, y = Concentration, color = Visit)) +
+#       geom_point(size = 2) +
+#       geom_line(aes(group = Visit), linewidth = 1) +
+#       facet_wrap(~ Metabolite, scales = "free_y", ncol = 6) +
+#       labs(
+#         title = paste(patient, ":", "Kinetics of All Metabolites"),
+#         subtitle = "Visit 1 vs visit 2",
+#         x = "Time [min]",
+#         y = "Concentration [µM]"
+#       ) +
+#       theme_minimal(base_size = 10) +
+#       theme(
+#         strip.text = element_text(size = 8),
+#         legend.position = "bottom", 
+#         plot.title = element_text(face = "bold", size = 14)
+#       ) +
+#       scale_color_manual(values = c("Visit 1" = "lightblue", "Visit 2" = "orange"))
+#     
+#     #show plot
+#     plot(p)
+#     
+#     #press enter to go to the next plot 
+#     readline(prompt = "Press [Enter] to see the next plot")
+# }
 
 
 # -------------------------------------------------
@@ -168,6 +169,46 @@ p9_visit2 <- FAO_data[102:107,]
 p10_visit1 <- FAO_data[108:113,]
 p10_visit2 <- FAO_data[114:119,]
 
+#save to file
+
+#save everything into one excel with sheets
+#create workbook 
+wb <- createWorkbook()
+
+#add each data frame to a separate sheet
+sheet_list_original <- list(
+  "p1_v1" = p1_visit1,
+  "p1_v2" = p1_visit2,
+  "p2_v1" = p2_visit1,
+  "p2_v2" = p2_visit2,
+  "p3_v1" = p3_visit1,
+  "p3_v2" = p3_visit2,
+  "p4_v1" = p4_visit1,
+  "p4_v2" = p4_visit2,
+  "p5_v1" = p5_visit1,
+  "p5_v2" = p5_visit2,
+  "p6_v1" = p6_visit1,
+  "p6_v2" = p6_visit2,
+  "p7_v1" = p7_visit1,
+  "p7_v2" = p7_visit2,
+  "p8_v1" = p8_visit1,
+  "p8_v2" = p8_visit2,
+  "p9_v1" = p9_visit1,
+  "p9_v2" = p9_visit2,
+  "p10_v1" = p10_visit1,
+  "p10_v2" = p10_visit2
+)
+
+#add each sheet to the workbook
+for (name in names(sheet_list_original)) {
+  addWorksheet(wb, name)
+  writeData(wb, sheet = name, sheet_list_original[[name]])
+}
+
+#save the excel file
+saveWorkbook(wb, "/Users/marcinebessire/Desktop/Master_Thesis/FAO_original_patient_visit_sep.xlsx", overwrite = TRUE)
+
+
 # --------------------------------------
 # Part 3.2: MCAR 
 # --------------------------------------
@@ -222,6 +263,44 @@ p9_v2_mcar <- MCAR_manipulation_middle(p9_visit2)
 p10_v1_mcar <- MCAR_manipulation_middle(p10_visit1)
 p10_v2_mcar <- MCAR_manipulation_middle(p10_visit2)
 
+#save everything into one excel with sheets
+#create workbook 
+wb <- createWorkbook()
+
+#add each data frame to a separate sheet
+sheet_list_mcar <- list(
+  "p1_v1" = p1_v1_mcar,
+  "p1_v2" = p1_v2_mcar,
+  "p2_v1" = p2_v1_mcar,
+  "p2_v2" = p2_v2_mcar,
+  "p3_v1" = p3_v1_mcar,
+  "p3_v2" = p3_v2_mcar,
+  "p4_v1" = p4_v1_mcar,
+  "p4_v2" = p4_v2_mcar,
+  "p5_v1" = p5_v1_mcar,
+  "p5_v2" = p5_v2_mcar,
+  "p6_v1" = p6_v1_mcar,
+  "p6_v2" = p6_v2_mcar,
+  "p7_v1" = p7_v1_mcar,
+  "p7_v2" = p7_v2_mcar,
+  "p8_v1" = p8_v1_mcar,
+  "p8_v2" = p8_v2_mcar,
+  "p9_v1" = p9_v1_mcar,
+  "p9_v2" = p9_v2_mcar,
+  "p10_v1" = p10_v1_mcar,
+  "p10_v2" = p10_v2_mcar
+)
+
+#add each sheet to the workbook
+for (name in names(sheet_list_mcar)) {
+  addWorksheet(wb, name)
+  writeData(wb, sheet = name, sheet_list_mcar[[name]])
+}
+
+#save the excel file
+saveWorkbook(wb, "/Users/marcinebessire/Desktop/Master_Thesis/FAO_MCAR_patient_visit_sep.xlsx", overwrite = TRUE)
+
+
 # --------------------------------------
 # Part 3.3: MNAR
 # --------------------------------------
@@ -269,8 +348,45 @@ p8_v2_mnar <- MNAR_manipulation_lowest(p8_visit2)
 p9_v1_mnar <- MNAR_manipulation_lowest(p9_visit1)
 p9_v2_mnar <- MNAR_manipulation_lowest(p9_visit2)
 #p10
-p10_v1_mcar <- MNAR_manipulation_lowest(p10_visit1)
-p10_v2_mcar <- MNAR_manipulation_lowest(p10_visit2)
+p10_v1_mnar <- MNAR_manipulation_lowest(p10_visit1)
+p10_v2_mnar <- MNAR_manipulation_lowest(p10_visit2)
+
+#save everything into one excel with sheets
+#create workbook 
+wb <- createWorkbook()
+
+#add each data frame to a separate sheet
+sheet_list_mnar <- list(
+  "p1_v1" = p1_v1_mnar,
+  "p1_v2" = p1_v2_mnar,
+  "p2_v1" = p2_v1_mnar,
+  "p2_v2" = p2_v2_mnar,
+  "p3_v1" = p3_v1_mnar,
+  "p3_v2" = p3_v2_mnar,
+  "p4_v1" = p4_v1_mnar,
+  "p4_v2" = p4_v2_mnar,
+  "p5_v1" = p5_v1_mnar,
+  "p5_v2" = p5_v2_mnar,
+  "p6_v1" = p6_v1_mnar,
+  "p6_v2" = p6_v2_mnar,
+  "p7_v1" = p7_v1_mnar,
+  "p7_v2" = p7_v2_mnar,
+  "p8_v1" = p8_v1_mnar,
+  "p8_v2" = p8_v2_mnar,
+  "p9_v1" = p9_v1_mnar,
+  "p9_v2" = p9_v2_mnar,
+  "p10_v1" = p10_v1_mcar,
+  "p10_v2" = p10_v2_mcar
+)
+
+#add each sheet to the workbook
+for (name in names(sheet_list_mnar)) {
+  addWorksheet(wb, name)
+  writeData(wb, sheet = name, sheet_list_mnar[[name]])
+}
+
+#save the excel file
+saveWorkbook(wb, "/Users/marcinebessire/Desktop/Master_Thesis/FAO_MNAR_patient_visit_sep.xlsx", overwrite = TRUE)
 
 
 # --------------------------------------
