@@ -1,0 +1,8 @@
+# R-specific files
+.RData
+.Rhistory
+.Rproj.user/
+.Ruserdata
+
+# macOS junk
+.DS_Store

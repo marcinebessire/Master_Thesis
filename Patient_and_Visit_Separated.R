@@ -3,237 +3,444 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(tidyverse)
-library(stringr)
 library(openxlsx)
-library(readxl)
 library(zoo) #for interpolation
-library(purrr)
 
 
-#load whole data
-mcar_data <- "/Users/marcinebessire/Desktop/Master_Thesis/FAO_MCAR_patient_visit_sep.xlsx"
-original_data <- "/Users/marcinebessire/Desktop/Master_Thesis/FAO_original_patient_visit_sep.xlsx"
+# --------------------------------------
+# TITLE: PATIENT AND VISIT SEPARATED
+# --------------------------------------
 
-# #open each sheet in excel
-# open_excel_sheets <- function(file_path){
-#   #get sheet name
-#   sheet_names <- excel_sheets(file_path)
-# 
-#   for (sheet in sheet_names){
-#     df <- read_excel(file_path, sheet = sheet)
-# 
-#     #create R variable name
-#     var_name <- make.names(sheet)
-# 
-#     #assing the dataframe to variable
-#     assign(var_name, df, envir = .GlobalEnv)
-#   }
-# }
-# 
-# #call function to open all sheets
-# open_excel_sheets(mcar_data)
-# open_excel_sheets(original_data)
+#load data
+FAO_data <- read.csv("/Users/marcinebessire/Desktop/Master_Thesis/FAO_data.csv", check.names = FALSE) #34 metabolites
 
-# ----------------------------------------------------
-# Part 1: Area under the curve (AUC) and interpolation
+# --------------------------------------
+# TITLE: MISSING VALUE SIMULATION
+# --------------------------------------
+# ---------------------------------------------------
+# Part 1: Split Dataframe according to Patient and Visit
 # ----------------------------------------------------
 
-#interpolation function
-interpolate_mcar <- function(df){
-  time <- df$Time_min
-  
-  #metaa data
-  metadata <- c("ID", "Patient", "Date", "Time_min", "Visit")
-  
-  metabolite_cols <- setdiff(names(df), metadata)
-  
-  #interpolate each metabolite column
-  df[metabolite_cols] <- lapply(df[metabolite_cols], function(col) {
-    na.approx(col, x = time, na.rm = FALSE) #linear interpolation, values filled based on time spacing
-  })
-  
-  return(df)
-}
+p1_visit1 <- FAO_data[1:6,]
+p1_visit2 <- FAO_data[7:12,]
+p2_visit1 <- FAO_data[13:18,]
+p2_visit2 <- FAO_data[19:24,]
+p3_visit1 <- FAO_data[25:30,]
+p3_visit2 <- FAO_data[31:36,]
+p4_visit1 <- FAO_data[37:41,] #misses 120 min
+p4_visit2 <- FAO_data[42:47,]
+p5_visit1 <- FAO_data[48:53,]
+p5_visit2 <- FAO_data[54:59,]
+p6_visit1 <- FAO_data[60:65,]
+p6_visit2 <- FAO_data[66:71,]
+p7_visit1 <- FAO_data[72:77,]
+p7_visit2 <- FAO_data[78:83,]
+p8_visit1 <- FAO_data[84:89,]
+p8_visit2 <- FAO_data[90:95,]
+p9_visit1 <- FAO_data[96:101,]
+p9_visit2 <- FAO_data[102:107,]
+p10_visit1 <- FAO_data[108:113,]
+p10_visit2 <- FAO_data[114:119,]
 
-#trapezoidal AUC 
-compute_auc <- function(df){
-  time <- df$Time_min
-  metadata <- c("ID", "Patient", "Date", "Time_min", "Visit")
-  
-  metabolite_cols <- setdiff(names(df), metadata)
-  
-  auc <- sapply(metabolite_cols, function(metabolite) {
-    conc <- df[[metabolite]]
-    valid <- !is.na(time) & !is.na(conc)
-    
-    if (sum(valid) < 2) return(NA) #if not enough data
-    
-    sum(diff(time[valid]) * (head(conc[valid], -1) + tail(conc[valid], -1)) / 2)
-  })
-  
-  return(auc)
-}
+# --------------------------------------
+# Part 2: MCAR Simulation
+# --------------------------------------
 
-#function to process all sheets
-process_all_sheets <- function(dataset, apply_interpolation = TRUE) {
-  sheet_names <- excel_sheets(dataset)
+#function to introduce 1 MCAR per dataframe randomly
+
+#middle values only (one missing value)
+MCAR_manipulation_middle <- function(data){
+  #copy dataset to avoid modifying the original
+  data_copy <- data
   
-  #empty list
-  auc_list <- list()
+  #filter eligible rows (30, 60 or 120)
+  middle_rows <- which(data_copy$Time_min %in% c(30, 60, 120))
   
-  for (sheet in sheet_names){
-    df <- read_excel(dataset, sheet = sheet)
-    
-    #only interpolate if there are missing values 
-    if (apply_interpolation) {
-      df <- interpolate_mcar(df)
-    }
-    
-    auc_values <- compute_auc(df)
-    auc_list[[sheet]] <- auc_values
+  for (col in colnames(data_copy[6:ncol(data_copy)])) {
+    rand_row <- sample(middle_rows, 1)
+    data_copy[rand_row, col] <- NA
   }
   
-  return(auc_list)
-} 
-
-#call function to process sheets
-auc_mcar <- process_all_sheets(mcar_data, apply_interpolation = TRUE)
-auc_original <- process_all_sheets(original_data, apply_interpolation = FALSE)
-
-#compare now the auc results
-compare_auc <- function(auc_list1, auc_list2){
-  sheet_names <- intersect(names(auc_list1), names(auc_list2))
-  
-  comparison_df <- bind_rows(
-    lapply(sheet_names, function(sheet) {
-      auc1 <- auc_list1[[sheet]]
-      auc2 <- auc_list2[[sheet]]
-      
-      common_metabolites <- intersect(names(auc1), names(auc2))
-      
-      auc_mcar_vals <- unname(auc1[common_metabolites])
-      auc_orig_vals <- unname(auc2[common_metabolites])
-      
-      #compute difference
-      diff_vals <- auc_mcar_vals - auc_orig_vals
-      
-      #compute relative difference s(afely )handle division by 0
-      rel_diff <- ifelse(
-        is.na(auc_orig_vals) | auc_orig_vals == 0,
-        NA,
-        (diff_vals / auc_orig_vals) * 100
-      )
-    
-      
-      data.frame(
-        Sheet = sheet,
-        Metabolite = common_metabolites,
-        AUC_MCAR = auc_mcar_vals,
-        AUC_Original = auc_orig_vals,
-        Absolute_Diff = diff_vals,
-        Relative_Diff_Percent = rel_diff
-      )
-    })
-  )
-  
-  return(comparison_df)
+  return(data_copy)
 }
 
-#call comparison function
-auc_comparison <- compare_auc(auc_mcar, auc_original)
+#call function
+#p1
+p1_v1_mcar <- MCAR_manipulation_middle(p1_visit1)
+p1_v2_mcar <- MCAR_manipulation_middle(p1_visit2)
+#p2
+p2_v1_mcar <- MCAR_manipulation_middle(p2_visit1)
+p2_v2_mcar <- MCAR_manipulation_middle(p2_visit2)
+#p3
+p3_v1_mcar <- MCAR_manipulation_middle(p3_visit1)
+p3_v2_mcar <- MCAR_manipulation_middle(p3_visit2)
+#p4
+p4_v1_mcar <- MCAR_manipulation_middle(p4_visit1)
+p4_v2_mcar <- MCAR_manipulation_middle(p4_visit2)
+#p5
+p5_v1_mcar <- MCAR_manipulation_middle(p5_visit1)
+p5_v2_mcar <- MCAR_manipulation_middle(p5_visit2)
+#p6
+p6_v1_mcar <- MCAR_manipulation_middle(p6_visit1)
+p6_v2_mcar <- MCAR_manipulation_middle(p6_visit2)
+#p7
+p7_v1_mcar <- MCAR_manipulation_middle(p7_visit1)
+p7_v2_mcar <- MCAR_manipulation_middle(p7_visit2)
+#p8
+p8_v1_mcar <- MCAR_manipulation_middle(p8_visit1)
+p8_v2_mcar <- MCAR_manipulation_middle(p8_visit2)
+#p9
+p9_v1_mcar <- MCAR_manipulation_middle(p9_visit1)
+p9_v2_mcar <- MCAR_manipulation_middle(p9_visit2)
+#p10
+p10_v1_mcar <- MCAR_manipulation_middle(p10_visit1)
+p10_v2_mcar <- MCAR_manipulation_middle(p10_visit2)
 
-#Make density plot
-prepare_density_data <- function(file_path_mcar, file_path_orig) {
-  sheets <- intersect(excel_sheets(file_path_mcar), excel_sheets(file_path_orig))
+# --------------------------------------
+# Part 3: MNAR Simulation
+# --------------------------------------
+
+#function to introduce 1 MNAR per dataframe (one missing value)
+MNAR_manipulation_lowest <- function(data){
+  #copy dataset to avoid modifying the original
+  data_copy <- data
   
-  all_data <- purrr::map_dfr(sheets, function(sheet) {
-    df_mcar <- read_excel(file_path_mcar, sheet = sheet)
-    df_orig <- read_excel(file_path_orig, sheet = sheet)
-    
-    #interpolate MCAR only if it has NAs
-    if (anyNA(df_mcar)) df_mcar <- interpolate_mcar(df_mcar)
-    
-    #define metadata
-    metadata <- c("ID", "Patient", "Date", "Time_min", "Visit")
-    metabolite_cols <- setdiff(names(df_mcar), metadata)
-    
-    #add sheet-based Patient and Visit info
-    patient <- str_extract(sheet, "p\\d+")
-    visit <- str_extract(sheet, "v\\d+")
-    
-    df_mcar_long <- df_mcar %>%
-      select(Time_min, all_of(metabolite_cols)) %>%
-      pivot_longer(-Time_min, names_to = "Metabolite", values_to = "Value") %>%
-      mutate(Source = "MCAR", Patient = patient, Visit = visit)
-    
-    df_orig_long <- df_orig %>%
-      select(Time_min, all_of(metabolite_cols)) %>%
-      pivot_longer(-Time_min, names_to = "Metabolite", values_to = "Value") %>%
-      mutate(Source = "Original", Patient = patient, Visit = visit)
-    
-    bind_rows(df_mcar_long, df_orig_long)
+  #go through each column
+  for (col in colnames(data_copy[6:ncol(data_copy)])) {
+    min_row <- which.min(data_copy[[col]])
+    data_copy[min_row, col] <- NA
+  }
+  
+  return(data_copy)
+}
+
+#call function
+#p1
+p1_v1_mnar <- MNAR_manipulation_lowest(p1_visit1)
+p1_v2_mnar <- MNAR_manipulation_lowest(p1_visit2)
+#p2
+p2_v1_mnar <- MNAR_manipulation_lowest(p2_visit1)
+p2_v2_mnar <- MNAR_manipulation_lowest(p2_visit2)
+#p3
+p3_v1_mnar <- MNAR_manipulation_lowest(p3_visit1)
+p3_v2_mnar <- MNAR_manipulation_lowest(p3_visit2)
+#p4
+p4_v1_mnar <- MNAR_manipulation_lowest(p4_visit1)
+p4_v2_mnar <- MNAR_manipulation_lowest(p4_visit2)
+#p5
+p5_v1_mnar <- MNAR_manipulation_lowest(p5_visit1)
+p5_v2_mnar <- MNAR_manipulation_lowest(p5_visit2)
+#p6
+p6_v1_mnar <- MNAR_manipulation_lowest(p6_visit1)
+p6_v2_mnar <- MNAR_manipulation_lowest(p6_visit2)
+#p7
+p7_v1_mnar <- MNAR_manipulation_lowest(p7_visit1)
+p7_v2_mnar <- MNAR_manipulation_lowest(p7_visit2)
+#p8
+p8_v1_mnar <- MNAR_manipulation_lowest(p8_visit1)
+p8_v2_mnar <- MNAR_manipulation_lowest(p8_visit2)
+#p9
+p9_v1_mnar <- MNAR_manipulation_lowest(p9_visit1)
+p9_v2_mnar <- MNAR_manipulation_lowest(p9_visit2)
+#p10
+p10_v1_mnar <- MNAR_manipulation_lowest(p10_visit1)
+p10_v2_mnar <- MNAR_manipulation_lowest(p10_visit2)
+
+
+# --------------------------------------
+# TITLE: IMPUTATION METHODS
+# --------------------------------------
+# --------------------------------------
+# Part 1: Linear interpolation
+# --------------------------------------
+
+#interpolate missing data 
+interpolate_missing <- function(data){
+  data_copy <- data
+  
+  #apply interpolation to each numeric column from 6th to last
+  data_copy[, 6:ncol(data_copy)] <- lapply(data_copy[, 6:ncol(data_copy)], function(col){
+    if (is.numeric(col)) {
+      return(na.approx(col, na.rm = FALSE)) #keep NA if interpolation not possible
+    } else {
+      return(col)
+    }
   })
   
-  return(all_data)
+  return(data_copy)
 }
 
-#call function to prepare for plotting
-density_data <- prepare_density_data(mcar_data, original_data)
+#call interpolation function on mcar data
+#p1
+p1_v1_mcar_interpolation <- interpolate_missing(p1_v1_mcar)
+p1_v2_mcar_interpolation <- interpolate_missing(p1_v2_mcar)
+#p2
+p2_v1_mcar_interpolation <- interpolate_missing(p2_v1_mcar)
+p2_v2_mcar_interpolation <- interpolate_missing(p2_v2_mcar)
+#p3
+p3_v1_mcar_interpolation <- interpolate_missing(p3_v1_mcar)
+p3_v2_mcar_interpolation <- interpolate_missing(p3_v2_mcar)
+#p4
+p4_v1_mcar_interpolation <- interpolate_missing(p4_v1_mcar)
+p4_v2_mcar_interpolation <- interpolate_missing(p4_v2_mcar)
+#p5
+p5_v1_mcar_interpolation <- interpolate_missing(p5_v1_mcar)
+p5_v2_mcar_interpolation <- interpolate_missing(p5_v2_mcar)
+#p6
+p6_v1_mcar_interpolation <- interpolate_missing(p6_v1_mcar)
+p6_v2_mcar_interpolation <- interpolate_missing(p6_v2_mcar)
+#p7
+p7_v1_mcar_interpolation <- interpolate_missing(p7_v1_mcar)
+p7_v2_mcar_interpolation <- interpolate_missing(p7_v2_mcar)
+#p8
+p8_v1_mcar_interpolation <- interpolate_missing(p8_v1_mcar)
+p8_v2_mcar_interpolation <- interpolate_missing(p8_v2_mcar)
+#p9
+p9_v1_mcar_interpolation <- interpolate_missing(p9_v1_mcar)
+p9_v2_mcar_interpolation <- interpolate_missing(p9_v2_mcar)
+#p10
+p10_v1_mcar_interpolation <- interpolate_missing(p10_v1_mcar)
+p10_v2_mcar_interpolation <- interpolate_missing(p10_v2_mcar)
 
-#make density plot (whole FAO data for each patient)
-ggplot(density_data, aes(x = Value, fill = Source, color = Source)) +
-  geom_density(alpha = 0.4, adjust = 1.2, na.rm = TRUE) +
-  facet_grid(Patient ~ Visit, scales = "free") +
-  labs(
-    title = "Density Distribution of Metabolite Values: MCAR vs Original",
-    x = "Metabolite Value",
-    y = "Density"
-  ) +
+#call interpolation function on mnar data
+#p1
+p1_v1_mnar_interpolation <- interpolate_missing(p1_v1_mnar)
+p1_v2_mnar_interpolation <- interpolate_missing(p1_v2_mnar)
+#p2
+p2_v1_mnar_interpolation <- interpolate_missing(p2_v1_mnar)
+p2_v2_mnar_interpolation <- interpolate_missing(p2_v2_mnar)
+#p3
+p3_v1_mnar_interpolation <- interpolate_missing(p3_v1_mnar)
+p3_v2_mnar_interpolation <- interpolate_missing(p3_v2_mnar)
+#p4
+p4_v1_mnar_interpolation <- interpolate_missing(p4_v1_mnar)
+p4_v2_mnar_interpolation <- interpolate_missing(p4_v2_mnar)
+#p5
+p5_v1_mnar_interpolation <- interpolate_missing(p5_v1_mnar)
+p5_v2_mnar_interpolation <- interpolate_missing(p5_v2_mnar)
+#p6
+p6_v1_mnar_interpolation <- interpolate_missing(p6_v1_mnar)
+p6_v2_mnar_interpolation <- interpolate_missing(p6_v2_mnar)
+#p7
+p7_v1_mnar_interpolation <- interpolate_missing(p7_v1_mnar)
+p7_v2_mnar_interpolation <- interpolate_missing(p7_v2_mnar)
+#p8
+p8_v1_mnar_interpolation <- interpolate_missing(p8_v1_mnar)
+p8_v2_mnar_interpolation <- interpolate_missing(p8_v2_mnar)
+#p9
+p9_v1_mnar_interpolation <- interpolate_missing(p9_v1_mnar)
+p9_v2_mnar_interpolation <- interpolate_missing(p9_v2_mnar)
+#p10
+p10_v1_mnar_interpolation <- interpolate_missing(p10_v1_mnar)
+p10_v2_mnar_interpolation <- interpolate_missing(p10_v2_mnar)
+
+# --------------------------------------
+# TITLE: EVALUATION OF IMPUTATION METHOD
+# --------------------------------------
+
+# --------------------------------------
+# Part 1: NRMSE
+# --------------------------------------
+
+#function to calcualte nrmse 
+calculate_nrsme <- function(original, imputed, method) {
+  numeric_col_names <- names(original)[6:ncol(original)]
+  
+  nrmse_values <- sapply(numeric_col_names, function(col) {
+    actual_val <- original[[col]]
+    imputed_val <- imputed[[col]]
+    
+    valid_indices <- !is.na(actual_val) & !is.na(imputed_val)
+    
+    if (sum(valid_indices) > 2) {
+      mse <- mean((actual_val[valid_indices] - imputed_val[valid_indices])^2)
+      rmse <- sqrt(mse)
+      norm_factor <- max(actual_val[valid_indices], na.rm = TRUE) - min(actual_val[valid_indices], na.rm = TRUE)
+      
+      if (norm_factor > 0) {
+        return(rmse / norm_factor)
+      } else {
+        return(NA)
+      }
+    } else {
+      return(NA)
+    }
+  })
+  
+  return(data.frame(
+    Metabolite = numeric_col_names,
+    Imputation_method = method,
+    NRMSE = nrmse_values
+  ))
+}
+
+# ------------------------------------
+# Part 1.1: Interpolation NRMSE (MCAR)
+# ------------------------------------
+
+#call function to calcualte nrms
+#interpolation
+#p1
+nrmse_interp_p1v1_mcar <- calculate_nrsme(p1_visit1, p1_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p1v2_mcar <- calculate_nrsme(p1_visit2, p1_v2_mcar_interpolation, method = "Linear Interpolation")
+#p2
+nrmse_interp_p2v1_mcar <- calculate_nrsme(p2_visit1, p2_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p2v2_mcar <- calculate_nrsme(p2_visit2, p2_v2_mcar_interpolation, method = "Linear Interpolation")
+#p3
+nrmse_interp_p3v1_mcar <- calculate_nrsme(p3_visit1, p3_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p3v2_mcar <- calculate_nrsme(p3_visit2, p3_v2_mcar_interpolation, method = "Linear Interpolation")
+#p4
+nrmse_interp_p4v1_mcar <- calculate_nrsme(p4_visit1, p4_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p4v2_mcar <- calculate_nrsme(p4_visit2, p4_v2_mcar_interpolation, method = "Linear Interpolation")
+#p5
+nrmse_interp_p5v1_mcar <- calculate_nrsme(p5_visit1, p5_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p5v2_mcar <- calculate_nrsme(p5_visit2, p5_v2_mcar_interpolation, method = "Linear Interpolation")
+#p6
+nrmse_interp_p6v1_mcar <- calculate_nrsme(p6_visit1, p6_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p6v2_mcar <- calculate_nrsme(p6_visit2, p6_v2_mcar_interpolation, method = "Linear Interpolation")
+#p7
+nrmse_interp_p7v1_mcar <- calculate_nrsme(p7_visit1, p7_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p7v2_mcar <- calculate_nrsme(p7_visit2, p7_v2_mcar_interpolation, method = "Linear Interpolation")
+#p8
+nrmse_interp_p8v1_mcar <- calculate_nrsme(p8_visit1, p8_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p8v2_mcar <- calculate_nrsme(p8_visit2, p8_v2_mcar_interpolation, method = "Linear Interpolation")
+#p9
+nrmse_interp_p9v1_mcar <- calculate_nrsme(p9_visit1, p9_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p9v2_mcar <- calculate_nrsme(p9_visit2, p9_v2_mcar_interpolation, method = "Linear Interpolation")
+#p10
+nrmse_interp_p10v1_mcar <- calculate_nrsme(p10_visit1, p10_v1_mcar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p10v2_mcar <- calculate_nrsme(p10_visit2, p10_v2_mcar_interpolation, method = "Linear Interpolation")
+
+#combine visit 1 
+nrmse_mcar_visit1 <- bind_rows(
+  nrmse_interp_p1v1_mcar %>% mutate(Patient = "P1"),
+  nrmse_interp_p2v1_mcar %>% mutate(Patient = "P2"),
+  nrmse_interp_p3v1_mcar %>% mutate(Patient = "P3"),
+  nrmse_interp_p4v1_mcar %>% mutate(Patient = "P4"),
+  nrmse_interp_p5v1_mcar %>% mutate(Patient = "P5"),
+  nrmse_interp_p6v1_mcar %>% mutate(Patient = "P6"),
+  nrmse_interp_p7v1_mcar %>% mutate(Patient = "P7"),
+  nrmse_interp_p8v1_mcar %>% mutate(Patient = "P8"),
+  nrmse_interp_p9v1_mcar %>% mutate(Patient = "P9"),
+  nrmse_interp_p10v1_mcar %>% mutate(Patient = "P10")
+)
+
+#combine visit 2
+nrmse_mcar_visit2 <- bind_rows(
+  nrmse_interp_p1v2_mcar %>% mutate(Patient = "P1"),
+  nrmse_interp_p2v2_mcar %>% mutate(Patient = "P2"),
+  nrmse_interp_p3v2_mcar %>% mutate(Patient = "P3"),
+  nrmse_interp_p4v2_mcar %>% mutate(Patient = "P4"),
+  nrmse_interp_p5v2_mcar %>% mutate(Patient = "P5"),
+  nrmse_interp_p6v2_mcar %>% mutate(Patient = "P6"),
+  nrmse_interp_p7v2_mcar %>% mutate(Patient = "P7"),
+  nrmse_interp_p8v2_mcar %>% mutate(Patient = "P8"),
+  nrmse_interp_p9v2_mcar %>% mutate(Patient = "P9"),
+  nrmse_interp_p10v2_mcar %>% mutate(Patient = "P10")
+)
+
+
+#plot visit 1
+ggplot(nrmse_mcar_visit1, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  theme(
-    strip.text = element_text(face = "bold"),
-    legend.title = element_blank()
-  ) +
-  xlim(-50,200)
+  labs(title = "NRMSE Distribution per Patient - Visit 1",
+       y = "NRMSE", x = "Patient")
 
-#plot Density for each metabolite and each patient and visit separately 
+#plot visit 2
+ggplot(nrmse_mcar_visit2, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE Distribution per Patient - Visit 1",
+       y = "NRMSE", x = "Patient")
 
-#output PDF path
-pdf_path <- "/Users/marcinebessire/Desktop/Master_Thesis/Density_original_vs_mcar_all.pdf"
+# ------------------------------------
+# Part 1.2: Interpolation NRMSE (MNAR)
+# ------------------------------------
 
-#open pdf 
-pdf(pdf_path, width = 12, height = 6)
+#call function to calcualte nrms
+#interpolation
+#p1
+nrmse_interp_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_mnar_interpolation, method = "Linear Interpolation")
+#p2
+nrmse_interp_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_interpolation, method = "Linear Interpolation")
+#p3
+nrmse_interp_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_interpolation, method = "Linear Interpolation")
+#p4
+nrmse_interp_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_interpolation, method = "Linear Interpolation")
+#p5
+nrmse_interp_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_mnar_interpolation, method = "Linear Interpolation")
+#p6
+nrmse_interp_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_mnar_interpolation, method = "Linear Interpolation")
+#p7
+nrmse_interp_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_mnar_interpolation, method = "Linear Interpolation")
+#p8
+nrmse_interp_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_mnar_interpolation, method = "Linear Interpolation")
+#p9
+nrmse_interp_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_mnar_interpolation, method = "Linear Interpolation")
+#p10
+nrmse_interp_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_mnar_interpolation, method = "Linear Interpolation")
 
-#get unique pateint visit 
-combo_list <- density_data %>%
-  distinct(Patient, Visit)
+#combine visit 1 
+nrmse_mnar_visit1 <- bind_rows(
+  nrmse_interp_p1v1_mnar %>% mutate(Patient = "P1"),
+  nrmse_interp_p2v1_mnar %>% mutate(Patient = "P2"),
+  nrmse_interp_p3v1_mnar %>% mutate(Patient = "P3"),
+  nrmse_interp_p4v1_mnar %>% mutate(Patient = "P4"),
+  nrmse_interp_p5v1_mnar %>% mutate(Patient = "P5"),
+  nrmse_interp_p6v1_mnar %>% mutate(Patient = "P6"),
+  nrmse_interp_p7v1_mnar %>% mutate(Patient = "P7"),
+  nrmse_interp_p8v1_mnar %>% mutate(Patient = "P8"),
+  nrmse_interp_p9v1_mnar %>% mutate(Patient = "P9"),
+  nrmse_interp_p10v1_mnar %>% mutate(Patient = "P10")
+)
 
-#loop over each Patient + Visit combo and plot
-for (i in 1:nrow(combo_list)) {
-  patient <- combo_list$Patient[i]
-  visit <- combo_list$Visit[i]
-  
-  df_subset <- density_data %>%
-    filter(Patient == patient, Visit == visit)
-  
-  if (nrow(df_subset) == 0) next  # skip if empty
-  
-  p <- ggplot(df_subset, aes(x = Value, fill = Source, color = Source)) +
-    geom_density(alpha = 0.4, adjust = 1.2, na.rm = TRUE) +
-    facet_wrap(~ Metabolite, scales = "free") +
-    labs(
-      title = paste("Patient:", patient, "| Visit:", visit),
-      x = "Value",
-      y = "Density"
-    ) +
-    theme_minimal() +
-    theme(
-      legend.title = element_blank(),
-      strip.text = element_text(size = 9)
-    )
-  
-  print(p)  
-}
+#combine visit 2
+nrmse_mnar_visit2 <- bind_rows(
+  nrmse_interp_p1v2_mnar %>% mutate(Patient = "P1"),
+  nrmse_interp_p2v2_mnar %>% mutate(Patient = "P2"),
+  nrmse_interp_p3v2_mnar %>% mutate(Patient = "P3"),
+  nrmse_interp_p4v2_mnar %>% mutate(Patient = "P4"),
+  nrmse_interp_p5v2_mnar %>% mutate(Patient = "P5"),
+  nrmse_interp_p6v2_mnar %>% mutate(Patient = "P6"),
+  nrmse_interp_p7v2_mnar %>% mutate(Patient = "P7"),
+  nrmse_interp_p8v2_mnar %>% mutate(Patient = "P8"),
+  nrmse_interp_p9v2_mnar %>% mutate(Patient = "P9"),
+  nrmse_interp_p10v2_mnar %>% mutate(Patient = "P10")
+)
 
-#close the PDF device
-dev.off()
+#plot visit 1
+ggplot(nrmse_mnar_visit1, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE Distribution per Patient - Visit 1",
+       y = "NRMSE", x = "Patient")
+
+#plot visit 2
+ggplot(nrmse_mnar_visit2, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE Distribution per Patient - Visit 1",
+       y = "NRMSE", x = "Patient")
+
+
+
+
+
+
+
+
+
+
+
+
