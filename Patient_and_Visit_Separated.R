@@ -344,11 +344,43 @@ plot_imputed_vs_original(p9_visit2, p9_v2_mcar_interpolation, visit = "Visit 2",
 plot_imputed_vs_original(p10_visit1, p10_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
 plot_imputed_vs_original(p10_visit2, p10_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
 
+#MNAR
+#p1
+plot_imputed_vs_original(p1_visit1, p1_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p1_visit2, p1_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p2
+plot_imputed_vs_original(p2_visit1, p2_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p2_visit2, p2_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p3
+plot_imputed_vs_original(p3_visit1, p3_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p3_visit2, p3_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p4
+plot_imputed_vs_original(p4_visit1, p4_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p4_visit2, p4_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p5
+plot_imputed_vs_original(p5_visit1, p5_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p5_visit2, p5_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p6
+plot_imputed_vs_original(p6_visit1, p6_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p6_visit2, p6_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p7
+plot_imputed_vs_original(p7_visit1, p7_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p7_visit2, p7_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p8
+plot_imputed_vs_original(p8_visit1, p8_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p8_visit2, p8_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p9
+plot_imputed_vs_original(p9_visit1, p9_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p9_visit2, p9_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+#p10
+plot_imputed_vs_original(p10_visit1, p10_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p10_visit2, p10_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+
 # --------------------------------------
 # Part 2: NRMSE
 # --------------------------------------
 
-#function to calcualte nrmse 
+#function to calculate nrmse 
 calculate_nrsme <- function(original, imputed, method) {
   numeric_col_names <- names(original)[6:ncol(original)]
   
