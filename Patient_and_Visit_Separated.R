@@ -64,6 +64,23 @@ MCAR_manipulation_middle <- function(data){
   return(data_copy)
 }
 
+#middle values only (two missing value)
+MCAR_manipulation_middle <- function(data){
+  #copy dataset to avoid modifying the original
+  data_copy <- data
+  
+  #filter eligible rows (30, 60 or 120)
+  middle_rows <- which(data_copy$Time_min %in% c(30, 60, 120))
+  
+  for (col in colnames(data_copy[6:ncol(data_copy)])) {
+    rand_row <- sample(middle_rows, 1)
+    data_copy[rand_row, col] <- NA
+  }
+  
+  return(data_copy)
+}
+
+
 #call function
 #p1
 p1_v1_mcar <- MCAR_manipulation_middle(p1_visit1)
@@ -238,8 +255,97 @@ p10_v2_mnar_interpolation <- interpolate_missing(p10_v2_mnar)
 # TITLE: EVALUATION OF IMPUTATION METHOD
 # --------------------------------------
 
+# -------------------------------------------
+# Part 1: Plot before and After Interpolation
+# --------------------------------------------
+
+plot_imputed_vs_original <- function(original, imputed, visit, type){
+  #add source info 
+  original_df <- original %>% mutate(Source = "Original")
+  imputed_df <- imputed %>% mutate(Source = "Imputed")
+  
+  #combine data
+  combined <- bind_rows(original_df, imputed_df)
+  
+  #ensure correct type
+  combined <- combined %>%
+    mutate(
+      Visit = as.factor(Visit),
+      Time_min = as.numeric(Time_min),
+      Source = as.factor(Source)
+    )
+  
+  #reshape into long
+  long_df <- combined %>%
+    pivot_longer(cols = 6:(ncol(combined) - 1), #last column source
+                 names_to = "Metabolite",
+                 values_to = "Concentration")
+  
+  #pateint list 
+  patients <- unique(long_df$Patient)
+  
+  for (patient in patients){
+    plot_data <- long_df %>%
+      filter(Patient == patient)
+    
+    p <- ggplot(plot_data, aes(x = Time_min, y = Concentration, color = Source)) +
+      geom_point(size = 2) +
+      geom_line(aes(group = Source), linewidth =1) +
+      facet_wrap(~ Metabolite, scales = "free_y", ncol = 6) +
+      labs(
+        title = paste(patient, ":", "Kintecs of all Metabolites (", visit, ", ", type, ")"),
+        subtitle = "Original vs Imputed",
+        x = "Time [min]",
+        y = "Concentration [µM]"
+      ) +
+      theme_minimal(base_size = 10) +
+      theme(
+        strip.text = element_text(size = 8),
+        legend.position = "bottom",
+        plot.title = element_text(face = "bold", size = 14)
+      ) +
+      scale_color_manual(values = c("Original" = "darkblue", "Imputed" = "red"))
+    
+    print(p)
+  }
+}
+
+#call function
+
+#MCAR
+#p1
+plot_imputed_vs_original(p1_visit1, p1_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p1_visit2, p1_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p2
+plot_imputed_vs_original(p2_visit1, p2_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p2_visit2, p2_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p3
+plot_imputed_vs_original(p3_visit1, p3_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p3_visit2, p3_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p4
+plot_imputed_vs_original(p4_visit1, p4_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p4_visit2, p4_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p5
+plot_imputed_vs_original(p5_visit1, p5_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p5_visit2, p5_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p6
+plot_imputed_vs_original(p6_visit1, p6_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p6_visit2, p6_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p7
+plot_imputed_vs_original(p7_visit1, p7_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p7_visit2, p7_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p8
+plot_imputed_vs_original(p8_visit1, p8_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p8_visit2, p8_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p9
+plot_imputed_vs_original(p9_visit1, p9_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p9_visit2, p9_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+#p10
+plot_imputed_vs_original(p10_visit1, p10_v1_mcar_interpolation, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p10_visit2, p10_v2_mcar_interpolation, visit = "Visit 2", type = "MCAR")
+
 # --------------------------------------
-# Part 1: NRMSE
+# Part 2: NRMSE
 # --------------------------------------
 
 #function to calcualte nrmse 
@@ -275,7 +381,7 @@ calculate_nrsme <- function(original, imputed, method) {
 }
 
 # ------------------------------------
-# Part 1.1: Interpolation NRMSE (MCAR)
+# Part 2.1: NRMSE (MCAR)
 # ------------------------------------
 
 #call function to calcualte nrms
@@ -344,18 +450,18 @@ nrmse_mcar_visit2 <- bind_rows(
 ggplot(nrmse_mcar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE Distribution per Patient - Visit 1",
+  labs(title = "NRMSE per Patient: Visit 1 (MCAR 1 MV in middle)",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_mcar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE Distribution per Patient - Visit 1",
+  labs(title = "NRMSE per Patient: Visit 2 (MCAR 1 MV in middle)",
        y = "NRMSE", x = "Patient")
 
 # ------------------------------------
-# Part 1.2: Interpolation NRMSE (MNAR)
+# Part 2.2: NRMSE (MNAR)
 # ------------------------------------
 
 #call function to calcualte nrms
@@ -423,14 +529,14 @@ nrmse_mnar_visit2 <- bind_rows(
 ggplot(nrmse_mnar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE Distribution per Patient - Visit 1",
+  labs(title = "NRMSE per Patient: Visit 1 (MNAR 1 MV in middle)",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE Distribution per Patient - Visit 1",
+  labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV in middle)",
        y = "NRMSE", x = "Patient")
 
 
