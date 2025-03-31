@@ -48,19 +48,57 @@ p10_visit2 <- FAO_data[114:119,]
 # Part 2: MCAR Simulation
 # --------------------------------------
 
+#function to impute row T = 120 for patient 4
+add_row_120 <- function(data){
+  data_copy <- data
+
+  #new row using metadata from existing row (e.g., row with Time_min == 60)
+  template_row <- data_copy[which.min(abs(data_copy$Time_min - 120)), ]  # Closest row (e.g., 60)
+  
+  new_row <- template_row
+  new_row$Time_min <- 120
+  new_row[6:ncol(new_row)] <- NA  #set all metabolite values to NA for this row
+  
+  #bind and re-sort
+  data_copy <- bind_rows(data_copy, new_row) %>%
+    arrange(Time_min)
+  
+  return(data_copy)
+}
+
+#call function for patient 4 visit 1 (NA introduced)
+p4_visit1_full <- add_row_120(p4_visit1)
+
+
 #function to introduce 1 MCAR per dataframe randomly
 
-#middle values only (one missing value)
+# #middle values only (one missing value)
+# MCAR_manipulation_middle <- function(data){
+#   #copy dataset to avoid modifying the original
+#   data_copy <- data
+#   
+#   #filter eligible rows (30, 60 or 120)
+#   middle_rows <- which(data_copy$Time_min %in% c(30, 60, 120))
+#   
+#   for (col in colnames(data_copy[6:ncol(data_copy)])) {
+#     rand_row <- sample(middle_rows, 1)
+#     data_copy[rand_row, col] <- NA
+#   }
+#   
+#   return(data_copy)
+# }
+
+#5th (120 min) values only (one missing value) and generate the column for patient which has no 120 min
 MCAR_manipulation_middle <- function(data){
   #copy dataset to avoid modifying the original
   data_copy <- data
   
-  #filter eligible rows (30, 60 or 120)
-  middle_rows <- which(data_copy$Time_min %in% c(30, 60, 120))
+  #find rows with T = 120
+  rows_120 <- which(data_copy$Time_min == 120)
   
-  for (col in colnames(data_copy[6:ncol(data_copy)])) {
-    rand_row <- sample(middle_rows, 1)
-    data_copy[rand_row, col] <- NA
+  #set them to NA if they exist
+  if (length(rows_120) > 0){
+    data_copy[rows_120, 6:ncol(data_copy)] <- NA
   }
   
   return(data_copy)
@@ -78,7 +116,7 @@ p2_v2_mcar <- MCAR_manipulation_middle(p2_visit2)
 p3_v1_mcar <- MCAR_manipulation_middle(p3_visit1)
 p3_v2_mcar <- MCAR_manipulation_middle(p3_visit2)
 #p4
-p4_v1_mcar <- MCAR_manipulation_middle(p4_visit1)
+p4_v1_mcar <- MCAR_manipulation_middle(p4_visit1_full)
 p4_v2_mcar <- MCAR_manipulation_middle(p4_visit2)
 #p5
 p5_v1_mcar <- MCAR_manipulation_middle(p5_visit1)
@@ -485,7 +523,7 @@ plot_imputed_vs_original <- function(original, imputed, visit, type){
 # Part 1: Linear Interpolation
 # ----------------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Interpolation/MCAR_Interpolation_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Interpolation/MCAR_Interpolation_5thMV.pdf", width = 14, height = 10)
 
 #call function
 #MCAR
@@ -562,7 +600,7 @@ dev.off()
 # Part 2: Kalman Smoothing
 # ----------------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Kalman_Smoothing/MCAR_Kalman_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Kalman_Smoothing/MCAR_Kalman_5thMV.pdf", width = 14, height = 10)
 
 #call function
 #MCAR
@@ -639,7 +677,7 @@ dev.off()
 # Part 3: LWMA
 # ----------------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LWMA/MCAR_LWMA_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LWMA/MCAR_LWMA_5thMV.pdf", width = 14, height = 10)
 
 #call function
 #MCAR
@@ -817,7 +855,7 @@ nrmse_mcar_visit2 <- bind_rows(
   nrmse_interp_p10v2_mcar %>% mutate(Patient = "P10")
 )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Interpolation/MCAR_Interpolation_1MV_NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Interpolation/MCAR_Interpolation_5thMV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
 ggplot(nrmse_mcar_visit1, aes(x = Patient, y = NRMSE)) +
@@ -988,7 +1026,7 @@ nrmse_kalman_mcar_visit2 <- bind_rows(
   nrmse_kalman_p10v2_mcar %>% mutate(Patient = "P10")
 )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Kalman_Smoothing/MCAR_Kalman_1MV_NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Kalman_Smoothing/MCAR_Kalman_5thMV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
 ggplot(nrmse_kalman_mcar_visit1, aes(x = Patient, y = NRMSE)) +
@@ -1159,7 +1197,7 @@ nrmse_lwma_mcar_visit2 <- bind_rows(
   nrmse_lwma_p10v2_mcar %>% mutate(Patient = "P10")
 )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LWMA/MCAR_LWMA_1MV_NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LWMA/MCAR_LWMA_5thMV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
 ggplot(nrmse_lwma_mcar_visit1, aes(x = Patient, y = NRMSE)) +
@@ -1278,329 +1316,343 @@ calculate_auc <- function(data){
   return(aucs)
 }
 
-# ------------------------
-# Part 1: Interpolation AUC
-# ------------------------
+# ----------------------------------
+# Part 1: For 5th Value (T = 120 min) 
+# -----------------------------------
 
-#MCAR
-#call function for interpolation 
-#p1
-auc_mcar_p1v1_original <- calculate_auc(p1_visit1)
-auc_mcar_p1v1_interpolation <- calculate_auc(p1_v1_mcar_interpolation)
-auc_mcar_p1v2_original <- calculate_auc(p1_visit2)
-auc_mcar_p1v2_interpolation <- calculate_auc(p1_v2_mcar_interpolation)
+#original AUC
+#visit 1
+auc_p1v1_original <- calculate_auc(p1_visit1)
+auc_p2v1_original <- calculate_auc(p2_visit1)
+auc_p3v1_original <- calculate_auc(p3_visit1)
+auc_p4v1_original <- calculate_auc(p4_visit1)
+auc_p5v1_original <- calculate_auc(p5_visit1)
+auc_p6v1_original <- calculate_auc(p6_visit1)
+auc_p7v1_original <- calculate_auc(p7_visit1)
+auc_p8v1_original <- calculate_auc(p8_visit1)
+auc_p9v1_original <- calculate_auc(p9_visit1)
+auc_p10v1_original <- calculate_auc(p10_visit1)
+#visit 2
+auc_p1v2_original <- calculate_auc(p1_visit2)
+auc_p2v2_original <- calculate_auc(p2_visit2)
+auc_p3v2_original <- calculate_auc(p3_visit2)
+auc_p4v2_original <- calculate_auc(p4_visit2)
+auc_p5v2_original <- calculate_auc(p5_visit2)
+auc_p6v2_original <- calculate_auc(p6_visit2)
+auc_p7v2_original <- calculate_auc(p7_visit2)
+auc_p8v2_original <- calculate_auc(p8_visit2)
+auc_p9v2_original <- calculate_auc(p9_visit2)
+auc_p10v2_original <- calculate_auc(p10_visit2)
 
-#combine into dataframe for comparison
-#p1
-auc_mcar_combined_p1v1 <- data.frame(
-  Metabolite = names(auc_mcar_p1v1_original),
-  Original_AUC = auc_mcar_p1v1_original,
-  Interpolation_AUC = auc_mcar_p1v1_interpolation,
-  Difference = auc_mcar_p1v1_interpolation - auc_mcar_p1v1_original,
-  Percent_Change_AUC = 100 *(auc_mcar_p1v1_interpolation - auc_mcar_p1v1_original) / auc_mcar_p1v1_original
+#combine all 
+#visit 1
+original_visit1_auc <- bind_rows(
+  auc_p1v1_original, 
+  auc_p2v1_original,
+  auc_p3v1_original,
+  auc_p4v1_original,
+  auc_p5v1_original,
+  auc_p6v1_original,
+  auc_p7v1_original,
+  auc_p8v1_original,
+  auc_p9v1_original,
+  auc_p10v1_original
 )
-auc_mcar_combined_p1v2 <- data.frame(
-  Metabolite = names(auc_mcar_p1v2_original),
-  Original_AUC = auc_mcar_p1v2_original,
-  Interpolation_AUC = auc_mcar_p1v2_interpolation,
-  Difference = auc_mcar_p1v2_interpolation - auc_mcar_p1v2_original,
-  Percent_Change_AUC = 100 *(auc_mcar_p1v2_interpolation - auc_mcar_p1v2_original) / auc_mcar_p1v2_original
-)
-
-#plot
-#p1
-ggplot(auc_mcar_combined_p1v1, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-ggplot(auc_mcar_combined_p1v2, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
- 
-
-#MNAR
-#call function for interpolation 
-#p1
-auc_mnar_p1v1_original <- calculate_auc(p1_visit1)
-auc_mnar_p1v1_interpolation <- calculate_auc(p1_v1_mnar_interpolation)
-auc_mnar_p1v2_original <- calculate_auc(p1_visit2)
-auc_mnar_p1v2_interpolation <- calculate_auc(p1_v2_mnar_interpolation)
-
-#combine into dataframe for comparison
-#p1
-auc_mnar_combined_p1v1 <- data.frame(
-  Metabolite = names(auc_mnar_p1v1_original),
-  Original_AUC = auc_mnar_p1v1_original,
-  Interpolation_AUC = auc_mnar_p1v1_interpolation,
-  Difference = auc_mnar_p1v1_interpolation - auc_mnar_p1v1_original,
-  Percent_Change_AUC = 100 *(auc_mnar_p1v1_interpolation - auc_mnar_p1v1_original) / auc_mnar_p1v1_original
+#visit 2
+original_visit2_auc <- bind_rows(
+  auc_p1v2_original, 
+  auc_p2v2_original,
+  auc_p3v2_original,
+  auc_p4v2_original,
+  auc_p5v2_original,
+  auc_p6v2_original,
+  auc_p7v2_original,
+  auc_p8v2_original,
+  auc_p9v2_original,
+  auc_p10v2_original
 )
 
-auc_mnar_combined_p1v2 <- data.frame(
-  Metabolite = names(auc_mnar_p1v2_original),
-  Original_AUC = auc_mnar_p1v2_original,
-  Interpolation_AUC = auc_mnar_p1v2_interpolation,
-  Difference = auc_mnar_p1v2_interpolation - auc_mnar_p1v2_original,
-  Percent_Change_AUC = 100 *(auc_mnar_p1v2_interpolation - auc_mnar_p1v2_original) / auc_mnar_p1v2_original
+#interpolation AUC
+#visit 1
+auc_p1v1_interpolation <- calculate_auc(p1_v1_mcar_interpolation)
+auc_p2v1_interpolation <- calculate_auc(p2_v1_mcar_interpolation)
+auc_p3v1_interpolation <- calculate_auc(p3_v1_mcar_interpolation)
+auc_p4v1_interpolation <- calculate_auc(p4_v1_mcar_interpolation)
+auc_p5v1_interpolation <- calculate_auc(p5_v1_mcar_interpolation)
+auc_p6v1_interpolation <- calculate_auc(p6_v1_mcar_interpolation)
+auc_p7v1_interpolation <- calculate_auc(p7_v1_mcar_interpolation)
+auc_p8v1_interpolation <- calculate_auc(p8_v1_mcar_interpolation)
+auc_p9v1_interpolation <- calculate_auc(p9_v1_mcar_interpolation)
+auc_p10v1_interpolation <- calculate_auc(p10_v1_mcar_interpolation)
+#visit 2
+auc_p1v2_interpolation <- calculate_auc(p1_v2_mcar_interpolation)
+auc_p2v2_interpolation <- calculate_auc(p2_v2_mcar_interpolation)
+auc_p3v2_interpolation <- calculate_auc(p3_v2_mcar_interpolation)
+auc_p4v2_interpolation <- calculate_auc(p4_v2_mcar_interpolation)
+auc_p5v2_interpolation <- calculate_auc(p5_v2_mcar_interpolation)
+auc_p6v2_interpolation <- calculate_auc(p6_v2_mcar_interpolation)
+auc_p7v2_interpolation <- calculate_auc(p7_v2_mcar_interpolation)
+auc_p8v2_interpolation <- calculate_auc(p8_v2_mcar_interpolation)
+auc_p9v2_interpolation <- calculate_auc(p9_v2_mcar_interpolation)
+auc_p10v2_interpolation <- calculate_auc(p10_v2_mcar_interpolation)
+
+#combine
+#visit 1
+interpolation_visit1_auc <- bind_rows(
+  auc_p1v1_interpolation, 
+  auc_p2v1_interpolation,
+  auc_p3v1_interpolation,
+  auc_p4v1_interpolation,
+  auc_p5v1_interpolation,
+  auc_p6v1_interpolation,
+  auc_p7v1_interpolation,
+  auc_p8v1_interpolation,
+  auc_p9v1_interpolation,
+  auc_p10v1_interpolation
+)
+#visit 2
+interpolation_visit2_auc <- bind_rows(
+  auc_p1v2_interpolation, 
+  auc_p2v2_interpolation,
+  auc_p3v2_interpolation,
+  auc_p4v2_interpolation,
+  auc_p5v2_interpolation,
+  auc_p6v2_interpolation,
+  auc_p7v2_interpolation,
+  auc_p8v2_interpolation,
+  auc_p9v2_interpolation,
+  auc_p10v2_interpolation
 )
 
-#plot
-#p1
-ggplot(auc_mnar_combined_p1v1, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#kalman AUC
+#visit 1
+auc_p1v1_kalman <- calculate_auc(p1_v1_mcar_kalman)
+auc_p2v1_kalman <- calculate_auc(p2_v1_mcar_kalman)
+auc_p3v1_kalman <- calculate_auc(p3_v1_mcar_kalman)
+auc_p4v1_kalman <- calculate_auc(p4_v1_mcar_kalman)
+auc_p5v1_kalman <- calculate_auc(p5_v1_mcar_kalman)
+auc_p6v1_kalman <- calculate_auc(p6_v1_mcar_kalman)
+auc_p7v1_kalman <- calculate_auc(p7_v1_mcar_kalman)
+auc_p8v1_kalman <- calculate_auc(p8_v1_mcar_kalman)
+auc_p9v1_kalman <- calculate_auc(p9_v1_mcar_kalman)
+auc_p10v1_kalman <- calculate_auc(p10_v1_mcar_kalman)
+#visit 2
+auc_p1v2_kalman <- calculate_auc(p1_v2_mcar_kalman)
+auc_p2v2_kalman <- calculate_auc(p2_v2_mcar_kalman)
+auc_p3v2_kalman <- calculate_auc(p3_v2_mcar_kalman)
+auc_p4v2_kalman <- calculate_auc(p4_v2_mcar_kalman)
+auc_p5v2_kalman <- calculate_auc(p5_v2_mcar_kalman)
+auc_p6v2_kalman <- calculate_auc(p6_v2_mcar_kalman)
+auc_p7v2_kalman <- calculate_auc(p7_v2_mcar_kalman)
+auc_p8v2_kalman <- calculate_auc(p8_v2_mcar_kalman)
+auc_p9v2_kalman <- calculate_auc(p9_v2_mcar_kalman)
+auc_p10v2_kalman <- calculate_auc(p10_v2_mcar_kalman)
 
-ggplot(auc_mnar_combined_p1v2, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-# ------------------------
-# Part 2: Kalman AUC
-# ------------------------
-
-#MCAR
-#call function for interpolation 
-#p1
-auc_mcar_p1v1_original <- calculate_auc(p1_visit1)
-auc_mcar_p1v1_kalman <- calculate_auc(p1_v1_mcar_kalman)
-auc_mcar_p1v2_original <- calculate_auc(p1_visit2)
-auc_mcar_p1v2_kalman <- calculate_auc(p1_v2_mcar_kalman)
-
-#combine into dataframe for comparison
-#p1
-auc_mcar_combined_p1v1_kalman <- data.frame(
-  Metabolite = names(auc_mcar_p1v1_original),
-  Original_AUC = auc_mcar_p1v1_original,
-  Interpolation_AUC = auc_mcar_p1v1_kalman,
-  Difference = auc_mcar_p1v1_kalman - auc_mcar_p1v1_original,
-  Percent_Change_AUC = 100 *(auc_mcar_p1v1_kalman - auc_mcar_p1v1_original) / auc_mcar_p1v1_original
+#combine
+kalman_visit1_auc <- bind_rows(
+  auc_p1v1_kalman, 
+  auc_p2v1_kalman,
+  auc_p3v1_kalman,
+  auc_p4v1_kalman,
+  auc_p5v1_kalman,
+  auc_p6v1_kalman,
+  auc_p7v1_kalman,
+  auc_p8v1_kalman,
+  auc_p9v1_kalman,
+  auc_p10v1_kalman
 )
-auc_mcar_combined_p1v2_kalman <- data.frame(
-  Metabolite = names(auc_mcar_p1v2_original),
-  Original_AUC = auc_mcar_p1v2_original,
-  Interpolation_AUC = auc_mcar_p1v2_kalman,
-  Difference = auc_mcar_p1v2_kalman - auc_mcar_p1v2_original,
-  Percent_Change_AUC = 100 *(auc_mcar_p1v2_kalman - auc_mcar_p1v2_original) / auc_mcar_p1v2_original
+#visit 2
+kalman_visit2_auc <- bind_rows(
+  auc_p1v2_kalman, 
+  auc_p2v2_kalman,
+  auc_p3v2_kalman,
+  auc_p4v2_kalman,
+  auc_p5v2_kalman,
+  auc_p6v2_kalman,
+  auc_p7v2_kalman,
+  auc_p8v2_kalman,
+  auc_p9v2_kalman,
+  auc_p10v2_kalman
 )
 
-#plot
-#p1
-ggplot(auc_mcar_combined_p1v1_kalman, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#LWMA AUC
+#visit 1
+auc_p1v1_lwma <- calculate_auc(p1_v1_mcar_lwma)
+auc_p2v1_lwma <- calculate_auc(p2_v1_mcar_lwma)
+auc_p3v1_lwma <- calculate_auc(p3_v1_mcar_lwma)
+auc_p4v1_lwma <- calculate_auc(p4_v1_mcar_lwma)
+auc_p5v1_lwma <- calculate_auc(p5_v1_mcar_lwma)
+auc_p6v1_lwma <- calculate_auc(p6_v1_mcar_lwma)
+auc_p7v1_lwma <- calculate_auc(p7_v1_mcar_lwma)
+auc_p8v1_lwma <- calculate_auc(p8_v1_mcar_lwma)
+auc_p9v1_lwma <- calculate_auc(p9_v1_mcar_lwma)
+auc_p10v1_lwma <- calculate_auc(p10_v1_mcar_lwma)
+#visit 2
+auc_p1v2_lwma <- calculate_auc(p1_v2_mcar_lwma)
+auc_p2v2_lwma <- calculate_auc(p2_v2_mcar_lwma)
+auc_p3v2_lwma <- calculate_auc(p3_v2_mcar_lwma)
+auc_p4v2_lwma <- calculate_auc(p4_v2_mcar_lwma)
+auc_p5v2_lwma <- calculate_auc(p5_v2_mcar_lwma)
+auc_p6v2_lwma <- calculate_auc(p6_v2_mcar_lwma)
+auc_p7v2_lwma <- calculate_auc(p7_v2_mcar_lwma)
+auc_p8v2_lwma <- calculate_auc(p8_v2_mcar_lwma)
+auc_p9v2_lwma <- calculate_auc(p9_v2_mcar_lwma)
+auc_p10v2_lwma <- calculate_auc(p10_v2_mcar_lwma)
 
-ggplot(auc_mcar_combined_p1v2_kalman, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-#MNAR
-#call function for interpolation 
-#p1
-auc_mnar_p1v1_original <- calculate_auc(p1_visit1)
-auc_mnar_p1v1_kalman <- calculate_auc(p1_v1_mnar_kalman)
-auc_mnar_p1v2_original <- calculate_auc(p1_visit2)
-auc_mnar_p1v2_kalman <- calculate_auc(p1_v2_mcar_kalman)
-
-#combine into dataframe for comparison
-#p1
-auc_mnar_combined_p1v1_kalman <- data.frame(
-  Metabolite = names(auc_mnar_p1v1_original),
-  Original_AUC = auc_mnar_p1v1_original,
-  Interpolation_AUC = auc_mnar_p1v1_kalman,
-  Difference = auc_mnar_p1v1_kalman - auc_mnar_p1v1_original,
-  Percent_Change_AUC = 100 *(auc_mnar_p1v1_kalman - auc_mnar_p1v1_original) / auc_mnar_p1v1_original
+#combine
+#visit 1
+lwma_visit1_auc <- bind_rows(
+  auc_p1v1_lwma, 
+  auc_p2v1_lwma,
+  auc_p3v1_lwma,
+  auc_p4v1_lwma,
+  auc_p5v1_lwma,
+  auc_p6v1_lwma,
+  auc_p7v1_lwma,
+  auc_p8v1_lwma,
+  auc_p9v1_lwma,
+  auc_p10v1_lwma
+)
+#visit 2
+lwma_visit2_auc <- bind_rows(
+  auc_p1v2_lwma, 
+  auc_p2v2_lwma,
+  auc_p3v2_lwma,
+  auc_p4v2_lwma,
+  auc_p5v2_lwma,
+  auc_p6v2_lwma,
+  auc_p7v2_lwma,
+  auc_p8v2_lwma,
+  auc_p8v2_lwma,
+  auc_p10v2_lwma
 )
 
-auc_mnar_combined_p1v2_kalman <- data.frame(
-  Metabolite = names(auc_mnar_p1v2_original),
-  Original_AUC = auc_mnar_p1v2_original,
-  Interpolation_AUC = auc_mnar_p1v2_kalman,
-  Difference = auc_mnar_p1v2_kalman - auc_mnar_p1v2_original,
-  Percent_Change_AUC = 100 *(auc_mnar_p1v2_kalman - auc_mnar_p1v2_original) / auc_mnar_p1v2_original
-)
+#combine the datasets
+#visit 1
+visit1_auc_df <- bind_rows(
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p1v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p2v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p3v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p4v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p5v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p6v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p7v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p8v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p9v1_original)),
+  data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p10v1_original)),
+  
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p1v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p2v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p3v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p4v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p5v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p6v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p7v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p8v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p9v1_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p10v1_interpolation)),
+  
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p1v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p2v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p3v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p4v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p5v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p6v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p7v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p8v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p9v1_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p10v1_kalman)),
+  
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p1v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p2v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p3v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p4v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p5v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p6v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p7v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p8v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p9v1_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p10v1_lwma))
+) %>% rename(AUC = values, Metabolite = ind)
 
-#plot
-#p1
-ggplot(auc_mnar_combined_p1v1_kalman, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
+#visit 2
+visit2_auc_df <- bind_rows(
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p1v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p2v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p3v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p4v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p5v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p6v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p7v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p8v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p9v2_original)),
+  data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p10v2_original)),
+  
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p1v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p2v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p3v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p4v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p5v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p6v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p7v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p8v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p9v2_interpolation)),
+  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p10v2_interpolation)),
+  
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p1v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p2v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p3v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p4v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p5v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p6v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p7v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p8v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p9v2_kalman)),
+  data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p10v2_kalman)),
+  
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p1v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p2v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p3v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p4v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p5v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p6v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p7v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p8v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p9v2_lwma)),
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p10v2_lwma))
+) %>% rename(AUC = values, Metabolite = ind)
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/AUC_Density.pdf", width = 16, height = 10)
+
+#now plot the density of AUC 
+#Visit 1
+ggplot(visit1_auc_df, aes(x = AUC, fill = Method, color = Method)) +
+  geom_density(alpha = 0.4, linewidth = 0.8) +
+  facet_wrap(~ Metabolite, scales = "free") +
+  theme_minimal(base_size = 12) +
   labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
+    title = "Visit 1: AUC Density per Metabolite",
+    x = "AUC",
+    y = "Density"
   ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(
+    legend.position = "bottom",
+    strip.text = element_text(size = 9)
+  )
 
-ggplot(auc_mnar_combined_p1v2_kalman, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
+#Visit 2
+ggplot(visit2_auc_df, aes(x = AUC, fill = Method, color = Method)) +
+  geom_density(alpha = 0.4, linewidth = 0.8) +
+  facet_wrap(~ Metabolite, scales = "free") +
+  theme_minimal(base_size = 12) +
   labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
+    title = "Visit 1: AUC Density per Metabolite",
+    x = "AUC",
+    y = "Density"
   ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(
+    legend.position = "bottom",
+    strip.text = element_text(size = 9)
+  )
 
-# ------------------------
-# Part 3: LWMA AUC
-# ------------------------
-
-#MCAR
-#call function for interpolation 
-#p1
-auc_mcar_p1v1_original <- calculate_auc(p1_visit1)
-auc_mcar_p1v1_lwma <- calculate_auc(p1_v1_mcar_lwma)
-auc_mcar_p1v2_original <- calculate_auc(p1_visit2)
-auc_mcar_p1v2_lwma <- calculate_auc(p1_v2_mcar_lwma)
-
-#combine into dataframe for comparison
-#p1
-auc_mcar_combined_p1v1_lwma <- data.frame(
-  Metabolite = names(auc_mcar_p1v1_original),
-  Original_AUC = auc_mcar_p1v1_original,
-  Interpolation_AUC = auc_mcar_p1v1_lwma,
-  Difference = auc_mcar_p1v1_lwma - auc_mcar_p1v1_original,
-  Percent_Change_AUC = 100 *(auc_mcar_p1v1_lwma - auc_mcar_p1v1_original) / auc_mcar_p1v1_original
-)
-auc_mcar_combined_p1v2_lwma <- data.frame(
-  Metabolite = names(auc_mcar_p1v2_original),
-  Original_AUC = auc_mcar_p1v2_original,
-  Interpolation_AUC = auc_mcar_p1v2_lwma,
-  Difference = auc_mcar_p1v2_lwma - auc_mcar_p1v2_original,
-  Percent_Change_AUC = 100 *(auc_mcar_p1v2_lwma - auc_mcar_p1v2_original) / auc_mcar_p1v2_original
-)
-
-#plot
-#p1
-ggplot(auc_mcar_combined_p1v1_lwma, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-ggplot(auc_mcar_combined_p1v2_lwma, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-#MNAR
-#call function for interpolation 
-#p1
-auc_mnar_p1v1_original <- calculate_auc(p1_visit1)
-auc_mnar_p1v1_lwma <- calculate_auc(p1_v1_mnar_lwma)
-auc_mnar_p1v2_original <- calculate_auc(p1_visit2)
-auc_mnar_p1v2_lwma <- calculate_auc(p1_v2_mcar_lwma)
-
-#combine into dataframe for comparison
-#p1
-auc_mnar_combined_p1v1_lwma <- data.frame(
-  Metabolite = names(auc_mnar_p1v1_original),
-  Original_AUC = auc_mnar_p1v1_original,
-  Interpolation_AUC = auc_mnar_p1v1_lwma,
-  Difference = auc_mnar_p1v1_lwma - auc_mnar_p1v1_original,
-  Percent_Change_AUC = 100 *(auc_mnar_p1v1_lwma - auc_mnar_p1v1_original) / auc_mnar_p1v1_original
-)
-
-auc_mnar_combined_p1v2_lwma <- data.frame(
-  Metabolite = names(auc_mnar_p1v2_original),
-  Original_AUC = auc_mnar_p1v2_original,
-  Interpolation_AUC = auc_mnar_p1v2_lwma,
-  Difference = auc_mnar_p1v2_lwma - auc_mnar_p1v2_original,
-  Percent_Change_AUC = 100 *(auc_mnar_p1v2_lwma - auc_mnar_p1v2_original) / auc_mnar_p1v2_original
-)
-
-#plot
-#p1
-ggplot(auc_mnar_combined_p1v1_lwma, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-ggplot(auc_mnar_combined_p1v2_lwma, aes(x = Metabolite, y = Percent_Change_AUC)) +
-  geom_bar(stat = "identity", fill = "steelblue") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  theme_minimal() +
-  labs(
-    title = "Percent Change in AUC after Interpolation (MCAR)",
-    x = "Metabolite",
-    y = "Percent Change in AUC (%)"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+dev.off()
