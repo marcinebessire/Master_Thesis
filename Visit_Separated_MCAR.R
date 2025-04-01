@@ -4,6 +4,9 @@ library(dplyr)
 library(tidyr)
 library(tidyverse)
 library(openxlsx)
+library(zoo) #for interpolation
+library(imputeTS) #for imputation methods
+library(pracma) #for AUC calculation
 
 # -------------------------------------------------
 # Title: Separated based on Visit
@@ -92,6 +95,9 @@ FAO_40pct_mcar <- MCAR_manipulation_visit(FAO_data_full, 0.4)
 #original
 FAO_original_v1 <- FAO_data %>% filter(Visit == "Visit 1") #59
 FAO_original_v2 <- FAO_data %>% filter(Visit == "Visit 2") #60
+#original with pateint 4 visit 1
+FAO_original_full_v1 <- FAO_data_full %>% filter(Visit == "Visit 1")
+FAO_original_full_v2 <- FAO_data_full %>% filter(Visit == "Visit 2")
 #10%
 FAO_v1_10pct_mcar <- FAO_10pct_mcar %>% filter(Visit == "Visit 1") #60
 FAO_v2_10pct_mcar <- FAO_10pct_mcar %>% filter(Visit == "Visit 2") #60
@@ -426,5 +432,191 @@ for (pct in names(all_datasets_v2)) {
   )
 }
 
+# ------------------------
+# TITLE: NRMSE Function
+# ------------------------
 
+#function to calculate nrmse 
+calculate_nrsme <- function(original, imputed, method) {
+  numeric_col_names <- names(original)[6:ncol(original)]
+  
+  nrmse_values <- sapply(numeric_col_names, function(col) {
+    actual_val <- original[[col]]
+    imputed_val <- imputed[[col]]
+    
+    valid_indices <- !is.na(actual_val) & !is.na(imputed_val)
+    
+    if (sum(valid_indices) > 2) {
+      mse <- mean((actual_val[valid_indices] - imputed_val[valid_indices])^2)
+      rmse <- sqrt(mse)
+      norm_factor <- max(actual_val[valid_indices], na.rm = TRUE) - min(actual_val[valid_indices], na.rm = TRUE)
+      
+      if (norm_factor > 0) {
+        return(rmse / norm_factor)
+      } else {
+        return(NA)
+      }
+    } else {
+      return(NA)
+    }
+  })
+  
+  return(data.frame(
+    Metabolite = numeric_col_names,
+    Imputation_method = method,
+    NRMSE = nrmse_values
+  ))
+}
+
+# ----------------------------
+# Part 1: Linear Interpolation
+# ----------------------------
+
+#Visit 1
+nrmse_v1_10pct_interpolation <- calculate_nrsme(FAO_original_full_v1, v1_10pct_mcar_interpolation, method = "Interpolation")
+nrmse_v1_20pct_interpolation <- calculate_nrsme(FAO_original_full_v1, v1_20pct_mcar_interpolation, method = "Interpolation")
+nrmse_v1_25pct_interpolation <- calculate_nrsme(FAO_original_full_v1, v1_25pct_mcar_interpolation, method = "Interpolation")
+nrmse_v1_30pct_interpolation <- calculate_nrsme(FAO_original_full_v1, v1_30pct_mcar_interpolation, method = "Interpolation")
+nrmse_v1_35pct_interpolation <- calculate_nrsme(FAO_original_full_v1, v1_35pct_mcar_interpolation, method = "Interpolation")
+nrmse_v1_40pct_interpolation <- calculate_nrsme(FAO_original_full_v1, v1_40pct_mcar_interpolation, method = "Interpolation")
+#Visit 2
+nrmse_v2_10pct_interpolation <- calculate_nrsme(FAO_original_full_v2, v2_10pct_mcar_interpolation, method = "Interpolation")
+nrmse_v2_20pct_interpolation <- calculate_nrsme(FAO_original_full_v2, v2_20pct_mcar_interpolation, method = "Interpolation")
+nrmse_v2_25pct_interpolation <- calculate_nrsme(FAO_original_full_v2, v2_25pct_mcar_interpolation, method = "Interpolation")
+nrmse_v2_30pct_interpolation <- calculate_nrsme(FAO_original_full_v2, v2_30pct_mcar_interpolation, method = "Interpolation")
+nrmse_v2_35pct_interpolation <- calculate_nrsme(FAO_original_full_v2, v2_35pct_mcar_interpolation, method = "Interpolation")
+nrmse_v2_40pct_interpolation <- calculate_nrsme(FAO_original_full_v2, v2_40pct_mcar_interpolation, method = "Interpolation")
+
+# ----------------------------
+# Part 2: Kalmna
+# ----------------------------
+
+#Visit 1
+nrmse_v1_10pct_kalman <- calculate_nrsme(FAO_original_full_v1, v1_10pct_mcar_kalman, method = "Kalman")
+nrmse_v1_20pct_kalman <- calculate_nrsme(FAO_original_full_v1, v1_20pct_mcar_kalman, method = "Kalman")
+nrmse_v1_25pct_kalman <- calculate_nrsme(FAO_original_full_v1, v1_25pct_mcar_kalman, method = "Kalman")
+nrmse_v1_30pct_kalman <- calculate_nrsme(FAO_original_full_v1, v1_30pct_mcar_kalman, method = "Kalman")
+nrmse_v1_35pct_kalman <- calculate_nrsme(FAO_original_full_v1, v1_35pct_mcar_kalman, method = "Kalman")
+nrmse_v1_40pct_kalman <- calculate_nrsme(FAO_original_full_v1, v1_40pct_mcar_kalman, method = "Kalman")
+#Visit 2
+nrmse_v2_10pct_kalman <- calculate_nrsme(FAO_original_full_v2, v2_10pct_mcar_kalman, method = "Kalman")
+nrmse_v2_20pct_kalman <- calculate_nrsme(FAO_original_full_v2, v2_20pct_mcar_kalman, method = "Kalman")
+nrmse_v2_25pct_kalman <- calculate_nrsme(FAO_original_full_v2, v2_25pct_mcar_kalman, method = "Kalman")
+nrmse_v2_30pct_kalman <- calculate_nrsme(FAO_original_full_v2, v2_30pct_mcar_kalman, method = "Kalman")
+nrmse_v2_35pct_kalman <- calculate_nrsme(FAO_original_full_v2, v2_35pct_mcar_kalman, method = "Kalman")
+nrmse_v2_40pct_kalman <- calculate_nrsme(FAO_original_full_v2, v2_40pct_mcar_kalman, method = "Kalman")
+
+# ----------------------------
+# Part 3:LWMA
+# ----------------------------
+
+#Visit 1
+nrmse_v1_10pct_lwma <- calculate_nrsme(FAO_original_full_v1, v1_10pct_mcar_lwma, method = "LWMA")
+nrmse_v1_20pct_lwma <- calculate_nrsme(FAO_original_full_v1, v1_20pct_mcar_lwma, method = "LWMA")
+nrmse_v1_25pct_lwma <- calculate_nrsme(FAO_original_full_v1, v1_25pct_mcar_lwma, method = "LWMA")
+nrmse_v1_30pct_lwma <- calculate_nrsme(FAO_original_full_v1, v1_30pct_mcar_lwma, method = "LWMA")
+nrmse_v1_35pct_lwma <- calculate_nrsme(FAO_original_full_v1, v1_35pct_mcar_lwma, method = "LWMA")
+nrmse_v1_40pct_lwma <- calculate_nrsme(FAO_original_full_v1, v1_40pct_mcar_lwma, method = "LWMA")
+#Visit 2
+nrmse_v2_10pct_lwma <- calculate_nrsme(FAO_original_full_v2, v2_10pct_mcar_lwma, method = "LWMA")
+nrmse_v2_20pct_lwma <- calculate_nrsme(FAO_original_full_v2, v2_20pct_mcar_lwma, method = "LWMA")
+nrmse_v2_25pct_lwma <- calculate_nrsme(FAO_original_full_v2, v2_25pct_mcar_lwma, method = "LWMA")
+nrmse_v2_30pct_lwma <- calculate_nrsme(FAO_original_full_v2, v2_30pct_mcar_lwma, method = "LWMA")
+nrmse_v2_35pct_lwma <- calculate_nrsme(FAO_original_full_v2, v2_35pct_mcar_lwma, method = "LWMA")
+nrmse_v2_40pct_lwma <- calculate_nrsme(FAO_original_full_v2, v2_40pct_mcar_lwma, method = "LWMA")
+
+
+# --------------------------------------
+# Part 4: All methods compared (Visit 1)
+# --------------------------------------
+
+#visit1
+nrmse_visit1_tot <- bind_rows(
+  mutate(nrmse_v1_10pct_interpolation, percentage = 10),
+  mutate(nrmse_v1_10pct_kalman, percentage = 10),
+  mutate(nrmse_v1_10pct_lwma, percentage = 10),
+  
+  mutate(nrmse_v1_20pct_interpolation, percentage = 20),
+  mutate(nrmse_v1_20pct_kalman, percentage = 20),
+  mutate(nrmse_v1_20pct_lwma, percentage = 20),
+  
+  mutate(nrmse_v1_25pct_interpolation, percentage = 25),
+  mutate(nrmse_v1_25pct_kalman, percentage = 25),
+  mutate(nrmse_v1_25pct_lwma, percentage = 25),
+  
+  mutate(nrmse_v1_30pct_interpolation, percentage = 30),
+  mutate(nrmse_v1_30pct_kalman, percentage = 30),
+  mutate(nrmse_v1_30pct_lwma, percentage = 30),
+  
+  mutate(nrmse_v1_35pct_interpolation, percentage = 35),
+  mutate(nrmse_v1_35pct_kalman, percentage = 35),
+  mutate(nrmse_v1_35pct_lwma, percentage = 35),
+  
+  mutate(nrmse_v1_40pct_interpolation, percentage = 40),
+  mutate(nrmse_v1_40pct_kalman, percentage = 40),
+  mutate(nrmse_v1_40pct_lwma, percentage = 40)
+)
+
+
+#visit2
+nrmse_visit2_tot <- bind_rows(
+  mutate(nrmse_v2_10pct_interpolation, percentage = 10),
+  mutate(nrmse_v2_10pct_kalman, percentage = 10),
+  mutate(nrmse_v2_10pct_lwma, percentage = 10),
+  
+  mutate(nrmse_v2_20pct_interpolation, percentage = 20),
+  mutate(nrmse_v2_20pct_kalman, percentage = 20),
+  mutate(nrmse_v2_20pct_lwma, percentage = 20),
+  
+  mutate(nrmse_v2_25pct_interpolation, percentage = 25),
+  mutate(nrmse_v2_25pct_kalman, percentage = 25),
+  mutate(nrmse_v2_25pct_lwma, percentage = 25),
+  
+  mutate(nrmse_v2_30pct_interpolation, percentage = 30),
+  mutate(nrmse_v2_30pct_kalman, percentage = 30),
+  mutate(nrmse_v2_30pct_lwma, percentage = 30),
+  
+  mutate(nrmse_v2_35pct_interpolation, percentage = 35),
+  mutate(nrmse_v2_35pct_kalman, percentage = 35),
+  mutate(nrmse_v2_35pct_lwma, percentage = 35),
+  
+  mutate(nrmse_v2_40pct_interpolation, percentage = 40),
+  mutate(nrmse_v2_40pct_kalman, percentage = 40),
+  mutate(nrmse_v2_40pct_lwma, percentage = 40)
+)
+
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Visit_Separated/NRMSE_MCAR_Imputation_methods.pdf", width = 16, height = 10)
+
+#plot visit 1
+ggplot(nrmse_visit1_tot, aes(x = factor(percentage), y = NRMSE, fill = Imputation_method)) +
+  geom_boxplot() +
+  labs(
+    title = "NRMSE by Imputation Method and Missing Data Percentage",
+    x = "Missing Data Percentage (%)",
+    y = "NRMSE"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3") +
+  theme(
+    text = element_text(size = 12),
+    legend.title = element_blank()
+  )
+
+#plot visit 2
+ggplot(nrmse_visit2_tot, aes(x = factor(percentage), y = NRMSE, fill = Imputation_method)) +
+  geom_boxplot() +
+  labs(
+    title = "NRMSE by Imputation Method and Missing Data Percentage",
+    x = "Missing Data Percentage (%)",
+    y = "NRMSE"
+  ) +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3") +
+  theme(
+    text = element_text(size = 12),
+    legend.title = element_blank()
+  )
+
+dev.off()
 
