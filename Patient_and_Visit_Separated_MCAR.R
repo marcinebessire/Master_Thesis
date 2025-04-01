@@ -149,7 +149,7 @@ interpolate_missing <- function(data){
   #apply interpolation to each numeric column from 6th to last
   data_copy[, 6:ncol(data_copy)] <- lapply(data_copy[, 6:ncol(data_copy)], function(col){
     if (is.numeric(col)) {
-      return(na.approx(col, na.rm = FALSE)) #keep NA if interpolation not possible
+      return(na.approx(col, na.rm = FALSE, rule = 2)) #keep NA if interpolation not possible
     } else {
       return(col)
     }
