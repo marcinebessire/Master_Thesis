@@ -48,44 +48,39 @@ clean_data <- function(data){
 BAS_data_cleaned <- clean_data(BAS_data)
 FAO_data_cleaned <- clean_data(FAO_data)
 
-
-#clean and make new columns
+#funciton to furhter process
 process_patient_data <- function(df) {
   df_clean <- df %>%
-    #remove rows where first column starts with "NIST_"
+    #remove unwanted rows
     filter(!str_detect(.[[1]], "^.*NIST_")) %>%
     filter(!str_detect(.[[1]], "^[A-Z]_NIST")) %>%
-  
-    #extract patient info from first column
+    
+    #extract metadata
     mutate(
-      ID = .[[1]],  #keep original identifier
-      
-      #extract patient number e.g. "P10"
+      ID = .[[1]],
       Patient = str_extract(ID, "P\\d+"),
-      
-      #extract numeric part of patient
       Patient_num = as.numeric(str_remove(Patient, "P")),
-      
-      #extract date in format DDMMYY (e.g. 250222)
       Date_raw = str_extract(ID, "\\d{6}"),
-      Date = dmy(Date_raw),  #convert
-      
-      #extract time in minutes (after E)
+      Date = dmy(Date_raw),
       Time_min = as.numeric(str_extract(ID, "(?<=E)\\d+")),
-      
-      #format for output
       Date_formatted = format(Date, "%m/%d/%Y")
     ) %>%
     
-    #sort by patient and full date
     arrange(Patient_num, Date, Time_min) %>%
     
-    #assign Visit based on order
+    #assign Visit based on actual date (earliest = Visit 1)
     group_by(Patient) %>%
-    mutate(Visit = if_else(row_number() <= 6, "Visit 1", "Visit 2")) %>%
+    mutate(
+      visit_date = dense_rank(Date),
+      Visit = case_when(
+        visit_date == 1 ~ "Visit 1",
+        visit_date == 2 ~ "Visit 2",
+        TRUE ~ paste0("Visit ", visit_date)  
+      )
+    ) %>%
     ungroup() %>%
     
-    select(ID, Patient, Date, Time_min, Visit, everything(), -Date_raw, -Date_formatted, -Patient_num)
+    select(ID, Patient, Date, Time_min, Visit, everything(), -Date_raw, -Date_formatted, -Patient_num, -visit_date)
   
   return(df_clean)
 }

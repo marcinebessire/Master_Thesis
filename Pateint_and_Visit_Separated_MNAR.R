@@ -480,7 +480,7 @@ dev.off()
 # TITLE: NRMSE Function
 # ------------------------
 
-#function to calculate nrmse 
+#function to calculate nrmse (tot)
 calculate_nrsme <- function(original, imputed, method) {
   numeric_col_names <- names(original)[6:ncol(original)]
   
@@ -580,6 +580,7 @@ nrmse_mnar_visit2 <- bind_rows(
   nrmse_interp_p9v2_mnar %>% mutate(Patient = "P9"),
   nrmse_interp_p10v2_mnar %>% mutate(Patient = "P10")
 )
+
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Interpolation/MNAR_Interpolation_1MV_NRMSE.pdf", width = 14, height = 10)
 
@@ -770,6 +771,63 @@ ggplot(nrmse_lwma_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   theme_minimal() +
   labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV)",
        y = "NRMSE", x = "Patient")
+
+dev.off()
+
+
+# ----------------------------
+# Part 4: All methods compared
+# ----------------------------
+
+#visit1
+nrmse_visit1_tot <- bind_rows(
+  nrmse_mnar_visit1,
+  nrmse_kalman_mnar_visit1,
+  nrmse_lwma_mnar_visit1
+)
+
+#visit2
+nrmse_visit2_tot <- bind_rows(
+  nrmse_mnar_visit2,
+  nrmse_kalman_mnar_visit2,
+  nrmse_lwma_mnar_visit2
+)
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/NRMSE_MNAR_Imputation_methods.pdf", width = 16, height = 10)
+
+#plot visit 1
+ggplot(nrmse_visit1_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation_method)) +
+  geom_boxplot(width = 0.6, outlier.shape = 21, outlier.size = 2, outlier.fill = "white") +
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  ) +
+  labs(
+    title = "NRMSE of Imputed Values Only (Visit 1 - MCAR)",
+    x = "Imputation Method",
+    y = "Normalized RMSE"
+  )
+
+#plot visit 1
+ggplot(nrmse_visit2_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation_method)) +
+  geom_boxplot(width = 0.6, outlier.shape = 21, outlier.size = 2, outlier.fill = "white") +
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 16, hjust = 0.5),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  ) +
+  labs(
+    title = "NRMSE of Imputed Values Only (Visit 2 - MCAR)",
+    x = "Imputation Method",
+    y = "Normalized RMSE"
+  )
 
 dev.off()
 
