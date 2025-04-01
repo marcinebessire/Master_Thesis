@@ -8,7 +8,6 @@ library(zoo) #for interpolation
 library(imputeTS) #for imputation methods
 library(pracma) #for AUC calculation
 
-
 # --------------------------------------
 # TITLE: PATIENT AND VISIT SEPARATED
 # --------------------------------------
@@ -70,8 +69,7 @@ add_row_120 <- function(data){
 p4_visit1_full <- add_row_120(p4_visit1)
 
 
-#function to introduce 1 MCAR per dataframe randomly
-
+# #function to introduce 1 MCAR per dataframe randomly
 # #middle values only (one missing value)
 # MCAR_manipulation_middle <- function(data){
 #   #copy dataset to avoid modifying the original
@@ -138,73 +136,6 @@ p10_v1_mcar <- MCAR_manipulation_middle(p10_visit1)
 p10_v2_mcar <- MCAR_manipulation_middle(p10_visit2)
 
 # --------------------------------------
-# Part 3: MNAR Simulation
-# --------------------------------------
-
-#function to introduce 1 MNAR per dataframe (one missing value)
-MNAR_manipulation_lowest <- function(data){
-  #copy dataset to avoid modifying the original
-  data_copy <- data
-
-  #go through each column
-  for (col in colnames(data_copy[6:ncol(data_copy)])) {
-    min_row <- which.min(data_copy[[col]])
-    data_copy[min_row, col] <- NA
-  }
-
-  return(data_copy)
-}
-
-# #function to introduce 2 MNAR per dataframe (one missing value)
-# MNAR_manipulation_lowest <- function(data){
-#   #copy dataset to avoid modifying the original
-#   data_copy <- data
-#   
-#   #go through each column
-#   for (col in colnames(data_copy[6:ncol(data_copy)])) {
-#     #indices fot rhe two lowest value
-#     min_rows <- order(data_copy[[col]], na.last = NA)[1:2]
-#     data_copy[min_rows, col] <- NA
-#   }
-#   
-#   return(data_copy)
-# }
-
-
-#call function
-#p1
-p1_v1_mnar <- MNAR_manipulation_lowest(p1_visit1)
-p1_v2_mnar <- MNAR_manipulation_lowest(p1_visit2)
-#p2
-p2_v1_mnar <- MNAR_manipulation_lowest(p2_visit1)
-p2_v2_mnar <- MNAR_manipulation_lowest(p2_visit2)
-#p3
-p3_v1_mnar <- MNAR_manipulation_lowest(p3_visit1)
-p3_v2_mnar <- MNAR_manipulation_lowest(p3_visit2)
-#p4
-p4_v1_mnar <- MNAR_manipulation_lowest(p4_visit1)
-p4_v2_mnar <- MNAR_manipulation_lowest(p4_visit2)
-#p5
-p5_v1_mnar <- MNAR_manipulation_lowest(p5_visit1)
-p5_v2_mnar <- MNAR_manipulation_lowest(p5_visit2)
-#p6
-p6_v1_mnar <- MNAR_manipulation_lowest(p6_visit1)
-p6_v2_mnar <- MNAR_manipulation_lowest(p6_visit2)
-#p7
-p7_v1_mnar <- MNAR_manipulation_lowest(p7_visit1)
-p7_v2_mnar <- MNAR_manipulation_lowest(p7_visit2)
-#p8
-p8_v1_mnar <- MNAR_manipulation_lowest(p8_visit1)
-p8_v2_mnar <- MNAR_manipulation_lowest(p8_visit2)
-#p9
-p9_v1_mnar <- MNAR_manipulation_lowest(p9_visit1)
-p9_v2_mnar <- MNAR_manipulation_lowest(p9_visit2)
-#p10
-p10_v1_mnar <- MNAR_manipulation_lowest(p10_visit1)
-p10_v2_mnar <- MNAR_manipulation_lowest(p10_visit2)
-
-
-# --------------------------------------
 # TITLE: IMPUTATION METHODS
 # --------------------------------------
 # --------------------------------------
@@ -259,38 +190,6 @@ p9_v2_mcar_interpolation <- interpolate_missing(p9_v2_mcar)
 p10_v1_mcar_interpolation <- interpolate_missing(p10_v1_mcar)
 p10_v2_mcar_interpolation <- interpolate_missing(p10_v2_mcar)
 
-#call interpolation function on mnar data
-#p1
-p1_v1_mnar_interpolation <- interpolate_missing(p1_v1_mnar)
-p1_v2_mnar_interpolation <- interpolate_missing(p1_v2_mnar)
-#p2
-p2_v1_mnar_interpolation <- interpolate_missing(p2_v1_mnar)
-p2_v2_mnar_interpolation <- interpolate_missing(p2_v2_mnar)
-#p3
-p3_v1_mnar_interpolation <- interpolate_missing(p3_v1_mnar)
-p3_v2_mnar_interpolation <- interpolate_missing(p3_v2_mnar)
-#p4
-p4_v1_mnar_interpolation <- interpolate_missing(p4_v1_mnar)
-p4_v2_mnar_interpolation <- interpolate_missing(p4_v2_mnar)
-#p5
-p5_v1_mnar_interpolation <- interpolate_missing(p5_v1_mnar)
-p5_v2_mnar_interpolation <- interpolate_missing(p5_v2_mnar)
-#p6
-p6_v1_mnar_interpolation <- interpolate_missing(p6_v1_mnar)
-p6_v2_mnar_interpolation <- interpolate_missing(p6_v2_mnar)
-#p7
-p7_v1_mnar_interpolation <- interpolate_missing(p7_v1_mnar)
-p7_v2_mnar_interpolation <- interpolate_missing(p7_v2_mnar)
-#p8
-p8_v1_mnar_interpolation <- interpolate_missing(p8_v1_mnar)
-p8_v2_mnar_interpolation <- interpolate_missing(p8_v2_mnar)
-#p9
-p9_v1_mnar_interpolation <- interpolate_missing(p9_v1_mnar)
-p9_v2_mnar_interpolation <- interpolate_missing(p9_v2_mnar)
-#p10
-p10_v1_mnar_interpolation <- interpolate_missing(p10_v1_mnar)
-p10_v2_mnar_interpolation <- interpolate_missing(p10_v2_mnar)
-
 # --------------------------------------
 # Part 2: Kalman Smoothing
 # --------------------------------------
@@ -344,38 +243,6 @@ p9_v2_mcar_kalman <- kalman_imputation(p9_v2_mcar)
 p10_v1_mcar_kalman <- kalman_imputation(p10_v1_mcar)
 p10_v2_mcar_kalman <- kalman_imputation(p10_v2_mcar)
 
-#MNAR
-#p1
-p1_v1_mnar_kalman <- kalman_imputation(p1_v1_mnar)
-p1_v2_mnar_kalman <- kalman_imputation(p1_v2_mnar)
-#2
-p2_v1_mnar_kalman <- kalman_imputation(p2_v1_mnar)
-p2_v2_mnar_kalman <- kalman_imputation(p2_v2_mnar)
-#3
-p3_v1_mnar_kalman <- kalman_imputation(p3_v1_mnar)
-p3_v2_mnar_kalman <- kalman_imputation(p3_v2_mnar)
-#4
-p4_v1_mnar_kalman <- kalman_imputation(p4_v1_mnar)
-p4_v2_mnar_kalman <- kalman_imputation(p4_v2_mnar)
-#5
-p5_v1_mnar_kalman <- kalman_imputation(p5_v1_mnar)
-p5_v2_mnar_kalman <- kalman_imputation(p5_v2_mnar)
-#6
-p6_v1_mnar_kalman <- kalman_imputation(p6_v1_mnar)
-p6_v2_mnar_kalman <- kalman_imputation(p6_v2_mnar)
-#7
-p7_v1_mnar_kalman <- kalman_imputation(p7_v1_mnar)
-p7_v2_mnar_kalman <- kalman_imputation(p7_v2_mnar)
-#8
-p8_v1_mnar_kalman <- kalman_imputation(p8_v1_mnar)
-p8_v2_mnar_kalman <- kalman_imputation(p8_v2_mnar)
-#9
-p9_v1_mnar_kalman <- kalman_imputation(p9_v1_mnar)
-p9_v2_mnar_kalman <- kalman_imputation(p9_v2_mnar)
-#10
-p10_v1_mnar_kalman <- kalman_imputation(p10_v1_mnar)
-p10_v2_mnar_kalman <- kalman_imputation(p10_v2_mnar)
-
 # -----------------------------------------------------------
 # Part 3: Linear Weighted Moving Average (LWMA)
 # ----------------------------------------------------------
@@ -428,39 +295,6 @@ p9_v2_mcar_lwma <- weighted_mov_average(p9_v2_mcar)
 p10_v1_mcar_lwma <- weighted_mov_average(p10_v1_mcar)
 p10_v2_mcar_lwma <- weighted_mov_average(p10_v2_mcar)
 
-#MNAR
-#p1
-p1_v1_mnar_lwma <- weighted_mov_average(p1_v1_mnar)
-p1_v2_mnar_lwma <- weighted_mov_average(p1_v2_mnar)
-#2
-p2_v1_mnar_lwma <- weighted_mov_average(p2_v1_mnar)
-p2_v2_mnar_lwma <- weighted_mov_average(p2_v2_mnar)
-#3
-p3_v1_mnar_lwma <- weighted_mov_average(p3_v1_mnar)
-p3_v2_mnar_lwma <- weighted_mov_average(p3_v2_mnar)
-#4
-p4_v1_mnar_lwma <- weighted_mov_average(p4_v1_mnar)
-p4_v2_mnar_lwma <- weighted_mov_average(p4_v2_mnar)
-#5
-p5_v1_mnar_lwma <- weighted_mov_average(p5_v1_mnar)
-p5_v2_mnar_lwma <- weighted_mov_average(p5_v2_mnar)
-#6
-p6_v1_mnar_lwma <- weighted_mov_average(p6_v1_mnar)
-p6_v2_mnar_lwma <- weighted_mov_average(p6_v2_mnar)
-#7
-p7_v1_mnar_lwma <- weighted_mov_average(p7_v1_mnar)
-p7_v2_mnar_lwma <- weighted_mov_average(p7_v2_mnar)
-#8
-p8_v1_mnar_lwma <- weighted_mov_average(p8_v1_mnar)
-p8_v2_mnar_lwma <- weighted_mov_average(p8_v2_mnar)
-#9
-p9_v1_mnar_lwma <- weighted_mov_average(p9_v1_mnar)
-p9_v2_mnar_lwma <- weighted_mov_average(p9_v2_mnar)
-#10
-p10_v1_mnar_lwma <- weighted_mov_average(p10_v1_mnar)
-p10_v2_mnar_lwma <- weighted_mov_average(p10_v2_mnar)
-
-
 # --------------------------------------
 # TITLE: KINETICS PLOT BEFORE AND AFTER
 # --------------------------------------
@@ -468,6 +302,7 @@ p10_v2_mnar_lwma <- weighted_mov_average(p10_v2_mnar)
 # Plot before and After 
 # -------------------------------
 
+#plot dots and line
 plot_imputed_vs_original <- function(original, imputed, visit, type){
   #add source info 
   original_df <- original %>% mutate(Source = "Original")
@@ -560,42 +395,6 @@ plot_imputed_vs_original(p10_visit2, p10_v2_mcar_interpolation, visit = "Visit 2
 
 dev.off()
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Interpolation/MNAR_Interpolation_1MV.pdf", width = 14, height = 10)
-
-#MNAR
-#p1
-plot_imputed_vs_original(p1_visit1, p1_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p1_visit2, p1_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p2
-plot_imputed_vs_original(p2_visit1, p2_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p2_visit2, p2_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p3
-plot_imputed_vs_original(p3_visit1, p3_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p3_visit2, p3_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p4_visit2, p4_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p5
-plot_imputed_vs_original(p5_visit1, p5_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p5_visit2, p5_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p6
-plot_imputed_vs_original(p6_visit1, p6_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p6_visit2, p6_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p7
-plot_imputed_vs_original(p7_visit1, p7_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p7_visit2, p7_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p8
-plot_imputed_vs_original(p8_visit1, p8_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p8_visit2, p8_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p9
-plot_imputed_vs_original(p9_visit1, p9_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p9_visit2, p9_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-#p10
-plot_imputed_vs_original(p10_visit1, p10_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p10_visit2, p10_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
-
-dev.off()
-
 # ----------------------------
 # Part 2: Kalman Smoothing
 # ----------------------------
@@ -637,41 +436,6 @@ plot_imputed_vs_original(p10_visit2, p10_v2_mcar_kalman, visit = "Visit 2", type
 
 dev.off()
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Kalman_Smoothing/MNAR_Kalman_1MV.pdf", width = 14, height = 10)
-
-#MNAR
-#p1
-plot_imputed_vs_original(p1_visit1, p1_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p1_visit2, p1_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p2
-plot_imputed_vs_original(p2_visit1, p2_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p2_visit2, p2_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p3
-plot_imputed_vs_original(p3_visit1, p3_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p3_visit2, p3_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p4_visit2, p4_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p5
-plot_imputed_vs_original(p5_visit1, p5_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p5_visit2, p5_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p6
-plot_imputed_vs_original(p6_visit1, p6_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p6_visit2, p6_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p7
-plot_imputed_vs_original(p7_visit1, p7_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p7_visit2, p7_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p8
-plot_imputed_vs_original(p8_visit1, p8_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p8_visit2, p8_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p9
-plot_imputed_vs_original(p9_visit1, p9_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p9_visit2, p9_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-#p10
-plot_imputed_vs_original(p10_visit1, p10_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p10_visit2, p10_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
-
-dev.off()
 
 # ----------------------------
 # Part 3: LWMA
@@ -714,41 +478,6 @@ plot_imputed_vs_original(p10_visit2, p10_v2_mcar_lwma, visit = "Visit 2", type =
 
 dev.off()
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LWMA/MNAR_LWMA_1MV.pdf", width = 14, height = 10)
-
-#MNAR
-#p1
-plot_imputed_vs_original(p1_visit1, p1_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p1_visit2, p1_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p2
-plot_imputed_vs_original(p2_visit1, p2_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p2_visit2, p2_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p3
-plot_imputed_vs_original(p3_visit1, p3_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p3_visit2, p3_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p4_visit2, p4_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p5
-plot_imputed_vs_original(p5_visit1, p5_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p5_visit2, p5_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p6
-plot_imputed_vs_original(p6_visit1, p6_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p6_visit2, p6_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p7
-plot_imputed_vs_original(p7_visit1, p7_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p7_visit2, p7_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p8
-plot_imputed_vs_original(p8_visit1, p8_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p8_visit2, p8_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p9
-plot_imputed_vs_original(p9_visit1, p9_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p9_visit2, p9_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-#p10
-plot_imputed_vs_original(p10_visit1, p10_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p10_visit2, p10_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
-
-dev.off()
 
 # ------------------------
 # TITLE: NRMSE Function
@@ -873,89 +602,6 @@ ggplot(nrmse_mcar_visit2, aes(x = Patient, y = NRMSE)) +
 
 dev.off()
 
-# -------------------------
-# Part 1.2: NRMSE (MNAR)
-# --------------------------
-
-#call function to calcualte nrms
-#interpolation
-#p1
-nrmse_interp_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_mnar_interpolation, method = "Linear Interpolation")
-#p2
-nrmse_interp_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_interpolation, method = "Linear Interpolation")
-#p3
-nrmse_interp_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_interpolation, method = "Linear Interpolation")
-#p4
-nrmse_interp_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_interpolation, method = "Linear Interpolation")
-#p5
-nrmse_interp_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_mnar_interpolation, method = "Linear Interpolation")
-#p6
-nrmse_interp_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_mnar_interpolation, method = "Linear Interpolation")
-#p7
-nrmse_interp_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_mnar_interpolation, method = "Linear Interpolation")
-#p8
-nrmse_interp_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_mnar_interpolation, method = "Linear Interpolation")
-#p9
-nrmse_interp_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_mnar_interpolation, method = "Linear Interpolation")
-#p10
-nrmse_interp_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_mnar_interpolation, method = "Linear Interpolation")
-nrmse_interp_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_mnar_interpolation, method = "Linear Interpolation")
-
-#combine visit 1 
-nrmse_mnar_visit1 <- bind_rows(
-  nrmse_interp_p1v1_mnar %>% mutate(Patient = "P1"),
-  nrmse_interp_p2v1_mnar %>% mutate(Patient = "P2"),
-  nrmse_interp_p3v1_mnar %>% mutate(Patient = "P3"),
-  nrmse_interp_p4v1_mnar %>% mutate(Patient = "P4"),
-  nrmse_interp_p5v1_mnar %>% mutate(Patient = "P5"),
-  nrmse_interp_p6v1_mnar %>% mutate(Patient = "P6"),
-  nrmse_interp_p7v1_mnar %>% mutate(Patient = "P7"),
-  nrmse_interp_p8v1_mnar %>% mutate(Patient = "P8"),
-  nrmse_interp_p9v1_mnar %>% mutate(Patient = "P9"),
-  nrmse_interp_p10v1_mnar %>% mutate(Patient = "P10")
-)
-
-#combine visit 2
-nrmse_mnar_visit2 <- bind_rows(
-  nrmse_interp_p1v2_mnar %>% mutate(Patient = "P1"),
-  nrmse_interp_p2v2_mnar %>% mutate(Patient = "P2"),
-  nrmse_interp_p3v2_mnar %>% mutate(Patient = "P3"),
-  nrmse_interp_p4v2_mnar %>% mutate(Patient = "P4"),
-  nrmse_interp_p5v2_mnar %>% mutate(Patient = "P5"),
-  nrmse_interp_p6v2_mnar %>% mutate(Patient = "P6"),
-  nrmse_interp_p7v2_mnar %>% mutate(Patient = "P7"),
-  nrmse_interp_p8v2_mnar %>% mutate(Patient = "P8"),
-  nrmse_interp_p9v2_mnar %>% mutate(Patient = "P9"),
-  nrmse_interp_p10v2_mnar %>% mutate(Patient = "P10")
-)
-
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Interpolation/MNAR_Interpolation_1MV_NRMSE.pdf", width = 14, height = 10)
-
-#plot visit 1
-ggplot(nrmse_mnar_visit1, aes(x = Patient, y = NRMSE)) +
-  geom_boxplot(fill = "skyblue") +
-  theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MNAR 1 MV in middle)",
-       y = "NRMSE", x = "Patient")
-
-#plot visit 2
-ggplot(nrmse_mnar_visit2, aes(x = Patient, y = NRMSE)) +
-  geom_boxplot(fill = "skyblue") +
-  theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV in middle)",
-       y = "NRMSE", x = "Patient")
-
-dev.off()
-
 
 # ----------------------------
 # Part 2: Kalman
@@ -1045,89 +691,6 @@ ggplot(nrmse_kalman_mcar_visit2, aes(x = Patient, y = NRMSE)) +
 dev.off()
 
 
-# --------------------------
-# Part 2.2: NRMSE (MNAR)
-# --------------------------
-
-#call function to calcualte nrms
-#kalman
-#p1
-nrmse_kalman_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_mnar_kalman, method = "Kalman Smoothing")
-#p2
-nrmse_kalman_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_kalman, method = "Kalman Smoothing")
-#p3
-nrmse_kalman_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_kalman, method = "Kalman Smoothing")
-#p4
-nrmse_kalman_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_kalman, method = "Kalman Smoothing")
-#p5
-nrmse_kalman_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_mnar_kalman, method = "Kalman Smoothing")
-#p6
-nrmse_kalman_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_mnar_kalman, method = "Kalman Smoothing")
-#p7
-nrmse_kalman_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_mnar_kalman, method = "Kalman Smoothing")
-#p8
-nrmse_kalman_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_mnar_kalman, method = "Kalman Smoothing")
-#p9
-nrmse_kalman_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_mnar_kalman, method = "Kalman Smoothing")
-#p10
-nrmse_kalman_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_mnar_kalman, method = "Kalman Smoothing")
-
-#combine visit 1 
-nrmse_kalman_mnar_visit1 <- bind_rows(
-  nrmse_kalman_p1v1_mnar %>% mutate(Patient = "P1"),
-  nrmse_kalman_p2v1_mnar %>% mutate(Patient = "P2"),
-  nrmse_kalman_p3v1_mnar %>% mutate(Patient = "P3"),
-  nrmse_kalman_p4v1_mnar %>% mutate(Patient = "P4"),
-  nrmse_kalman_p5v1_mnar %>% mutate(Patient = "P5"),
-  nrmse_kalman_p6v1_mnar %>% mutate(Patient = "P6"),
-  nrmse_kalman_p7v1_mnar %>% mutate(Patient = "P7"),
-  nrmse_kalman_p8v1_mnar %>% mutate(Patient = "P8"),
-  nrmse_kalman_p9v1_mnar %>% mutate(Patient = "P9"),
-  nrmse_kalman_p10v1_mnar %>% mutate(Patient = "P10")
-)
-
-#combine visit 2
-nrmse_kalman_mnar_visit2 <- bind_rows(
-  nrmse_kalman_p1v2_mnar %>% mutate(Patient = "P1"),
-  nrmse_kalman_p2v2_mnar %>% mutate(Patient = "P2"),
-  nrmse_kalman_p3v2_mnar %>% mutate(Patient = "P3"),
-  nrmse_kalman_p4v2_mnar %>% mutate(Patient = "P4"),
-  nrmse_kalman_p5v2_mnar %>% mutate(Patient = "P5"),
-  nrmse_kalman_p6v2_mnar %>% mutate(Patient = "P6"),
-  nrmse_kalman_p7v2_mnar %>% mutate(Patient = "P7"),
-  nrmse_kalman_p8v2_mnar %>% mutate(Patient = "P8"),
-  nrmse_kalman_p9v2_mnar %>% mutate(Patient = "P9"),
-  nrmse_kalman_p10v2_mnar %>% mutate(Patient = "P10")
-)
-
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Kalman_Smoothing/MNAR_Kalman_1MV_NRMSE.pdf", width = 14, height = 10)
-
-#plot visit 1
-ggplot(nrmse_kalman_mnar_visit1, aes(x = Patient, y = NRMSE)) +
-  geom_boxplot(fill = "skyblue") +
-  theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MNAR 1 MV in middle)",
-       y = "NRMSE", x = "Patient")
-
-#plot visit 2
-ggplot(nrmse_kalman_mnar_visit2, aes(x = Patient, y = NRMSE)) +
-  geom_boxplot(fill = "skyblue") +
-  theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV in middle)",
-       y = "NRMSE", x = "Patient")
-
-dev.off()
-
 # ----------------------------
 # Part 3: LWMA
 # ----------------------------
@@ -1214,90 +777,6 @@ ggplot(nrmse_lwma_mcar_visit2, aes(x = Patient, y = NRMSE)) +
        y = "NRMSE", x = "Patient")
 
 dev.off()
-
-# --------------------------
-# Part 3.2: NRMSE (MNAR)
-# --------------------------
-
-#call function to calcualte nrms
-#LWMA
-#p1
-nrmse_lwma_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_mnar_lwma, method = "LWMA")
-#p2
-nrmse_lwma_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_lwma, method = "LWMA")
-#p3
-nrmse_lwma_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_lwma, method = "LWMA")
-#p4
-nrmse_lwma_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_lwma, method = "LWMA")
-#p5
-nrmse_lwma_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_mnar_lwma, method = "LWMA")
-#p6
-nrmse_lwma_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_mnar_lwma, method = "LWMA")
-#p7
-nrmse_lwma_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_mnar_lwma, method = "LWMA")
-#p8
-nrmse_lwma_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_mnar_lwma, method = "LWMA")
-#p9
-nrmse_lwma_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_mnar_lwma, method = "LWMA")
-#p10
-nrmse_lwma_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_mnar_lwma, method = "LWMA")
-nrmse_lwma_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_mnar_lwma, method = "LWMA")
-
-#combine visit 1 
-nrmse_lwma_mnar_visit1 <- bind_rows(
-  nrmse_lwma_p1v1_mnar %>% mutate(Patient = "P1"),
-  nrmse_lwma_p2v1_mnar %>% mutate(Patient = "P2"),
-  nrmse_lwma_p3v1_mnar %>% mutate(Patient = "P3"),
-  nrmse_lwma_p4v1_mnar %>% mutate(Patient = "P4"),
-  nrmse_lwma_p5v1_mnar %>% mutate(Patient = "P5"),
-  nrmse_lwma_p6v1_mnar %>% mutate(Patient = "P6"),
-  nrmse_lwma_p7v1_mnar %>% mutate(Patient = "P7"),
-  nrmse_lwma_p8v1_mnar %>% mutate(Patient = "P8"),
-  nrmse_lwma_p9v1_mnar %>% mutate(Patient = "P9"),
-  nrmse_lwma_p10v1_mnar %>% mutate(Patient = "P10")
-)
-
-#combine visit 2
-nrmse_lwma_mnar_visit2 <- bind_rows(
-  nrmse_lwma_p1v2_mnar %>% mutate(Patient = "P1"),
-  nrmse_lwma_p2v2_mnar %>% mutate(Patient = "P2"),
-  nrmse_lwma_p3v2_mnar %>% mutate(Patient = "P3"),
-  nrmse_lwma_p4v2_mnar %>% mutate(Patient = "P4"),
-  nrmse_lwma_p5v2_mnar %>% mutate(Patient = "P5"),
-  nrmse_lwma_p6v2_mnar %>% mutate(Patient = "P6"),
-  nrmse_lwma_p7v2_mnar %>% mutate(Patient = "P7"),
-  nrmse_lwma_p8v2_mnar %>% mutate(Patient = "P8"),
-  nrmse_lwma_p9v2_mnar %>% mutate(Patient = "P9"),
-  nrmse_lwma_p10v2_mnar %>% mutate(Patient = "P10")
-)
-
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LWMA/MNAR_LWMA_1MV_NRMSE.pdf", width = 14, height = 10)
-
-#plot visit 1
-ggplot(nrmse_lwma_mnar_visit1, aes(x = Patient, y = NRMSE)) +
-  geom_boxplot(fill = "skyblue") +
-  theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MNAR 1 MV)",
-       y = "NRMSE", x = "Patient")
-
-#plot visit 2
-ggplot(nrmse_lwma_mnar_visit2, aes(x = Patient, y = NRMSE)) +
-  geom_boxplot(fill = "skyblue") +
-  theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV)",
-       y = "NRMSE", x = "Patient")
-
-dev.off()
-
 
 # ------------------------
 # TITLE: AUC Function
@@ -1622,7 +1101,7 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p10v2_lwma))
 ) %>% rename(AUC = values, Metabolite = ind)
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/AUC_Density.pdf", width = 16, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/AUC_Density_MCAR.pdf", width = 16, height = 10)
 
 #now plot the density of AUC 
 #Visit 1
@@ -1656,3 +1135,4 @@ ggplot(visit2_auc_df, aes(x = AUC, fill = Method, color = Method)) +
   )
 
 dev.off()
+
