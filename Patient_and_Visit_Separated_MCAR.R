@@ -9,6 +9,7 @@ library(imputeTS) #for imputation methods
 library(pracma) #for AUC calculation
 library(nlme)
 library(purrr)
+library(missForest)
 
 # --------------------------------------
 # TITLE: PATIENT AND VISIT SEPARATED
@@ -1097,7 +1098,6 @@ ggplot(nrmse_lwma_mcar_visit2, aes(x = Patient, y = NRMSE)) +
        y = "NRMSE", x = "Patient")
 
 dev.off()
-
 
 
 # ----------------------------
