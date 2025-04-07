@@ -309,17 +309,17 @@ impute_single_missing_loess <- function(df, time_col = "Time_min", meta_start_co
     time <- df[[time_col]]
     y <- df[[metabolite]]
     
-    # Check for exactly 1 missing value
+    #check for exactly 1 missing value
     if (sum(is.na(y)) != 1) {
       warning("Skipping ", metabolite, ": requires exactly 1 NA")
       next
     }
     
-    # Index and time of missing value
+    #index and time of missing value
     na_index <- which(is.na(y))
     t_missing <- time[na_index]
     
-    # Fit LOESS on available data
+    #fit LOESS on available data
     df_non_na <- data.frame(time = time[!is.na(y)], y = y[!is.na(y)])
     loess_fit <- tryCatch({
       loess(y ~ time, data = df_non_na, span = span, degree = 2)
@@ -328,7 +328,7 @@ impute_single_missing_loess <- function(df, time_col = "Time_min", meta_start_co
       return(NULL)
     })
     
-    # Predict missing if model worked
+    #predict missing if model worked
     if (!is.null(loess_fit)) {
       predicted <- predict(loess_fit, newdata = data.frame(time = t_missing))
       df_imputed[[metabolite]][na_index] <- predicted
@@ -337,7 +337,6 @@ impute_single_missing_loess <- function(df, time_col = "Time_min", meta_start_co
   
   return(df_imputed)
 }
-
 
 
 #call function for gamma imputation

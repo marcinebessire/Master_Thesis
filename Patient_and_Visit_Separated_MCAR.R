@@ -369,6 +369,82 @@ p8_v2_gamma <- impute_single_missing_gamma(p8_v2_mcar)
 p9_v2_gamma <- impute_single_missing_gamma(p9_v2_mcar)
 p10_v2_gamma <- impute_single_missing_gamma(p10_v2_mcar)
 
+# --------------------------------
+# Part 5: LOESS 
+# --------------------------------
+
+#LOESS (locally estimated scatterplot smoothing)
+#span: controls how smooth the curve is (larger = smoother)
+impute_all_missing_loess <- function(df, time_col = "Time_min", meta_start_col = 6) {
+  df_imputed <- df
+  metabolite_cols <- names(df)[meta_start_col:ncol(df)]
+  
+  for (metabolite in metabolite_cols) {
+    message("Fitting LOESS for: ", metabolite)
+    
+    time <- df[[time_col]]
+    y <- df[[metabolite]]
+    
+    na_indices <- which(is.na(y))
+    if (length(na_indices) == 0) next  # skip if no missing
+    
+    # Adjust span based on curve shape
+    variability <- sd(y, na.rm = TRUE)
+    span <- ifelse(variability < 5, 0.4, 0.75)
+    message("  -> Using span = ", span, " (SD = ", round(variability, 2), ")")
+    
+    df_non_na <- data.frame(time = time[!is.na(y)], y = y[!is.na(y)])
+    
+    loess_fit <- tryCatch({
+      loess(y ~ time, data = df_non_na, span = span, degree = 2)
+    }, error = function(e) {
+      warning("LOESS failed for ", metabolite, ": ", e$message)
+      return(NULL)
+    })
+    
+    if (!is.null(loess_fit)) {
+      for (na_index in na_indices) {
+        t_missing <- time[na_index]
+        predicted <- predict(loess_fit, newdata = data.frame(time = t_missing))
+        
+        # If LOESS fails to predict (e.g., edge), fallback to linear
+        if (is.na(predicted)) {
+          message("    -> LOESS prediction failed; using linear interpolation")
+          predicted <- approx(x = df_non_na$time, y = df_non_na$y, xout = t_missing, rule = 2)$y
+        }
+        
+        df_imputed[[metabolite]][na_index] <- predicted
+      }
+    }
+  }
+  
+  return(df_imputed)
+}
+
+
+#call function for gamma imputation
+#visit 1
+p1_v1_loess <- impute_single_missing_loess(p1_v1_mcar)
+p2_v1_loess <- impute_single_missing_loess(p2_v1_mcar)
+p3_v1_loess <- impute_single_missing_loess(p3_v1_mcar)
+p4_v1_loess <- impute_single_missing_loess(p4_v1_mcar)
+p5_v1_loess <- impute_single_missing_loess(p5_v1_mcar)
+p6_v1_loess <- impute_single_missing_loess(p6_v1_mcar)
+p7_v1_loess <- impute_single_missing_loess(p7_v1_mcar)
+p8_v1_loess <- impute_single_missing_loess(p8_v1_mcar)
+p9_v1_loess <- impute_single_missing_loess(p9_v1_mcar)
+p10_v1_loess <- impute_single_missing_loess(p10_v1_mcar)
+#visit 2
+p1_v2_loess <- impute_single_missing_loess(p1_v2_mcar)
+p2_v2_loess <- impute_single_missing_loess(p2_v2_mcar)
+p3_v2_loess <- impute_single_missing_loess(p3_v2_mcar)
+p4_v2_loess <- impute_single_missing_loess(p4_v2_mcar)
+p5_v2_loess <- impute_single_missing_loess(p5_v2_mcar)
+p6_v2_loess <- impute_single_missing_loess(p6_v2_mcar)
+p7_v2_loess <- impute_single_missing_loess(p7_v2_mcar)
+p8_v2_loess <- impute_single_missing_loess(p8_v2_mcar)
+p9_v2_loess <- impute_single_missing_loess(p9_v2_mcar)
+p10_v2_loess <- impute_single_missing_loess(p10_v2_mcar)
 
 # --------------------------------------
 # TITLE: KINETICS PLOT BEFORE AND AFTER
@@ -591,6 +667,48 @@ plot_imputed_vs_original(p9_visit2, p9_v2_gamma, visit = "Visit 2", type = "MCAR
 #p10
 plot_imputed_vs_original(p10_visit1, p10_v1_gamma, visit = "Visit 1", type = "MCAR")
 plot_imputed_vs_original(p10_visit2, p10_v2_gamma, visit = "Visit 2", type = "MCAR")
+
+dev.off()
+
+
+# ----------------------------
+# Part 5: LEOSS 
+# ----------------------------
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LOESS_MCAR/MCAR_LOESS_5thMV.pdf", width = 14, height = 10)
+
+#call function
+#MCAR
+#p1
+plot_imputed_vs_original(p1_visit1, p1_v2_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p1_visit2, p1_v2_loess, visit = "Visit 2", type = "MCAR")
+#p2
+plot_imputed_vs_original(p2_visit1, p2_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p2_visit2, p2_v2_loess, visit = "Visit 2", type = "MCAR")
+#p3
+plot_imputed_vs_original(p3_visit1, p3_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p3_visit2, p3_v2_loess, visit = "Visit 2", type = "MCAR")
+#p4
+plot_imputed_vs_original(p4_visit1, p4_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p4_visit2, p4_v2_loess, visit = "Visit 2", type = "MCAR")
+#p5
+plot_imputed_vs_original(p5_visit1, p5_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p5_visit2, p5_v2_loess, visit = "Visit 2", type = "MCAR")
+#p6
+plot_imputed_vs_original(p6_visit1, p6_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p6_visit2, p6_v2_loess, visit = "Visit 2", type = "MCAR")
+#p7
+plot_imputed_vs_original(p7_visit1, p7_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p7_visit2, p7_v2_loess, visit = "Visit 2", type = "MCAR")
+#p8
+plot_imputed_vs_original(p8_visit1, p8_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p8_visit2, p8_v2_loess, visit = "Visit 2", type = "MCAR")
+#p9
+plot_imputed_vs_original(p9_visit1, p9_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p9_visit2, p9_v2_loess, visit = "Visit 2", type = "MCAR")
+#p10
+plot_imputed_vs_original(p10_visit1, p10_v1_loess, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p10_visit2, p10_v2_loess, visit = "Visit 2", type = "MCAR")
 
 dev.off()
 
