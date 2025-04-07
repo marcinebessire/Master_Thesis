@@ -7,6 +7,8 @@ library(openxlsx)
 library(zoo) #for interpolation
 library(imputeTS) #for imputation methods
 library(pracma) #for AUC calculation
+library(nlme)
+library(purrr)
 
 # --------------------------------------
 # TITLE: PATIENT AND VISIT SEPARATED
@@ -295,6 +297,79 @@ p9_v2_mcar_lwma <- weighted_mov_average(p9_v2_mcar)
 p10_v1_mcar_lwma <- weighted_mov_average(p10_v1_mcar)
 p10_v2_mcar_lwma <- weighted_mov_average(p10_v2_mcar)
 
+# --------------------------------
+# Part 4: Gamma-like kinetic model 
+# -------------------------------
+
+#nonlinear regression model, specifically a gamma-like kinetic model
+impute_single_missing_gamma <- function(df, time_col = "Time_min", meta_start_col = 6) {
+  df_imputed <- df
+  metabolite_cols <- names(df)[meta_start_col:ncol(df)]
+  
+  for (metabolite in metabolite_cols) {
+    message("Fitting: ", metabolite)
+    
+    #extract time and response
+    time <- df[[time_col]]
+    y <- df[[metabolite]]
+    
+    #check for exactly 1 missing value
+    if (sum(is.na(y)) != 1) {
+      warning("Skipping ", metabolite, ": requires exactly 1 NA")
+      next
+    }
+    
+    #adjust time to avoid 0 for power function
+    time_adj <- ifelse(time == 0, 0.001, time)
+    
+    #fit the model on non-NA values
+    tryCatch({
+      fit <- nls(
+        y ~ A * time_adj^n * exp(-k * time_adj),
+        start = list(A = max(y, na.rm = TRUE), n = 1, k = 0.01),
+        data = data.frame(time_adj = time_adj[!is.na(y)], y = y[!is.na(y)])
+      )
+      
+      #predict for the missing row
+      na_index <- which(is.na(y))
+      t_missing <- time_adj[na_index]
+      predicted <- predict(fit, newdata = data.frame(time_adj = t_missing))
+      
+      df_imputed[[metabolite]][na_index] <- predicted
+      
+    }, error = function(e) {
+      warning("Model failed for ", metabolite, ": ", e$message)
+    })
+  }
+  
+  return(df_imputed)
+}
+
+#call function for gamma imputatin
+#visit 1
+p1_v1_gamma <- impute_single_missing_gamma(p1_v1_mcar)
+p2_v1_gamma <- impute_single_missing_gamma(p2_v1_mcar)
+p3_v1_gamma <- impute_single_missing_gamma(p3_v1_mcar)
+p4_v1_gamma <- impute_single_missing_gamma(p4_v1_mcar)
+p5_v1_gamma <- impute_single_missing_gamma(p5_v1_mcar)
+p6_v1_gamma <- impute_single_missing_gamma(p6_v1_mcar)
+p7_v1_gamma <- impute_single_missing_gamma(p7_v1_mcar)
+p8_v1_gamma <- impute_single_missing_gamma(p8_v1_mcar)
+p9_v1_gamma <- impute_single_missing_gamma(p9_v1_mcar)
+p10_v1_gamma <- impute_single_missing_gamma(p10_v1_mcar)
+#visit 2
+p1_v2_gamma <- impute_single_missing_gamma(p1_v2_mcar)
+p2_v2_gamma <- impute_single_missing_gamma(p2_v2_mcar)
+p3_v2_gamma <- impute_single_missing_gamma(p3_v2_mcar)
+p4_v2_gamma <- impute_single_missing_gamma(p4_v2_mcar)
+p5_v2_gamma <- impute_single_missing_gamma(p5_v2_mcar)
+p6_v2_gamma <- impute_single_missing_gamma(p6_v2_mcar)
+p7_v2_gamma <- impute_single_missing_gamma(p7_v2_mcar)
+p8_v2_gamma <- impute_single_missing_gamma(p8_v2_mcar)
+p9_v2_gamma <- impute_single_missing_gamma(p9_v2_mcar)
+p10_v2_gamma <- impute_single_missing_gamma(p10_v2_mcar)
+
+
 # --------------------------------------
 # TITLE: KINETICS PLOT BEFORE AND AFTER
 # --------------------------------------
@@ -478,6 +553,46 @@ plot_imputed_vs_original(p10_visit2, p10_v2_mcar_lwma, visit = "Visit 2", type =
 
 dev.off()
 
+# ----------------------------
+# Part 4: Gamma Distr
+# ----------------------------
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Gamma_Dist/MCAR_Gamma_5thMV.pdf", width = 14, height = 10)
+
+#call function
+#MCAR
+#p1
+plot_imputed_vs_original(p1_visit1, p1_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p1_visit2, p1_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p2
+plot_imputed_vs_original(p2_visit1, p2_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p2_visit2, p2_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p3
+plot_imputed_vs_original(p3_visit1, p3_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p3_visit2, p3_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p4
+plot_imputed_vs_original(p4_visit1, p4_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p4_visit2, p4_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p5
+plot_imputed_vs_original(p5_visit1, p5_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p5_visit2, p5_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p6
+plot_imputed_vs_original(p6_visit1, p6_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p6_visit2, p6_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p7
+plot_imputed_vs_original(p7_visit1, p7_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p7_visit2, p7_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p8
+plot_imputed_vs_original(p8_visit1, p8_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p8_visit2, p8_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p9
+plot_imputed_vs_original(p9_visit1, p9_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p9_visit2, p9_v2_gamma, visit = "Visit 2", type = "MCAR")
+#p10
+plot_imputed_vs_original(p10_visit1, p10_v1_gamma, visit = "Visit 1", type = "MCAR")
+plot_imputed_vs_original(p10_visit2, p10_v2_gamma, visit = "Visit 2", type = "MCAR")
+
+dev.off()
 
 # ------------------------
 # TITLE: NRMSE Function
@@ -778,6 +893,93 @@ ggplot(nrmse_lwma_mcar_visit2, aes(x = Patient, y = NRMSE)) +
 
 dev.off()
 
+# ----------------------------
+# Part 4: Gamma
+# ----------------------------
+
+# --------------------------
+# Part 4.1: NRMSE (MCAR)
+# --------------------------
+
+#call function to calcualte nrms
+#LWMA
+#p1
+nrmse_gamma_p1v1_mcar <- calculate_nrsme(p1_visit1, p1_v1_gamma, method = "Gammma")
+nrmse_gamma_p1v2_mcar <- calculate_nrsme(p1_visit2, p1_v2_gamma, method = "Gammma")
+#p2
+nrmse_gamma_p2v1_mcar <- calculate_nrsme(p2_visit1, p2_v1_gamma, method = "Gammma")
+nrmse_gamma_p2v2_mcar <- calculate_nrsme(p2_visit2, p2_v2_gamma, method = "Gammma")
+#p3
+nrmse_gamma_p3v1_mcar <- calculate_nrsme(p3_visit1, p3_v1_gamma, method = "Gammma")
+nrmse_gamma_p3v2_mcar <- calculate_nrsme(p3_visit2, p3_v2_gamma, method = "Gammma")
+#p4
+nrmse_gamma_p4v1_mcar <- calculate_nrsme(p4_visit1, p4_v1_gamma, method = "Gammma")
+nrmse_gamma_p4v2_mcar <- calculate_nrsme(p4_visit2, p4_v2_gamma, method = "Gammma")
+#p5
+nrmse_gamma_p5v1_mcar <- calculate_nrsme(p5_visit1, p5_v1_gamma, method = "Gammma")
+nrmse_gamma_p5v2_mcar <- calculate_nrsme(p5_visit2, p5_v2_gamma, method = "Gammma")
+#p6
+nrmse_gamma_p6v1_mcar <- calculate_nrsme(p6_visit1, p6_v1_gamma, method = "Gammma")
+nrmse_gamma_p6v2_mcar <- calculate_nrsme(p6_visit2, p6_v2_gamma, method = "Gammma")
+#p7
+nrmse_gamma_p7v1_mcar <- calculate_nrsme(p7_visit1, p7_v1_gamma, method = "Gammma")
+nrmse_gamma_p7v2_mcar <- calculate_nrsme(p7_visit2, p7_v2_gamma, method = "Gammma")
+#p8
+nrmse_gamma_p8v1_mcar <- calculate_nrsme(p8_visit1, p8_v1_gamma, method = "Gammma")
+nrmse_gamma_p8v2_mcar <- calculate_nrsme(p8_visit2, p8_v2_gamma, method = "Gammma")
+#p9
+nrmse_gamma_p9v1_mcar <- calculate_nrsme(p9_visit1, p9_v1_gamma, method = "Gammma")
+nrmse_gamma_p9v2_mcar <- calculate_nrsme(p9_visit2, p9_v2_gamma, method = "Gammma")
+#p10
+nrmse_gamma_p10v1_mcar <- calculate_nrsme(p10_visit1, p10_v1_gamma, method = "Gammma")
+nrmse_gamma_p10v2_mcar <- calculate_nrsme(p10_visit2, p10_v2_gamma, method = "Gammma")
+
+#combine visit 1 
+nrmse_gamma_mcar_visit1 <- bind_rows(
+  nrmse_gamma_p1v1_mcar %>% mutate(Patient = "P1"),
+  nrmse_gamma_p2v1_mcar %>% mutate(Patient = "P2"),
+  nrmse_gamma_p3v1_mcar %>% mutate(Patient = "P3"),
+  nrmse_gamma_p4v1_mcar %>% mutate(Patient = "P4"),
+  nrmse_gamma_p5v1_mcar %>% mutate(Patient = "P5"),
+  nrmse_gamma_p6v1_mcar %>% mutate(Patient = "P6"),
+  nrmse_gamma_p7v1_mcar %>% mutate(Patient = "P7"),
+  nrmse_gamma_p8v1_mcar %>% mutate(Patient = "P8"),
+  nrmse_gamma_p9v1_mcar %>% mutate(Patient = "P9"),
+  nrmse_gamma_p10v1_mcar %>% mutate(Patient = "P10")
+)
+
+#combine visit 2
+nrmse_gamma_mcar_visit2 <- bind_rows(
+  nrmse_gamma_p1v2_mcar %>% mutate(Patient = "P1"),
+  nrmse_gamma_p2v2_mcar %>% mutate(Patient = "P2"),
+  nrmse_gamma_p3v2_mcar %>% mutate(Patient = "P3"),
+  nrmse_gamma_p4v2_mcar %>% mutate(Patient = "P4"),
+  nrmse_gamma_p5v2_mcar %>% mutate(Patient = "P5"),
+  nrmse_gamma_p6v2_mcar %>% mutate(Patient = "P6"),
+  nrmse_gamma_p7v2_mcar %>% mutate(Patient = "P7"),
+  nrmse_gamma_p8v2_mcar %>% mutate(Patient = "P8"),
+  nrmse_gamma_p9v2_mcar %>% mutate(Patient = "P9"),
+  nrmse_gamma_p10v2_mcar %>% mutate(Patient = "P10")
+)
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/Gamma_Dist/MCAR_Gamma_5thMV_NRMSE.pdf", width = 14, height = 10)
+
+#plot visit 1
+ggplot(nrmse_lwma_mcar_visit1, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE per Patient: Visit 1 (MCAR 1 MV in middle)",
+       y = "NRMSE", x = "Patient")
+
+#plot visit 2
+ggplot(nrmse_lwma_mcar_visit2, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE per Patient: Visit 2 (MCAR 1 MV in middle)",
+       y = "NRMSE", x = "Patient")
+
+dev.off()
+
 
 # ----------------------------
 # Part 4: All methods compared
@@ -787,14 +989,16 @@ dev.off()
 nrmse_visit1_tot <- bind_rows(
   nrmse_mcar_visit1,
   nrmse_kalman_mcar_visit1,
-  nrmse_lwma_mcar_visit1
+  nrmse_lwma_mcar_visit1,
+  nrmse_gamma_mcar_visit1
 )
 
 #visit2
 nrmse_visit2_tot <- bind_rows(
   nrmse_mcar_visit2,
   nrmse_kalman_mcar_visit2,
-  nrmse_lwma_mcar_visit2
+  nrmse_lwma_mcar_visit2,
+  nrmse_gamma_mcar_visit2
 )
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/NRMSE_MCAR_Imputation_methods.pdf", width = 16, height = 10)
@@ -1011,6 +1215,7 @@ kalman_visit2_auc <- bind_rows(
   auc_p10v2_kalman
 )
 
+
 #LWMA AUC
 #visit 1
 auc_p1v1_lwma <- calculate_auc(p1_v1_mcar_lwma)
@@ -1063,6 +1268,59 @@ lwma_visit2_auc <- bind_rows(
   auc_p10v2_lwma
 )
 
+#Gamma AUC
+#visit 1
+auc_p1v1_gamma <- calculate_auc(p1_v1_gamma)
+auc_p2v1_gamma <- calculate_auc(p2_v1_gamma)
+auc_p3v1_gamma <- calculate_auc(p3_v1_gamma)
+auc_p4v1_gamma <- calculate_auc(p4_v1_gamma)
+auc_p5v1_gamma <- calculate_auc(p5_v1_gamma)
+auc_p6v1_gamma <- calculate_auc(p6_v1_gamma)
+auc_p7v1_gamma <- calculate_auc(p7_v1_gamma)
+auc_p8v1_gamma <- calculate_auc(p8_v1_gamma)
+auc_p9v1_gamma <- calculate_auc(p9_v1_gamma)
+auc_p10v1_gamma <- calculate_auc(p10_v1_gamma)
+#visit 2
+auc_p1v2_gamma <- calculate_auc(p1_v2_gamma)
+auc_p2v2_gamma <- calculate_auc(p2_v2_gamma)
+auc_p3v2_gamma <- calculate_auc(p3_v2_gamma)
+auc_p4v2_gamma <- calculate_auc(p4_v2_gamma)
+auc_p5v2_gamma <- calculate_auc(p5_v2_gamma)
+auc_p6v2_gamma <- calculate_auc(p6_v2_gamma)
+auc_p7v2_gamma <- calculate_auc(p7_v2_gamma)
+auc_p8v2_gamma <- calculate_auc(p8_v2_gamma)
+auc_p9v2_gamma <- calculate_auc(p9_v2_gamma)
+auc_p10v2_gamma <- calculate_auc(p10_v2_gamma)
+
+#combine
+#visit 1
+gamma_visit1_auc <- bind_rows(
+  auc_p1v1_gamma, 
+  auc_p2v1_gamma,
+  auc_p3v1_gamma,
+  auc_p4v1_gamma,
+  auc_p5v1_gamma,
+  auc_p6v1_gamma,
+  auc_p7v1_gamma,
+  auc_p8v1_gamma,
+  auc_p9v1_gamma,
+  auc_p10v1_gamma
+)
+#visit 2
+gamma_visit2_auc <- bind_rows(
+  auc_p1v2_gamma, 
+  auc_p2v2_gamma,
+  auc_p3v2_gamma,
+  auc_p4v2_gamma,
+  auc_p5v2_gamma,
+  auc_p6v2_gamma,
+  auc_p7v2_gamma,
+  auc_p8v2_gamma,
+  auc_p9v2_gamma,
+  auc_p10v2_gamma
+)
+
+
 #combine the datasets
 #visit 1
 visit1_auc_df <- bind_rows(
@@ -1108,7 +1366,18 @@ visit1_auc_df <- bind_rows(
   data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p7v1_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p8v1_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p9v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p10v1_lwma))
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p10v1_lwma)),
+  
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p1v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p2v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p3v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p4v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p5v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p6v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p7v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p8v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p9v1_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p10v1_gamma))
 ) %>% rename(AUC = values, Metabolite = ind)
 
 #visit 2
@@ -1155,7 +1424,18 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p7v2_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p8v2_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p9v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p10v2_lwma))
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p10v2_lwma)),
+  
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p1v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p2v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p3v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p4v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p5v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p6v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p7v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p8v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p9v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p10v2_gamma))
 ) %>% rename(AUC = values, Metabolite = ind)
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/AUC_Density_MCAR.pdf", width = 16, height = 10)
@@ -1182,7 +1462,7 @@ ggplot(visit2_auc_df, aes(x = AUC, fill = Method, color = Method)) +
   facet_wrap(~ Metabolite, scales = "free") +
   theme_minimal(base_size = 12) +
   labs(
-    title = "Visit 1: AUC Density per Metabolite",
+    title = "Visit 2: AUC Density per Metabolite",
     x = "AUC",
     y = "Density"
   ) +
