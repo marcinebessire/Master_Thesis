@@ -1426,16 +1426,16 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p9v2_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p10v2_lwma)),
   
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p1v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p2v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p3v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p4v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p5v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p6v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p7v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p8v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p9v2_gamma)),
-  data.frame(Method = "Gamma",          Visit = "Visit 1", stack(auc_p10v2_gamma))
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p1v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p2v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p3v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p4v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p5v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p6v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p7v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p8v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p9v2_gamma)),
+  data.frame(Method = "Gamma",          Visit = "Visit 2", stack(auc_p10v2_gamma))
 ) %>% rename(AUC = values, Metabolite = ind)
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/AUC_Density_MCAR.pdf", width = 16, height = 10)

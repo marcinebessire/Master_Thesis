@@ -294,6 +294,77 @@ p10_v1_mnar_lwma <- weighted_mov_average(p10_v1_mnar)
 p10_v2_mnar_lwma <- weighted_mov_average(p10_v2_mnar)
 
 
+# --------------------------------
+# Part 4: LOESS 
+# --------------------------------
+
+#LOESS (locally estimated scatterplot smoothing)
+impute_single_missing_loess <- function(df, time_col = "Time_min", meta_start_col = 6, span = 0.75) {
+  df_imputed <- df
+  metabolite_cols <- names(df)[meta_start_col:ncol(df)]
+  
+  for (metabolite in metabolite_cols) {
+    message("Fitting LOESS for: ", metabolite)
+    
+    time <- df[[time_col]]
+    y <- df[[metabolite]]
+    
+    # Check for exactly 1 missing value
+    if (sum(is.na(y)) != 1) {
+      warning("Skipping ", metabolite, ": requires exactly 1 NA")
+      next
+    }
+    
+    # Index and time of missing value
+    na_index <- which(is.na(y))
+    t_missing <- time[na_index]
+    
+    # Fit LOESS on available data
+    df_non_na <- data.frame(time = time[!is.na(y)], y = y[!is.na(y)])
+    loess_fit <- tryCatch({
+      loess(y ~ time, data = df_non_na, span = span, degree = 2)
+    }, error = function(e) {
+      warning("LOESS failed for ", metabolite, ": ", e$message)
+      return(NULL)
+    })
+    
+    # Predict missing if model worked
+    if (!is.null(loess_fit)) {
+      predicted <- predict(loess_fit, newdata = data.frame(time = t_missing))
+      df_imputed[[metabolite]][na_index] <- predicted
+    }
+  }
+  
+  return(df_imputed)
+}
+
+
+
+#call function for gamma imputation
+#visit 1
+p1_v1_loess <- impute_single_missing_loess(p1_v1_mnar)
+p2_v1_loess <- impute_single_missing_loess(p2_v1_mnar)
+p3_v1_loess <- impute_single_missing_loess(p3_v1_mnar)
+p4_v1_loess <- impute_single_missing_loess(p4_v1_mnar)
+p5_v1_loess <- impute_single_missing_loess(p5_v1_mnar)
+p6_v1_loess <- impute_single_missing_loess(p6_v1_mnar)
+p7_v1_loess <- impute_single_missing_loess(p7_v1_mnar)
+p8_v1_loess <- impute_single_missing_loess(p8_v1_mnar)
+p9_v1_loess <- impute_single_missing_loess(p9_v1_mnar)
+p10_v1_loess <- impute_single_missing_loess(p10_v1_mnar)
+#visit 2
+p1_v2_loess <- impute_single_missing_loess(p1_v2_mnar)
+p2_v2_loess <- impute_single_missing_loess(p2_v2_mnar)
+p3_v2_loess <- impute_single_missing_loess(p3_v2_mnar)
+p4_v2_loess <- impute_single_missing_loess(p4_v2_mnar)
+p5_v2_loess <- impute_single_missing_loess(p5_v2_mnar)
+p6_v2_loess <- impute_single_missing_loess(p6_v2_mnar)
+p7_v2_loess <- impute_single_missing_loess(p7_v2_mnar)
+p8_v2_loess <- impute_single_missing_loess(p8_v2_mnar)
+p9_v2_loess <- impute_single_missing_loess(p9_v2_mnar)
+p10_v2_loess <- impute_single_missing_loess(p10_v2_mnar)
+
+
 # --------------------------------------
 # TITLE: KINETICS PLOT BEFORE AND AFTER
 # --------------------------------------
@@ -473,6 +544,48 @@ plot_imputed_vs_original(p9_visit2, p9_v2_mnar_lwma, visit = "Visit 2", type = "
 #p10
 plot_imputed_vs_original(p10_visit1, p10_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p10_visit2, p10_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+
+dev.off()
+
+
+# ----------------------------
+# Part 4: LEOSS 
+# ----------------------------
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LOESS_MNAR/MNAR_LOESS_1MV.pdf", width = 14, height = 10)
+
+#call function
+#MCAR
+#p1
+plot_imputed_vs_original(p1_visit1, p1_v2_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p1_visit2, p1_v2_loess, visit = "Visit 2", type = "MNAR")
+#p2
+plot_imputed_vs_original(p2_visit1, p2_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p2_visit2, p2_v2_loess, visit = "Visit 2", type = "MNAR")
+#p3
+plot_imputed_vs_original(p3_visit1, p3_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p3_visit2, p3_v2_loess, visit = "Visit 2", type = "MNAR")
+#p4
+plot_imputed_vs_original(p4_visit1, p4_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p4_visit2, p4_v2_loess, visit = "Visit 2", type = "MNAR")
+#p5
+plot_imputed_vs_original(p5_visit1, p5_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p5_visit2, p5_v2_loess, visit = "Visit 2", type = "MNAR")
+#p6
+plot_imputed_vs_original(p6_visit1, p6_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p6_visit2, p6_v2_loess, visit = "Visit 2", type = "MNAR")
+#p7
+plot_imputed_vs_original(p7_visit1, p7_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p7_visit2, p7_v2_loess, visit = "Visit 2", type = "MNAR")
+#p8
+plot_imputed_vs_original(p8_visit1, p8_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p8_visit2, p8_v2_loess, visit = "Visit 2", type = "MNAR")
+#p9
+plot_imputed_vs_original(p9_visit1, p9_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p9_visit2, p9_v2_loess, visit = "Visit 2", type = "MNAR")
+#p10
+plot_imputed_vs_original(p10_visit1, p10_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p10_visit2, p10_v2_loess, visit = "Visit 2", type = "MNAR")
 
 dev.off()
 
@@ -776,6 +889,95 @@ dev.off()
 
 
 # ----------------------------
+# Part 4: LOESS
+# ----------------------------
+
+# --------------------------
+# Part 4.1: NRMSE (MCAR)
+# --------------------------
+
+#call function to calcualte nrms
+#LWMA
+#p1
+nrmse_loess_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_loess, method = "LOES")
+nrmse_loess_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_loess, method = "LOES")
+#p2
+nrmse_loess_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_loess, method = "LOES")
+nrmse_loess_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_loess, method = "LOES")
+#p3
+nrmse_loess_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_loess, method = "LOES")
+nrmse_loess_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_loess, method = "LOES")
+#p4
+nrmse_loess_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_loess, method = "LOES")
+nrmse_loess_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_loess, method = "LOES")
+#p5
+nrmse_loess_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_loess, method = "LOES")
+nrmse_loess_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_loess, method = "LOES")
+#p6
+nrmse_loess_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_loess, method = "LOES")
+nrmse_loess_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_loess, method = "LOES")
+#p7
+nrmse_loess_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_loess, method = "LOES")
+nrmse_loess_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_loess, method = "LOES")
+#p8
+nrmse_loess_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_loess, method = "LOES")
+nrmse_loess_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_loess, method = "LOES")
+#p9
+nrmse_loess_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_loess, method = "LOES")
+nrmse_loess_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_loess, method = "LOES")
+#p10
+nrmse_loess_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_loess, method = "LOES")
+nrmse_loess_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_loess, method = "LOES")
+
+#combine visit 1 
+nrmse_loess_mnar_visit1 <- bind_rows(
+  nrmse_loess_p1v1_mnar %>% mutate(Patient = "P1"),
+  nrmse_loess_p2v1_mnar %>% mutate(Patient = "P2"),
+  nrmse_loess_p3v1_mnar %>% mutate(Patient = "P3"),
+  nrmse_loess_p4v1_mnar %>% mutate(Patient = "P4"),
+  nrmse_loess_p5v1_mnar %>% mutate(Patient = "P5"),
+  nrmse_loess_p6v1_mnar %>% mutate(Patient = "P6"),
+  nrmse_loess_p7v1_mnar %>% mutate(Patient = "P7"),
+  nrmse_loess_p8v1_mnar %>% mutate(Patient = "P8"),
+  nrmse_loess_p9v1_mnar %>% mutate(Patient = "P9"),
+  nrmse_loess_p10v1_mnar %>% mutate(Patient = "P10")
+)
+
+
+#combine visit 2
+nrmse_loess_mnar_visit2 <- bind_rows(
+  nrmse_loess_p1v2_mnar %>% mutate(Patient = "P1"),
+  nrmse_loess_p2v2_mnar %>% mutate(Patient = "P2"),
+  nrmse_loess_p3v2_mnar %>% mutate(Patient = "P3"),
+  nrmse_loess_p4v2_mnar %>% mutate(Patient = "P4"),
+  nrmse_loess_p5v2_mnar %>% mutate(Patient = "P5"),
+  nrmse_loess_p6v2_mnar %>% mutate(Patient = "P6"),
+  nrmse_loess_p7v2_mnar %>% mutate(Patient = "P7"),
+  nrmse_loess_p8v2_mnar %>% mutate(Patient = "P8"),
+  nrmse_loess_p9v2_mnar %>% mutate(Patient = "P9"),
+  nrmse_loess_p10v2_mnar %>% mutate(Patient = "P10")
+)
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/LOESS_MNAR/MNAR_LOESS_1MV_NRMSE.pdf", width = 14, height = 10)
+
+#plot visit 1
+ggplot(nrmse_lwma_mcar_visit1, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE per Patient: Visit 1 (MCAR 1 MV in middle)",
+       y = "NRMSE", x = "Patient")
+
+#plot visit 2
+ggplot(nrmse_lwma_mcar_visit2, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE per Patient: Visit 2 (MCAR 1 MV in middle)",
+       y = "NRMSE", x = "Patient")
+
+dev.off()
+
+
+# ----------------------------
 # Part 4: All methods compared
 # ----------------------------
 
@@ -783,14 +985,16 @@ dev.off()
 nrmse_visit1_tot <- bind_rows(
   nrmse_mnar_visit1,
   nrmse_kalman_mnar_visit1,
-  nrmse_lwma_mnar_visit1
+  nrmse_lwma_mnar_visit1,
+  nrmse_loess_mnar_visit1
 )
 
 #visit2
 nrmse_visit2_tot <- bind_rows(
   nrmse_mnar_visit2,
   nrmse_kalman_mnar_visit2,
-  nrmse_lwma_mnar_visit2
+  nrmse_lwma_mnar_visit2,
+  nrmse_loess_mnar_visit2
 )
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/NRMSE_MNAR_Imputation_methods.pdf", width = 16, height = 10)
@@ -1059,6 +1263,59 @@ lwma_visit2_auc <- bind_rows(
   auc_p10v2_lwma
 )
 
+
+#LOESS AUC
+#visit 1
+auc_p1v1_loess <- calculate_auc(p1_v1_loess)
+auc_p2v1_loess <- calculate_auc(p2_v1_loess)
+auc_p3v1_loess <- calculate_auc(p3_v1_loess)
+auc_p4v1_loess <- calculate_auc(p4_v1_loess)
+auc_p5v1_loess <- calculate_auc(p5_v1_loess)
+auc_p6v1_loess <- calculate_auc(p6_v1_loess)
+auc_p7v1_loess <- calculate_auc(p7_v1_loess)
+auc_p8v1_loess <- calculate_auc(p8_v1_loess)
+auc_p9v1_loess <- calculate_auc(p9_v1_loess)
+auc_p10v1_loess <- calculate_auc(p10_v1_loess)
+#visit 2
+auc_p1v2_loess <- calculate_auc(p1_v2_loess)
+auc_p2v2_loess <- calculate_auc(p2_v2_loess)
+auc_p3v2_loess <- calculate_auc(p3_v2_loess)
+auc_p4v2_loess <- calculate_auc(p4_v2_loess)
+auc_p5v2_loess <- calculate_auc(p5_v2_loess)
+auc_p6v2_loess <- calculate_auc(p6_v2_loess)
+auc_p7v2_loess <- calculate_auc(p7_v2_loess)
+auc_p8v2_loess <- calculate_auc(p8_v2_loess)
+auc_p9v2_loess <- calculate_auc(p9_v2_loess)
+auc_p10v2_loess <- calculate_auc(p10_v2_loess)
+
+#combine
+#visit 1
+loess_visit1_auc <- bind_rows(
+  auc_p1v1_loess, 
+  auc_p2v1_loess,
+  auc_p3v1_loess,
+  auc_p4v1_loess,
+  auc_p5v1_loess,
+  auc_p6v1_loess,
+  auc_p7v1_loess,
+  auc_p8v1_loess,
+  auc_p9v1_loess,
+  auc_p10v1_loess
+)
+#visit 2
+loess_visit2_auc <- bind_rows(
+  auc_p1v2_loess, 
+  auc_p2v2_loess,
+  auc_p3v2_loess,
+  auc_p4v2_loess,
+  auc_p5v2_loess,
+  auc_p6v2_loess,
+  auc_p7v2_loess,
+  auc_p8v2_loess,
+  auc_p9v2_loess,
+  auc_p10v2_loess
+)
+
 #combine the datasets
 #visit 1
 visit1_auc_df <- bind_rows(
@@ -1104,7 +1361,18 @@ visit1_auc_df <- bind_rows(
   data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p7v1_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p8v1_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p9v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p10v1_lwma))
+  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p10v1_lwma)),
+  
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p1v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p2v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p3v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p4v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p5v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p6v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p7v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p8v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p8v1_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 1", stack(auc_p10v1_loess))
 ) %>% rename(AUC = values, Metabolite = ind)
 
 #visit 2
@@ -1151,7 +1419,18 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p7v2_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p8v2_lwma)),
   data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p9v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p10v2_lwma))
+  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p10v2_lwma)),
+  
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p1v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p2v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p3v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p4v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p5v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p6v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p7v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p8v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p8v2_loess)),
+  data.frame(Method = "LOESS",          Visit = "Visit 2", stack(auc_p10v2_loess))
 ) %>% rename(AUC = values, Metabolite = ind)
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/AUC_Density_MNAR.pdf", width = 16, height = 10)
@@ -1178,7 +1457,7 @@ ggplot(visit2_auc_df, aes(x = AUC, fill = Method, color = Method)) +
   facet_wrap(~ Metabolite, scales = "free") +
   theme_minimal(base_size = 12) +
   labs(
-    title = "Visit 1: AUC Density per Metabolite",
+    title = "Visit 2: AUC Density per Metabolite",
     x = "AUC",
     y = "Density"
   ) +
