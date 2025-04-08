@@ -206,7 +206,7 @@ kalman_imputation <- function(data){
   #apply kalman smoothing to each numeric column
   data_copy[, 6:ncol(data_copy)] <- lapply(data_copy[,6:ncol(data_copy)], function(col){
     if (is.numeric(col)){
-      return(na_kalman(col, model = "auto.arima", smooth = TRUE))
+      return(na_kalman(col, model = "StructTS", smooth = TRUE))
     } else {
       return(col)
     }
