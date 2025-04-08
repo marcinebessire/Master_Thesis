@@ -407,6 +407,92 @@ v2_30pct_mnar_lwma <- weighted_mov_average(FAO_v2_30pct_mnar)
 v2_35pct_mnar_lwma <- weighted_mov_average(FAO_v2_35pct_mnar)
 v2_40pct_mnar_lwma <- weighted_mov_average(FAO_v2_40pct_mnar)
 
+# --------------------------------
+# Part 4: LOESS + RF
+# --------------------------------
+
+#LOESS (locally estimated scatterplot smoothing)
+#LOESS + Random Forest Imputation
+impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
+  df_imputed <- df
+  metabolite_cols <- names(df)[6:ncol(df)]
+  
+  for (metabolite in metabolite_cols) {
+    message("LOESS for: ", metabolite)
+    
+    time <- df[[time_col]]
+    y <- df[[metabolite]]
+    na_indices <- which(is.na(y))
+    if (length(na_indices) == 0) next
+    
+    #require at least 3 non-missing values to fit LOESS
+    if (sum(!is.na(y)) < 3) {
+      message("  -> Skipping LOESS: not enough non-missing values.")
+      next
+    }
+    
+    #calculate variability and choose span
+    variability <- sd(y, na.rm = TRUE)
+    span <- max(0.6, ifelse(variability < sd_threshold, 0.4, 0.75))
+    message("  -> Using span = ", span, " (SD = ", round(variability, 2), ")")
+    
+    #fit LOESS
+    df_non_na <- data.frame(time = time[!is.na(y)], y = y[!is.na(y)])
+    loess_fit <- tryCatch({
+      loess(y ~ time, data = df_non_na, span = span, degree = 1, control = loess.control(surface = "direct"))
+    }, error = function(e) {
+      warning("  -> LOESS failed for ", metabolite, ": ", e$message)
+      return(NULL)
+    })
+    
+    #skip if model failed
+    if (is.null(loess_fit)) next
+    
+    #predict only for values within the fitting range
+    for (na_index in na_indices) {
+      t_missing <- time[na_index]
+      
+      #only predict if within time range
+      if (t_missing >= min(df_non_na$time) && t_missing <= max(df_non_na$time)) {
+        predicted <- predict(loess_fit, newdata = data.frame(time = t_missing))
+        if (!is.na(predicted)) {
+          df_imputed[[metabolite]][na_index] <- predicted
+        } else {
+          message("  -> LOESS could not predict at time = ", t_missing)
+        }
+      } else {
+        message("  -> Time = ", t_missing, " is outside LOESS fitting range.")
+      }
+    }
+  }
+  
+  #random Forest 
+  message("Running Random Forest refinement with missForest...")
+  rf_data <- df_imputed[, metabolite_cols]
+  rf_imputed <- missForest(rf_data)$ximp
+  df_imputed[, metabolite_cols] <- rf_imputed
+  
+  return(df_imputed)
+}
+
+
+#call function for loess+rf imputation
+#visit 1
+v1_10pct_mnar_loess <- impute_loess_then_rf(FAO_v1_10pct_mnar)
+v1_20pct_mnar_loess <- impute_loess_then_rf(FAO_v1_20pct_mnar)
+v1_25pct_mnar_loess <- impute_loess_then_rf(FAO_v1_25pct_mnar)
+v1_30pct_mnar_loess <- impute_loess_then_rf(FAO_v1_30pct_mnar)
+v1_35pct_mnar_loess <- impute_loess_then_rf(FAO_v1_35pct_mnar)
+v1_40pct_mnar_loess <- impute_loess_then_rf(FAO_v1_40pct_mnar)
+#visit 2
+v2_10pct_mnar_loess <- impute_loess_then_rf(FAO_v2_10pct_mnar)
+v2_20pct_mnar_loess <- impute_loess_then_rf(FAO_v2_20pct_mnar)
+v2_25pct_mnar_loess <- impute_loess_then_rf(FAO_v2_25pct_mnar)
+v2_30pct_mnar_loess <- impute_loess_then_rf(FAO_v2_30pct_mnar)
+v2_35pct_mnar_loess <- impute_loess_then_rf(FAO_v2_35pct_mnar)
+v2_40pct_mnar_loess <- impute_loess_then_rf(FAO_v2_40pct_mnar)
+
+
 # --------------------------------------
 # TITLE: KINETICS PLOT BEFORE AND AFTER
 # --------------------------------------
@@ -472,7 +558,8 @@ v1_10pct_all <- bind_rows(
   FAO_original_v1 %>% mutate(MissingPct = 10, Method = "Original"),
   v1_10pct_mnar_interpolation %>% mutate(MissingPct = 10, Method = "Interpolation"),
   v1_10pct_mnar_kalman %>% mutate(MissingPct = 10, Method = "Kalman"),
-  v1_10pct_mnar_lwma %>% mutate(MissingPct = 10, Method = "LWMA")
+  v1_10pct_mnar_lwma %>% mutate(MissingPct = 10, Method = "LWMA"), 
+  v1_10pct_mnar_loess %>% mutate(MissingPct = 10, Method = "LOESS-RF")
 )
 
 #20pct missingness
@@ -480,7 +567,8 @@ v1_20pct_all <- bind_rows(
   FAO_original_v1 %>% mutate(MissingPct = 20, Method = "Original"),
   v1_20pct_mnar_interpolation %>% mutate(MissingPct = 20, Method = "Interpolation"),
   v1_20pct_mnar_kalman %>% mutate(MissingPct = 20, Method = "Kalman"),
-  v1_20pct_mnar_lwma %>% mutate(MissingPct = 20, Method = "LWMA")
+  v1_20pct_mnar_lwma %>% mutate(MissingPct = 20, Method = "LWMA"),
+  v1_20pct_mnar_loess %>% mutate(MissingPct = 20, Method = "LOESS-RF")
 )
 
 #25pct missingness
@@ -488,7 +576,8 @@ v1_25pct_all <- bind_rows(
   FAO_original_v1 %>% mutate(MissingPct = 25, Method = "Original"),
   v1_25pct_mnar_interpolation %>% mutate(MissingPct = 25, Method = "Interpolation"),
   v1_25pct_mnar_kalman %>% mutate(MissingPct = 25, Method = "Kalman"),
-  v1_25pct_mnar_lwma %>% mutate(MissingPct = 25, Method = "LWMA")
+  v1_25pct_mnar_lwma %>% mutate(MissingPct = 25, Method = "LWMA"),
+  v1_25pct_mnar_loess %>% mutate(MissingPct = 25, Method = "LOESS-RF")
 )
 
 #30pct missingness
@@ -496,7 +585,8 @@ v1_30pct_all <- bind_rows(
   FAO_original_v1 %>% mutate(MissingPct = 30, Method = "Original"),
   v1_30pct_mnar_interpolation %>% mutate(MissingPct = 30, Method = "Interpolation"),
   v1_30pct_mnar_kalman %>% mutate(MissingPct = 30, Method = "Kalman"),
-  v1_30pct_mnar_lwma %>% mutate(MissingPct = 30, Method = "LWMA")
+  v1_30pct_mnar_lwma %>% mutate(MissingPct = 30, Method = "LWMA"),
+  v1_30pct_mnar_loess %>% mutate(MissingPct = 30, Method = "LOESS-RF")
 )
 
 #35pct missingness
@@ -504,7 +594,9 @@ v1_35pct_all <- bind_rows(
   FAO_original_v1 %>% mutate(MissingPct = 35, Method = "Original"),
   v1_35pct_mnar_interpolation %>% mutate(MissingPct = 35, Method = "Interpolation"),
   v1_35pct_mnar_kalman %>% mutate(MissingPct = 35, Method = "Kalman"),
-  v1_35pct_mnar_lwma %>% mutate(MissingPct = 35, Method = "LWMA")
+  v1_35pct_mnar_lwma %>% mutate(MissingPct = 35, Method = "LWMA"),
+  v1_35pct_mnar_loess %>% mutate(MissingPct = 35, Method = "LOESS-RF")
+  
 )
 
 #40pct missingness
@@ -512,7 +604,8 @@ v1_40pct_all <- bind_rows(
   FAO_original_v1 %>% mutate(MissingPct = 40, Method = "Original"),
   v1_40pct_mnar_interpolation %>% mutate(MissingPct = 40, Method = "Interpolation"),
   v1_40pct_mnar_kalman %>% mutate(MissingPct = 40, Method = "Kalman"),
-  v1_40pct_mnar_lwma %>% mutate(MissingPct = 40, Method = "LWMA")
+  v1_40pct_mnar_lwma %>% mutate(MissingPct = 40, Method = "LWMA"),
+  v1_40pct_mnar_loess %>% mutate(MissingPct = 40, Method = "LOESS-RF")
 )
 
 
@@ -546,7 +639,8 @@ v2_10pct_all <- bind_rows(
   FAO_original_v2 %>% mutate(MissingPct = 10, Method = "Original"),
   v2_10pct_mnar_interpolation %>% mutate(MissingPct = 10, Method = "Interpolation"),
   v2_10pct_mnar_kalman %>% mutate(MissingPct = 10, Method = "Kalman"),
-  v2_10pct_mnar_lwma %>% mutate(MissingPct = 10, Method = "LWMA")
+  v2_10pct_mnar_lwma %>% mutate(MissingPct = 10, Method = "LWMA"),
+  v2_10pct_mnar_loess %>% mutate(MissingPct = 10, Method = "LOESS-RF")
 )
 
 #20pct missingness
@@ -554,7 +648,8 @@ v2_20pct_all <- bind_rows(
   FAO_original_v2 %>% mutate(MissingPct = 20, Method = "Original"),
   v2_20pct_mnar_interpolation %>% mutate(MissingPct = 20, Method = "Interpolation"),
   v2_20pct_mnar_kalman %>% mutate(MissingPct = 20, Method = "Kalman"),
-  v2_20pct_mnar_lwma %>% mutate(MissingPct = 20, Method = "LWMA")
+  v2_20pct_mnar_lwma %>% mutate(MissingPct = 20, Method = "LWMA"),
+  v2_20pct_mnar_loess %>% mutate(MissingPct = 20, Method = "LOESS-RF")
 )
 
 #25pct missingness
@@ -562,7 +657,8 @@ v2_25pct_all <- bind_rows(
   FAO_original_v2 %>% mutate(MissingPct = 25, Method = "Original"),
   v2_25pct_mnar_interpolation %>% mutate(MissingPct = 25, Method = "Interpolation"),
   v2_25pct_mnar_kalman %>% mutate(MissingPct = 25, Method = "Kalman"),
-  v2_25pct_mnar_lwma %>% mutate(MissingPct = 25, Method = "LWMA")
+  v2_25pct_mnar_lwma %>% mutate(MissingPct = 25, Method = "LWMA"),
+  v2_25pct_mnar_loess %>% mutate(MissingPct = 25, Method = "LOESS-RF")
 )
 
 #30pct missingness
@@ -570,7 +666,8 @@ v2_30pct_all <- bind_rows(
   FAO_original_v2 %>% mutate(MissingPct = 30, Method = "Original"),
   v2_30pct_mnar_interpolation %>% mutate(MissingPct = 30, Method = "Interpolation"),
   v2_30pct_mnar_kalman %>% mutate(MissingPct = 30, Method = "Kalman"),
-  v2_30pct_mnar_lwma %>% mutate(MissingPct = 30, Method = "LWMA")
+  v2_30pct_mnar_lwma %>% mutate(MissingPct = 30, Method = "LWMA"),
+  v2_30pct_mnar_loess %>% mutate(MissingPct = 30, Method = "LOESS-RF")
 )
 
 #35pct missingness
@@ -578,7 +675,8 @@ v2_35pct_all <- bind_rows(
   FAO_original_v2 %>% mutate(MissingPct = 35, Method = "Original"),
   v2_35pct_mnar_interpolation %>% mutate(MissingPct = 35, Method = "Interpolation"),
   v2_35pct_mnar_kalman %>% mutate(MissingPct = 35, Method = "Kalman"),
-  v2_35pct_mnar_lwma %>% mutate(MissingPct = 35, Method = "LWMA")
+  v2_35pct_mnar_lwma %>% mutate(MissingPct = 35, Method = "LWMA"),
+  v2_35pct_mnar_loess %>% mutate(MissingPct = 35, Method = "LOESS-RF")
 )
 
 #40pct missingness
@@ -586,7 +684,8 @@ v2_40pct_all <- bind_rows(
   FAO_original_v2 %>% mutate(MissingPct = 40, Method = "Original"),
   v2_40pct_mnar_interpolation %>% mutate(MissingPct = 40, Method = "Interpolation"),
   v2_40pct_mnar_kalman %>% mutate(MissingPct = 40, Method = "Kalman"),
-  v2_40pct_mnar_lwma %>% mutate(MissingPct = 40, Method = "LWMA")
+  v2_40pct_mnar_lwma %>% mutate(MissingPct = 40, Method = "LWMA"),
+  v2_40pct_mnar_loess %>% mutate(MissingPct = 40, Method = "LOESS-RF")
 )
 
 
@@ -704,6 +803,24 @@ nrmse_v2_30pct_lwma <- calculate_nrsme(FAO_original_v2, v2_30pct_mnar_lwma, meth
 nrmse_v2_35pct_lwma <- calculate_nrsme(FAO_original_v2, v2_35pct_mnar_lwma, method = "LWMA")
 nrmse_v2_40pct_lwma <- calculate_nrsme(FAO_original_v2, v2_40pct_mnar_lwma, method = "LWMA")
 
+# ----------------------------
+# Part 4: LOESS-RF
+# ----------------------------
+
+#Visit 1
+nrmse_v1_10pct_loess <- calculate_nrsme(FAO_original_v1, v1_10pct_mnar_loess, method = "LOESS-RF")
+nrmse_v1_20pct_loess <- calculate_nrsme(FAO_original_v1, v1_20pct_mnar_loess, method = "LOESS-RF")
+nrmse_v1_25pct_loess <- calculate_nrsme(FAO_original_v1, v1_25pct_mnar_loess, method = "LOESS-RF")
+nrmse_v1_30pct_loess <- calculate_nrsme(FAO_original_v1, v1_30pct_mnar_loess, method = "LOESS-RF")
+nrmse_v1_35pct_loess <- calculate_nrsme(FAO_original_v1, v1_35pct_mnar_loess, method = "LOESS-RF")
+nrmse_v1_40pct_loess <- calculate_nrsme(FAO_original_v1, v1_40pct_mnar_loess, method = "LOESS-RF")
+#Visit 2
+nrmse_v2_10pct_loess <- calculate_nrsme(FAO_original_v2, v2_10pct_mnar_loess, method = "LOESS-RF")
+nrmse_v2_20pct_loess <- calculate_nrsme(FAO_original_v2, v2_20pct_mnar_loess, method = "LOESS-RF")
+nrmse_v2_25pct_loess <- calculate_nrsme(FAO_original_v2, v2_25pct_mnar_loess, method = "LOESS-RF")
+nrmse_v2_30pct_loess <- calculate_nrsme(FAO_original_v2, v2_30pct_mnar_loess, method = "LOESS-RF")
+nrmse_v2_35pct_loess <- calculate_nrsme(FAO_original_v2, v2_35pct_mnar_loess, method = "LOESS-RF")
+nrmse_v2_40pct_loess <- calculate_nrsme(FAO_original_v2, v2_40pct_mnar_loess, method = "LOESS-RF")
 
 # --------------------------------------
 # Part 4: All methods compared (Visit 1)
@@ -714,26 +831,32 @@ nrmse_visit1_tot <- bind_rows(
   mutate(nrmse_v1_10pct_interpolation, percentage = 10),
   mutate(nrmse_v1_10pct_kalman, percentage = 10),
   mutate(nrmse_v1_10pct_lwma, percentage = 10),
+  mutate(nrmse_v1_10pct_loess, percentage = 10),
   
   mutate(nrmse_v1_20pct_interpolation, percentage = 20),
   mutate(nrmse_v1_20pct_kalman, percentage = 20),
   mutate(nrmse_v1_20pct_lwma, percentage = 20),
+  mutate(nrmse_v1_20pct_loess, percentage = 20),
   
   mutate(nrmse_v1_25pct_interpolation, percentage = 25),
   mutate(nrmse_v1_25pct_kalman, percentage = 25),
   mutate(nrmse_v1_25pct_lwma, percentage = 25),
+  mutate(nrmse_v1_25pct_loess, percentage = 25),
   
   mutate(nrmse_v1_30pct_interpolation, percentage = 30),
   mutate(nrmse_v1_30pct_kalman, percentage = 30),
   mutate(nrmse_v1_30pct_lwma, percentage = 30),
+  mutate(nrmse_v1_30pct_loess, percentage = 30),
   
   mutate(nrmse_v1_35pct_interpolation, percentage = 35),
   mutate(nrmse_v1_35pct_kalman, percentage = 35),
   mutate(nrmse_v1_35pct_lwma, percentage = 35),
+  mutate(nrmse_v1_35pct_loess, percentage = 35),
   
   mutate(nrmse_v1_40pct_interpolation, percentage = 40),
   mutate(nrmse_v1_40pct_kalman, percentage = 40),
-  mutate(nrmse_v1_40pct_lwma, percentage = 40)
+  mutate(nrmse_v1_40pct_lwma, percentage = 40),
+  mutate(nrmse_v1_40pct_loess, percentage = 40)
 )
 
 
@@ -742,26 +865,32 @@ nrmse_visit2_tot <- bind_rows(
   mutate(nrmse_v2_10pct_interpolation, percentage = 10),
   mutate(nrmse_v2_10pct_kalman, percentage = 10),
   mutate(nrmse_v2_10pct_lwma, percentage = 10),
+  mutate(nrmse_v2_10pct_loess, percentage = 10),
   
   mutate(nrmse_v2_20pct_interpolation, percentage = 20),
   mutate(nrmse_v2_20pct_kalman, percentage = 20),
   mutate(nrmse_v2_20pct_lwma, percentage = 20),
+  mutate(nrmse_v2_20pct_loess, percentage = 20),
   
   mutate(nrmse_v2_25pct_interpolation, percentage = 25),
   mutate(nrmse_v2_25pct_kalman, percentage = 25),
   mutate(nrmse_v2_25pct_lwma, percentage = 25),
+  mutate(nrmse_v2_25pct_loess, percentage = 25),
   
   mutate(nrmse_v2_30pct_interpolation, percentage = 30),
   mutate(nrmse_v2_30pct_kalman, percentage = 30),
   mutate(nrmse_v2_30pct_lwma, percentage = 30),
+  mutate(nrmse_v2_30pct_loess, percentage = 30),
   
   mutate(nrmse_v2_35pct_interpolation, percentage = 35),
   mutate(nrmse_v2_35pct_kalman, percentage = 35),
   mutate(nrmse_v2_35pct_lwma, percentage = 35),
+  mutate(nrmse_v2_35pct_loess, percentage = 35),
   
   mutate(nrmse_v2_40pct_interpolation, percentage = 40),
   mutate(nrmse_v2_40pct_kalman, percentage = 40),
-  mutate(nrmse_v2_40pct_lwma, percentage = 40)
+  mutate(nrmse_v2_40pct_lwma, percentage = 40),
+  mutate(nrmse_v2_40pct_loess, percentage = 40),
 )
 
 

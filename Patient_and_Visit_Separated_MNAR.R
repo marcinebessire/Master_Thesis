@@ -371,7 +371,7 @@ impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
 }
 
 
-#call function for gamma imputation
+#call function for loess + rf imputation
 #visit 1
 p1_v1_loess <- impute_loess_then_rf(p1_v1_mnar)
 p2_v1_loess <- impute_loess_then_rf(p2_v1_mnar)
