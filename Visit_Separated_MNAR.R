@@ -82,53 +82,6 @@ FAO_data_full <- FAO_data_full %>%
   arrange(Patient_num, Date, Time_min) %>%
   select(-Patient_num)  
 
-# ------------------------------
-# Part 2: Count Missing Values
-# ------------------------------
-
-#function to count NAs per Patient + Visit + Metabolite
-get_missing_count_df <- function(data, missing_pct) {
-  data %>%
-    pivot_longer(cols = 6:ncol(.), names_to = "Metabolite", values_to = "Value") %>%
-    filter(is.na(Value)) %>%
-    group_by(Patient, Visit, Metabolite) %>%
-    summarise(MissingCount = n(), .groups = "drop") %>%
-    mutate(MissingPct = missing_pct)
-}
-
-#call function
-#10%
-missing_10 <- get_missing_count_df(FAO_10pct_mnar, 10)
-missing_10pct_v1 <- get_missing_count_df(FAO_v1_10pct_mnar, 10)
-missing_10pct_v2 <- get_missing_count_df(FAO_v2_10pct_mnar, 10)
-#20%
-missing_20 <- get_missing_count_df(FAO_20pct_mnar, 20)
-missing_20pct_v1 <- get_missing_count_df(FAO_v1_20pct_mnar, 20)
-missing_20pct_v2 <- get_missing_count_df(FAO_v2_20pct_mnar, 20)
-#25%
-missing_25 <- get_missing_count_df(FAO_25pct_mnar, 25)
-missing_25pct_v1 <- get_missing_count_df(FAO_v1_25pct_mnar, 25)
-missing_25pct_v2 <- get_missing_count_df(FAO_v2_25pct_mnar, 25)
-#30%
-missing_30 <- get_missing_count_df(FAO_30pct_mnar, 30)
-missing_30pct_v1 <- get_missing_count_df(FAO_v1_30pct_mnar, 30)
-missing_30pct_v2 <- get_missing_count_df(FAO_v2_30pct_mnar, 30)
-#35%
-missing_35 <- get_missing_count_df(FAO_35pct_mnar, 35)
-missing_35pct_v1 <- get_missing_count_df(FAO_v1_35pct_mnar, 35)
-missing_35pct_v2 <- get_missing_count_df(FAO_v2_35pct_mnar, 35)
-#40%
-missing_40 <- get_missing_count_df(FAO_40pct_mnar, 40)
-missing_40pct_v1 <- get_missing_count_df(FAO_v1_40pct_mnar, 40)
-missing_40pct_v2 <- get_missing_count_df(FAO_v2_40pct_mnar, 40)
-
-#combine
-all_missing_counts <- bind_rows(missing_10, missing_20, missing_25, missing_30, missing_35, missing_40)
-
-#look into wide format
-wide_missing <- all_missing_counts %>%
-  pivot_wider(names_from = MissingPct, values_from = MissingCount, values_fill = 0)
-
 
 # ------------------------------
 # Part 3: MNAR simulation
@@ -226,6 +179,54 @@ vis_miss(FAO_v2_35pct_mnar[, 6:ncol(FAO_v1_10pct_mnar)])
 #40%
 vis_miss(FAO_v1_40pct_mnar[, 6:ncol(FAO_v1_10pct_mnar)])
 vis_miss(FAO_v2_40pct_mnar[, 6:ncol(FAO_v1_10pct_mnar)])
+
+
+# ------------------------------
+# Part 3: Count Missing Values
+# ------------------------------
+
+#function to count NAs per Patient + Visit + Metabolite
+get_missing_count_df <- function(data, missing_pct) {
+  data %>%
+    pivot_longer(cols = 6:ncol(.), names_to = "Metabolite", values_to = "Value") %>%
+    filter(is.na(Value)) %>%
+    group_by(Patient, Visit, Metabolite) %>%
+    summarise(MissingCount = n(), .groups = "drop") %>%
+    mutate(MissingPct = missing_pct)
+}
+
+#call function
+#10%
+missing_10 <- get_missing_count_df(FAO_10pct_mnar, 10)
+missing_10pct_v1 <- get_missing_count_df(FAO_v1_10pct_mnar, 10)
+missing_10pct_v2 <- get_missing_count_df(FAO_v2_10pct_mnar, 10)
+#20%
+missing_20 <- get_missing_count_df(FAO_20pct_mnar, 20)
+missing_20pct_v1 <- get_missing_count_df(FAO_v1_20pct_mnar, 20)
+missing_20pct_v2 <- get_missing_count_df(FAO_v2_20pct_mnar, 20)
+#25%
+missing_25 <- get_missing_count_df(FAO_25pct_mnar, 25)
+missing_25pct_v1 <- get_missing_count_df(FAO_v1_25pct_mnar, 25)
+missing_25pct_v2 <- get_missing_count_df(FAO_v2_25pct_mnar, 25)
+#30%
+missing_30 <- get_missing_count_df(FAO_30pct_mnar, 30)
+missing_30pct_v1 <- get_missing_count_df(FAO_v1_30pct_mnar, 30)
+missing_30pct_v2 <- get_missing_count_df(FAO_v2_30pct_mnar, 30)
+#35%
+missing_35 <- get_missing_count_df(FAO_35pct_mnar, 35)
+missing_35pct_v1 <- get_missing_count_df(FAO_v1_35pct_mnar, 35)
+missing_35pct_v2 <- get_missing_count_df(FAO_v2_35pct_mnar, 35)
+#40%
+missing_40 <- get_missing_count_df(FAO_40pct_mnar, 40)
+missing_40pct_v1 <- get_missing_count_df(FAO_v1_40pct_mnar, 40)
+missing_40pct_v2 <- get_missing_count_df(FAO_v2_40pct_mnar, 40)
+
+#combine
+all_missing_counts <- bind_rows(missing_10, missing_20, missing_25, missing_30, missing_35, missing_40)
+
+#look into wide format
+wide_missing <- all_missing_counts %>%
+  pivot_wider(names_from = MissingPct, values_from = MissingCount, values_fill = 0)
 
 
 # --------------------------------------

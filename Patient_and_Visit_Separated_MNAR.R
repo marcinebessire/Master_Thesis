@@ -7,7 +7,8 @@ library(openxlsx)
 library(zoo) #for interpolation
 library(imputeTS) #for imputation methods
 library(pracma) #for AUC calculation
-library(missForest)
+library(missForest) #for RF
+library(keras) #for LSTM
 
 
 # --------------------------------------
@@ -395,6 +396,134 @@ p8_v2_loess <- impute_loess_then_rf(p8_v2_mnar)
 p9_v2_loess <- impute_loess_then_rf(p9_v2_mnar)
 p10_v2_loess <- impute_loess_then_rf(p10_v2_mnar)
 
+# --------------------------------
+# Part 5: LSTM
+# --------------------------------
+
+#step 1: create array/list of the dataframes 
+
+#combine into one array
+#visit1
+all_mnar_list_v1 <- list(
+  p1_v1_mnar, p2_v1_mnar, 
+  p3_v1_mnar, p4_v1_mnar,
+  p5_v1_mnar, p6_v1_mnar,
+  p7_v1_mnar, p8_v1_mnar,
+  p9_v1_mnar, p10_v1_mnar
+)
+#visit 2
+all_mnar_list_v2 <- list(
+  p1_v2_mnar, p2_v2_mnar, 
+  p3_v2_mnar, p4_v2_mnar,
+  p5_v2_mnar, p6_v2_mnar,
+  p7_v2_mnar, p8_v2_mnar,
+  p9_v2_mnar, p10_v2_mnar
+)
+
+#step 2: create function for LSTM imputation
+impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n_epochs = 200, batch_size = 4, verbose = 0) {
+  #get metabolite columns
+  metabolite_cols <- colnames(mnar_df_list[[1]])[meta_start_col:ncol(mnar_df_list[[1]])]
+  
+  #copy input list to update
+  updated_list <- mnar_df_list
+  
+  for (metabolite in metabolite_cols) {
+    message("Running LSTM imputation for: ", metabolite)
+    
+    #step 1: extract the sequences for the current metabolite
+    sequences <- lapply(mnar_df_list, function(df) df[[metabolite]])
+    sequences <- do.call(rbind, sequences)  #shape: patients x timepoints
+    
+    #step 2: replace NA with 0 for masking later
+    X <- sequences
+    X[is.na(X)] <- 0  #0 will be masked
+    
+    #reshape to 3D: [samples, timesteps, features]
+    X_array <- array(X, dim = c(nrow(X), ncol(X), 1))
+    Y_array <- X_array  #autoencoder style: predict the full sequence
+    
+    #step 3: define LSTM model
+    #bidericteion + deeper LSTM model
+    model <- keras_model_sequential() %>% #linear stack of layers, each layer feeds into the next
+      layer_masking(mask_value = 0, input_shape = c(ncol(X), 1)) %>% #tells the LTM to ignore (mask) any time step with value 0
+      bidirectional(layer_lstm( #captures bothpast and future context
+        units = 128,#larger capacity to model complex trends (128 memory cells per direction)
+        return_sequences = TRUE, #output full sequence
+        dropout = 0.3, #drop 30% of inputs (prevent overfitting)
+        recurrent_dropout = 0.2 #drop 20% of recurrent state (adds regularization to memory connections)
+      )) %>%
+      layer_lstm( #second layer, stacked deeper on top of the first one
+        units = 64, #smaller to progressively extract more compressed features
+        return_sequences = TRUE,
+        dropout = 0.3,
+        recurrent_dropout = 0.2
+      ) %>%
+      layer_dense(units = 1) #single predicted value per timepoitn
+    
+    model %>% compile(
+      loss = "mse",
+      optimizer = "adam"
+    )
+    
+    model %>% fit(
+      x = X_array,
+      y = Y_array,
+      epochs = n_epochs,
+      batch_size = batch_size,
+      verbose = verbose
+    )
+    
+    #step 4: predict missing values
+    predicted <- model %>% predict(X_array)
+    pred_matrix <- predicted[, , 1]  #shape: same as original
+    
+    #step 5: only replace the missing values
+    for (i in seq_along(mnar_df_list)) {
+      na_idx <- which(is.na(mnar_df_list[[i]][[metabolite]]))
+      if (length(na_idx) > 0) {
+        mnar_df_list[[i]][[metabolite]][na_idx] <- pred_matrix[i, na_idx]
+      }
+    }
+    
+    updated_list <- mnar_df_list  #save updated version
+  }
+  
+  return(updated_list)
+}
+
+#step 3: call function to get missing values via lstm
+lstm_v1 <- impute_with_lstm_all_metabolites(all_mnar_list_v1)
+lstm_v2 <- impute_with_lstm_all_metabolites(all_mnar_list_v2)
+
+#step 4: fill those imputed values from lsit back into dataframe & create new dataframe
+#lists of original MNAR dataframes for each visit
+original_v1 <- list(p1_v1_mnar, p2_v1_mnar, p3_v1_mnar, p4_v1_mnar, p5_v1_mnar,
+                    p6_v1_mnar, p7_v1_mnar, p8_v1_mnar, p9_v1_mnar, p10_v1_mnar)
+
+original_v2 <- list(p1_v2_mnar, p2_v2_mnar, p3_v2_mnar, p4_v2_mnar, p5_v2_mnar,
+                    p6_v2_mnar, p7_v2_mnar, p8_v2_mnar, p9_v2_mnar, p10_v2_mnar)
+
+#create values names
+output_names_v1 <- paste0("p", 1:10, "_v1_lstm")
+output_names_v2 <- paste0("p", 1:10, "_v2_lstm")
+
+#function to combine imputed values and original
+combine_metadata_with_imputed <- function(original_df, imputed_df) {
+  metadata <- original_df[, 1:5]
+  metabolites <- imputed_df[, 6:ncol(imputed_df)]
+  cbind(metadata, metabolites)
+}
+
+#loop to assign v1
+for (i in seq_along(output_names_v1)) {
+  assign(output_names_v1[i], combine_metadata_with_imputed(original_v1[[i]], lstm_v1[[i]]))
+}
+
+#loop to assign v2
+for (i in seq_along(output_names_v2)) {
+  assign(output_names_v2[i], combine_metadata_with_imputed(original_v2[[i]], lstm_v2[[i]]))
+}
 
 # --------------------------------------
 # TITLE: KINETICS PLOT BEFORE AND AFTER
@@ -588,7 +717,7 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LO
 #call function
 #MCAR
 #p1
-plot_imputed_vs_original(p1_visit1, p1_v2_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p1_visit1, p1_v1_loess, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p1_visit2, p1_v2_loess, visit = "Visit 2", type = "MNAR")
 #p2
 plot_imputed_vs_original(p2_visit1, p2_v1_loess, visit = "Visit 1", type = "MNAR")
@@ -619,6 +748,49 @@ plot_imputed_vs_original(p10_visit1, p10_v1_loess, visit = "Visit 1", type = "MN
 plot_imputed_vs_original(p10_visit2, p10_v2_loess, visit = "Visit 2", type = "MNAR")
 
 dev.off()
+
+
+# ----------------------------
+# Part 5: LSTM
+# ----------------------------
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LSTM/MNAR_LSTM_1MV.pdf", width = 14, height = 10)
+
+#call function
+#MCAR
+#p1
+plot_imputed_vs_original(p1_visit1, p1_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p1_visit2, p1_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p2
+plot_imputed_vs_original(p2_visit1, p2_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p2_visit2, p2_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p3
+plot_imputed_vs_original(p3_visit1, p3_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p3_visit2, p3_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p4
+plot_imputed_vs_original(p4_visit1, p4_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p4_visit2, p4_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p5
+plot_imputed_vs_original(p5_visit1, p5_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p5_visit2, p5_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p6
+plot_imputed_vs_original(p6_visit1, p6_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p6_visit2, p6_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p7
+plot_imputed_vs_original(p7_visit1, p7_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p7_visit2, p7_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p8
+plot_imputed_vs_original(p8_visit1, p8_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p8_visit2, p8_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p9
+plot_imputed_vs_original(p9_visit1, p9_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p9_visit2, p9_v2_lstm, visit = "Visit 2", type = "MNAR")
+#p10
+plot_imputed_vs_original(p10_visit1, p10_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p10_visit2, p10_v2_lstm, visit = "Visit 2", type = "MNAR")
+
+dev.off()
+
 
 # ------------------------
 # TITLE: NRMSE Function
@@ -1008,6 +1180,97 @@ ggplot(nrmse_loess_mnar_visit2, aes(x = Patient, y = NRMSE)) +
 dev.off()
 
 
+
+# ----------------------------
+# Part 4: LSTM
+# ----------------------------
+
+# --------------------------
+# Part 4.1: NRMSE (MCAR)
+# --------------------------
+
+#call function to calcualte nrms
+#LWMA
+#p1
+nrmse_lstm_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_lstm, method = "LSTM")
+nrmse_lstm_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_loess, method = "LSTM")
+#p2
+nrmse_lstm_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_lstm, method = "LSTM")
+nrmse_lstm_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_loess, method = "LSTM")
+#p3
+nrmse_lstm_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_lstm, method = "LSTM")
+nrmse_lstm_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_loess, method = "LSTM")
+#p4
+nrmse_lstm_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_lstm, method = "LSTM")
+nrmse_lstm_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_loess, method = "LSTM")
+#p5
+nrmse_lstm_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_lstm, method = "LSTM")
+nrmse_lstm_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_loess, method = "LSTM")
+#p6
+nrmse_lstm_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_lstm, method = "LSTM")
+nrmse_lstm_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_loess, method = "LSTM")
+#p7
+nrmse_lstm_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_lstm, method = "LSTM")
+nrmse_lstm_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_loess, method = "LSTM")
+#p8
+nrmse_lstm_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_lstm, method = "LSTM")
+nrmse_lstm_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_loess, method = "LSTM")
+#p9
+nrmse_lstm_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_lstm, method = "LSTM")
+nrmse_lstm_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_loess, method = "LSTM")
+#p10
+nrmse_lstm_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_lstm, method = "LSTM")
+nrmse_lstm_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_loess, method = "LSTM")
+
+#combine visit 1 
+nrmse_lstm_mnar_visit1 <- bind_rows(
+  nrmse_lstm_p1v1_mnar %>% mutate(Patient = "P1"),
+  nrmse_lstm_p2v1_mnar %>% mutate(Patient = "P2"),
+  nrmse_lstm_p3v1_mnar %>% mutate(Patient = "P3"),
+  nrmse_lstm_p4v1_mnar %>% mutate(Patient = "P4"),
+  nrmse_lstm_p5v1_mnar %>% mutate(Patient = "P5"),
+  nrmse_lstm_p6v1_mnar %>% mutate(Patient = "P6"),
+  nrmse_lstm_p7v1_mnar %>% mutate(Patient = "P7"),
+  nrmse_lstm_p8v1_mnar %>% mutate(Patient = "P8"),
+  nrmse_lstm_p9v1_mnar %>% mutate(Patient = "P9"),
+  nrmse_lstm_p10v1_mnar %>% mutate(Patient = "P10")
+)
+
+
+#combine visit 2
+nrmse_lstm_mnar_visit2 <- bind_rows(
+  nrmse_lstm_p1v2_mnar %>% mutate(Patient = "P1"),
+  nrmse_lstm_p2v2_mnar %>% mutate(Patient = "P2"),
+  nrmse_lstm_p3v2_mnar %>% mutate(Patient = "P3"),
+  nrmse_lstm_p4v2_mnar %>% mutate(Patient = "P4"),
+  nrmse_lstm_p5v2_mnar %>% mutate(Patient = "P5"),
+  nrmse_lstm_p6v2_mnar %>% mutate(Patient = "P6"),
+  nrmse_lstm_p7v2_mnar %>% mutate(Patient = "P7"),
+  nrmse_lstm_p8v2_mnar %>% mutate(Patient = "P8"),
+  nrmse_lstm_p9v2_mnar %>% mutate(Patient = "P9"),
+  nrmse_lstm_p10v2_mnar %>% mutate(Patient = "P10")
+)
+
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LSTM/MNAR_LSTM_1MV_NRMSE.pdf", width = 14, height = 10)
+
+#plot visit 1
+ggplot(nrmse_loess_mnar_visit1, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE per Patient: Visit 1 (MCAR 1 MV)",
+       y = "NRMSE", x = "Patient")
+
+#plot visit 2
+ggplot(nrmse_loess_mnar_visit2, aes(x = Patient, y = NRMSE)) +
+  geom_boxplot(fill = "skyblue") +
+  theme_minimal() +
+  labs(title = "NRMSE per Patient: Visit 2 (MCAR 1 MV in middle)",
+       y = "NRMSE", x = "Patient")
+
+dev.off()
+
+
 # ----------------------------
 # Part 4: All methods compared
 # ----------------------------
@@ -1017,7 +1280,8 @@ nrmse_visit1_tot <- bind_rows(
   nrmse_mnar_visit1,
   nrmse_kalman_mnar_visit1,
   nrmse_lwma_mnar_visit1,
-  nrmse_loess_mnar_visit1
+  nrmse_loess_mnar_visit1,
+  nrmse_lstm_mnar_visit1
 )
 
 #visit2
@@ -1025,7 +1289,8 @@ nrmse_visit2_tot <- bind_rows(
   nrmse_mnar_visit2,
   nrmse_kalman_mnar_visit2,
   nrmse_lwma_mnar_visit2,
-  nrmse_loess_mnar_visit2
+  nrmse_loess_mnar_visit2,
+  nrmse_lstm_mnar_visit2
 )
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/NRMSE_MNAR_Imputation_methods.pdf", width = 16, height = 10)
@@ -1349,6 +1614,59 @@ loess_visit2_auc <- bind_rows(
   auc_p10v2_loess
 )
 
+#LSTM AUC
+#visit 1
+auc_p1v1_lstm <- calculate_auc(p1_v1_lstm)
+auc_p2v1_lstm <- calculate_auc(p2_v1_lstm)
+auc_p3v1_lstm <- calculate_auc(p3_v1_lstm)
+auc_p4v1_lstm <- calculate_auc(p4_v1_lstm)
+auc_p5v1_lstm <- calculate_auc(p5_v1_lstm)
+auc_p6v1_lstm <- calculate_auc(p6_v1_lstm)
+auc_p7v1_lstm <- calculate_auc(p7_v1_lstm)
+auc_p8v1_lstm <- calculate_auc(p8_v1_lstm)
+auc_p9v1_lstm <- calculate_auc(p9_v1_lstm)
+auc_p10v1_lstm <- calculate_auc(p10_v1_lstm)
+#visit 2
+auc_p1v2_lstm <- calculate_auc(p1_v2_lstm)
+auc_p2v2_lstm <- calculate_auc(p2_v2_lstm)
+auc_p3v2_lstm <- calculate_auc(p3_v2_lstm)
+auc_p4v2_lstm <- calculate_auc(p4_v2_lstm)
+auc_p5v2_lstm <- calculate_auc(p5_v2_lstm)
+auc_p6v2_lstm <- calculate_auc(p6_v2_lstm)
+auc_p7v2_lstm <- calculate_auc(p7_v2_lstm)
+auc_p8v2_lstm <- calculate_auc(p8_v2_lstm)
+auc_p9v2_lstm <- calculate_auc(p9_v2_lstm)
+auc_p10v2_lstm <- calculate_auc(p10_v2_lstm)
+
+#combine
+#visit 1
+lstm_visit1_auc <- bind_rows(
+  auc_p1v1_lstm, 
+  auc_p2v1_lstm,
+  auc_p3v1_lstm,
+  auc_p4v1_lstm,
+  auc_p5v1_lstm,
+  auc_p6v1_lstm,
+  auc_p7v1_lstm,
+  auc_p8v1_lstm,
+  auc_p9v1_lstm,
+  auc_p10v1_lstm
+)
+#visit 2
+lstm_visit2_auc <- bind_rows(
+  auc_p1v2_lstm, 
+  auc_p2v2_lstm,
+  auc_p3v2_lstm,
+  auc_p4v2_lstm,
+  auc_p5v2_lstm,
+  auc_p6v2_lstm,
+  auc_p7v2_lstm,
+  auc_p8v2_lstm,
+  auc_p9v2_lstm,
+  auc_p10v2_lstm
+)
+
+
 #combine the datasets
 #visit 1
 visit1_auc_df <- bind_rows(
@@ -1405,7 +1723,18 @@ visit1_auc_df <- bind_rows(
   data.frame(Method = "LOESS + RF",          Visit = "Visit 1", stack(auc_p7v1_loess)),
   data.frame(Method = "LOESS + RF",          Visit = "Visit 1", stack(auc_p8v1_loess)),
   data.frame(Method = "LOESS + RF",          Visit = "Visit 1", stack(auc_p8v1_loess)),
-  data.frame(Method = "LOESS + RF",          Visit = "Visit 1", stack(auc_p10v1_loess))
+  data.frame(Method = "LOESS + RF",          Visit = "Visit 1", stack(auc_p10v1_loess)),
+  
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p1v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p2v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p3v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p4v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p5v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p6v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p7v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p8v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p9v1_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 1", stack(auc_p10v1_lstm))
 ) %>% rename(AUC = values, Metabolite = ind)
 
 #visit 2
@@ -1463,7 +1792,18 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "LOESS + RF",          Visit = "Visit 2", stack(auc_p7v2_loess)),
   data.frame(Method = "LOESS + RF",          Visit = "Visit 2", stack(auc_p8v2_loess)),
   data.frame(Method = "LOESS + RF",          Visit = "Visit 2", stack(auc_p8v2_loess)),
-  data.frame(Method = "LOESS + RF",          Visit = "Visit 2", stack(auc_p10v2_loess))
+  data.frame(Method = "LOESS + RF",          Visit = "Visit 2", stack(auc_p10v2_loess)),
+  
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p1v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p2v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p3v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p4v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p5v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p6v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p7v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p8v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p9v2_lstm)),
+  data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p10v2_lstm))
 ) %>% rename(AUC = values, Metabolite = ind)
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/AUC_Density_MNAR.pdf", width = 16, height = 10)
@@ -1500,3 +1840,214 @@ ggplot(visit2_auc_df, aes(x = AUC, fill = Method, color = Method)) +
   )
 
 dev.off()
+
+
+# --------------------------------------------------------
+# TITLE: Pearson Correlation between original and imputed 
+# --------------------------------------------------------
+
+#function to compute Pearson correlation for each metabolite
+calculate_pearson_corr_visit <- function(original_df, imputed_df) {
+  # Check input dimensions
+  stopifnot(nrow(original_df) == nrow(imputed_df))
+  
+  # Assume metadata in cols 1:5
+  metabolite_cols <- colnames(original_df)[6:ncol(original_df)]
+  
+  results <- data.frame(
+    Metabolite = character(),
+    Pearson_Correlation = numeric(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (metabolite in metabolite_cols) {
+    orig <- original_df[[metabolite]]
+    imputed <- imputed_df[[metabolite]]
+    
+    # Valid indices: where both original and imputed have data
+    valid_idx <- which(!is.na(orig) & !is.na(imputed))
+    
+    # Only compute correlation if enough valid points and non-zero variance
+    if (length(valid_idx) > 2 &&
+        sd(orig[valid_idx]) != 0 &&
+        sd(imputed[valid_idx]) != 0) {
+      
+      corr <- cor(orig[valid_idx], imputed[valid_idx], method = "pearson")
+    } else {
+      corr <- NA
+    }
+    
+    results <- rbind(results, data.frame(
+      Metabolite = metabolite,
+      Pearson_Correlation = corr
+    ))
+  }
+  
+  return(results)
+}
+
+#bar plot
+plot_pearson_bar <- function(corr_df, method_name = "Interpolation", visit_label = "Visit 1") {
+  p <- ggplot(corr_df, aes(x = reorder(Metabolite, Pearson_Correlation), y = Pearson_Correlation)) +
+    geom_bar(stat = "identity", fill = "skyblue") +
+    coord_flip() +  # flip for better readability
+    theme_minimal(base_size = 13) +
+    labs(
+      title = paste("Pearson Correlation per Metabolite (", visit_label, " - ", method_name, ")", sep = ""),
+      x = "Metabolite",
+      y = "Pearson Correlation"
+    ) +
+    geom_hline(yintercept = 0.8, linetype = "dashed", color = "darkgreen") + #strong correlation
+    geom_hline(yintercept = 0.5, linetype = "dotted", color = "orange") + #moderate correction
+    ylim(-0.1, 1.05)
+  
+  print(p)
+}
+
+# --------------------
+# Part 0: Original
+# --------------------
+
+#combine original data
+#v1
+original_v1 <- bind_rows(
+  p1_visit1, p2_visit1, p3_visit1, p4_visit1_full, p5_visit1,
+  p6_visit1, p7_visit1, p8_visit1, p9_visit1, p10_visit1
+)
+
+#v2
+original_v2 <- bind_rows(
+  p1_visit2, p2_visit2, p3_visit2, p4_visit2, p5_visit2,
+  p6_visit2, p7_visit2, p8_visit2, p9_visit2, p10_visit2
+)
+
+# ----------------------
+# Part 1: Interpolation
+# ----------------------
+
+#v1
+interpolation_v1 <- bind_rows(
+  p1_v1_mnar_interpolation, p2_v1_mnar_interpolation, p3_v1_mnar_interpolation,
+  p4_v1_mnar_interpolation, p5_v1_mnar_interpolation, p6_v1_mnar_interpolation,
+  p7_v1_mnar_interpolation, p8_v1_mnar_interpolation, p9_v1_mnar_interpolation,
+  p10_v1_mnar_interpolation
+)
+#v2
+interpolation_v2 <- bind_rows(
+  p1_v2_mnar_interpolation, p2_v2_mnar_interpolation, p3_v2_mnar_interpolation,
+  p4_v2_mnar_interpolation, p5_v2_mnar_interpolation, p6_v2_mnar_interpolation,
+  p7_v2_mnar_interpolation, p8_v2_mnar_interpolation, p9_v2_mnar_interpolation,
+  p10_v2_mnar_interpolation
+)
+
+
+#call function
+pearson_results_v1_interp <- calculate_pearson_corr_visit(original_v1, interpolation_v1)
+pearson_results_v2_interp <- calculate_pearson_corr_visit(original_v2, interpolation_v2)
+
+#plot results
+plot_pearson_bar(pearson_results_v1_interp, method_name = "Interpolation", visit_label = "Visit 1")
+plot_pearson_bar(pearson_results_v2_interp, method_name = "Interpolation", visit_label = "Visit 2")
+
+# ----------------------
+# Part 2: Kalman
+# ----------------------
+
+#v1
+kalman_v1 <- bind_rows(
+  p1_v1_mnar_kalman, p2_v1_mnar_kalman, p3_v1_mnar_kalman,
+  p4_v1_mnar_kalman, p5_v1_mnar_kalman, p6_v1_mnar_kalman,
+  p7_v1_mnar_kalman, p8_v1_mnar_kalman, p9_v1_mnar_kalman,
+  p10_v1_mnar_kalman
+)
+#v2
+kalman_v2 <- bind_rows(
+  p1_v2_mnar_kalman, p2_v2_mnar_kalman, p3_v2_mnar_kalman,
+  p4_v2_mnar_kalman, p5_v2_mnar_kalman, p6_v2_mnar_kalman,
+  p7_v2_mnar_kalman, p8_v2_mnar_kalman, p9_v2_mnar_kalman,
+  p10_v2_mnar_kalman
+)
+
+
+#call function
+pearson_results_v1_kalman <- calculate_pearson_corr_visit(original_v1, kalman_v1)
+pearson_results_v2_kalman <- calculate_pearson_corr_visit(original_v2, kalman_v2)
+
+#plot results
+plot_pearson_bar(pearson_results_v1_kalman, method_name = "Kalman", visit_label = "Visit 1")
+plot_pearson_bar(pearson_results_v2_kalman, method_name = "Kalman", visit_label = "Visit 2")
+
+
+# ----------------------
+# Part 3: LOESS + RF
+# ----------------------
+
+loess_v1 <- bind_rows(
+  p1_v1_loess, p2_v1_loess, p3_v1_loess,
+  p4_v1_loess, p5_v1_loess, p6_v1_loess,
+  p7_v1_loess, p8_v1_loess, p9_v1_loess,
+  p10_v1_loess
+)
+
+loess_v2 <- bind_rows(
+  p1_v2_loess, p2_v2_loess, p3_v2_loess,
+  p4_v2_loess, p5_v2_loess, p6_v2_loess,
+  p7_v2_loess, p8_v2_loess, p9_v2_loess,
+  p10_v2_loess
+)
+
+pearson_results_v1_loess <- calculate_pearson_corr_visit(original_v1, loess_v1)
+pearson_results_v2_loess <- calculate_pearson_corr_visit(original_v1, loess_v2)
+
+plot_pearson_bar(pearson_results_v1_loess, method_name = "LOESS + RF", visit_label = "Visit 1")
+plot_pearson_bar(pearson_results_v2_loess, method_name = "LOESS + RF", visit_label = "Visit 2")
+
+# ----------------------
+# Part 4: LWMA
+# ----------------------
+
+lwma_v1 <- bind_rows(
+  p1_v1_mnar_lwma, p2_v1_mnar_lwma, p3_v1_mnar_lwma,
+  p4_v1_mnar_lwma, p5_v1_mnar_lwma, p6_v1_mnar_lwma,
+  p7_v1_mnar_lwma, p8_v1_mnar_lwma, p9_v1_mnar_lwma,
+  p10_v1_mnar_lwma
+)
+
+lwma_v2 <- bind_rows(
+  p1_v2_mnar_lwma, p2_v2_mnar_lwma, p3_v2_mnar_lwma,
+  p4_v2_mnar_lwma, p5_v2_mnar_lwma, p6_v2_mnar_lwma,
+  p7_v2_mnar_lwma, p8_v2_mnar_lwma, p9_v2_mnar_lwma,
+  p10_v2_mnar_lwma
+)
+
+pearson_results_v1_lwma <- calculate_pearson_corr_visit(original_v1, lwma_v1)
+pearson_results_v2_lwma <- calculate_pearson_corr_visit(original_v2, lwma_v2)
+
+plot_pearson_bar(pearson_results_v1_lwma, method_name = "LWMA", visit_label = "Visit 1")
+plot_pearson_bar(pearson_results_v2_lwma, method_name = "LWMA", visit_label = "Visit 2")
+
+# ----------------------
+# Part 5: LSTM
+# ----------------------
+
+lstm_v1_combined <- bind_rows(
+  p1_v1_lstm, p2_v1_lstm, p3_v1_lstm,
+  p4_v1_lstm, p5_v1_lstm, p6_v1_lstm,
+  p7_v1_lstm, p8_v1_lstm, p9_v1_lstm,
+  p10_v1_lstm
+)
+
+lstm_v2_combined <- bind_rows(
+  p1_v2_lstm, p2_v2_lstm, p3_v2_lstm,
+  p4_v2_lstm, p5_v2_lstm, p6_v2_lstm,
+  p7_v2_lstm, p8_v2_lstm, p9_v2_lstm,
+  p10_v2_lstm
+)
+
+pearson_results_v1_lstm <- calculate_pearson_corr_visit(original_v1, lstm_v1_combined)
+pearson_results_v2_lstm <- calculate_pearson_corr_visit(original_v2, lstm_v2_combined)
+
+plot_pearson_bar(pearson_results_v1_lstm, method_name = "LSTM", visit_label = "Visit 1")
+plot_pearson_bar(pearson_results_v2_lstm, method_name = "LSTM", visit_label = "Visit 2")
+
+
