@@ -1848,10 +1848,10 @@ dev.off()
 
 #function to compute Pearson correlation for each metabolite
 calculate_pearson_corr_visit <- function(original_df, imputed_df) {
-  # Check input dimensions
+  #check input dimensions
   stopifnot(nrow(original_df) == nrow(imputed_df))
   
-  # Assume metadata in cols 1:5
+  #metadata
   metabolite_cols <- colnames(original_df)[6:ncol(original_df)]
   
   results <- data.frame(
@@ -1864,10 +1864,10 @@ calculate_pearson_corr_visit <- function(original_df, imputed_df) {
     orig <- original_df[[metabolite]]
     imputed <- imputed_df[[metabolite]]
     
-    # Valid indices: where both original and imputed have data
+    #valid indice where both original and imputed have data
     valid_idx <- which(!is.na(orig) & !is.na(imputed))
     
-    # Only compute correlation if enough valid points and non-zero variance
+    #nly compute correlation if enough valid points and non-zero variance
     if (length(valid_idx) > 2 &&
         sd(orig[valid_idx]) != 0 &&
         sd(imputed[valid_idx]) != 0) {
