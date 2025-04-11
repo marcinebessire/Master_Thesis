@@ -412,7 +412,7 @@ impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
 p1_v1_loess <- impute_loess_then_rf(p1_visit1)
 p2_v1_loess <- impute_loess_then_rf(p2_visit1)
 p3_v1_loess <- impute_loess_then_rf(p3_visit1)
-p4_v1_loess <- impute_loess_then_rf(p4_visit1)
+p4_v1_loess <- impute_loess_then_rf(p4_visit1_complete)
 p5_v1_loess <- impute_loess_then_rf(p5_visit1)
 p6_v1_loess <- impute_loess_then_rf(p6_visit1)
 p7_v1_loess <- impute_loess_then_rf(p7_visit1)
@@ -1876,7 +1876,6 @@ ggplot(visit2_auc_df, aes(x = AUC, fill = Method, color = Method)) +
 
 dev.off()
 
-
 # --------------------------------------------------------
 # TITLE: Pearson Correlation between original and imputed 
 # --------------------------------------------------------
@@ -1946,7 +1945,7 @@ plot_pearson_bar <- function(corr_df, method_name = "Interpolation", visit_label
 #combine original data
 #v1
 original_v1 <- bind_rows(
-  p1_visit1, p2_visit1, p3_visit1, p4_visit1_full, p5_visit1,
+  p1_visit1, p2_visit1, p3_visit1, p4_visit1_complete, p5_visit1,
   p6_visit1, p7_visit1, p8_visit1, p9_visit1, p10_visit1
 )
 
@@ -2084,5 +2083,6 @@ pearson_results_v2_lstm <- calculate_pearson_corr_visit(original_v2, lstm_v2_com
 
 plot_pearson_bar(pearson_results_v1_lstm, method_name = "LSTM", visit_label = "Visit 1")
 plot_pearson_bar(pearson_results_v2_lstm, method_name = "LSTM", visit_label = "Visit 2")
+
 
 
