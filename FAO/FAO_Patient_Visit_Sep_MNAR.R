@@ -1400,6 +1400,32 @@ ggplot(nrmse_visit2_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation
   ) +
   ylim(0,2)
 
+ggplot(nrmse_visit1_tot, aes(x = reorder(Metabolite, NRMSE), y = NRMSE, fill = Imputation_method)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "NRMSE per Metabolite (Visit 1 - All Methods)",
+    x = "Metabolite",
+    y = "NRMSE",
+    fill = "Imputation Method"
+  ) +
+  theme(axis.text.y = element_text(size = 10)) +
+  scale_fill_brewer(palette = "Set2")
+
+ggplot(nrmse_visit2_tot, aes(x = reorder(Metabolite, NRMSE), y = NRMSE, fill = Imputation_method)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "NRMSE per Metabolite (Visit 1 - All Methods)",
+    x = "Metabolite",
+    y = "NRMSE",
+    fill = "Imputation Method"
+  ) +
+  theme(axis.text.y = element_text(size = 10)) +
+  scale_fill_brewer(palette = "Set2")
+
 dev.off()
 
 # ------------------------
@@ -1909,6 +1935,71 @@ ggplot(visit2_auc_df, aes(x = AUC, fill = Method, color = Method)) +
   )
 
 dev.off()
+
+# ----------------------
+# Part 2: Each separately
+# -----------------------
+
+#get imputation methods
+methods_to_compare <- unique(visit1_auc_df$Method)
+methods_to_compare <- methods_to_compare[methods_to_compare != "Original"]
+
+#visit 1
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/AUC_Separated_V1.pdf", width = 16, height = 10)
+
+for (method in methods_to_compare) {
+  
+  #subset original
+  df_sub <- visit1_auc_df %>%
+    filter(Method %in% c("Original", method))
+  
+  p <- ggplot(df_sub, aes(x = AUC, fill = Method, color = Method)) +
+    geom_density(alpha = 0.4, linewidth = 0.8) +
+    facet_wrap(~ Metabolite, scales = "free") +
+    theme_minimal(base_size = 12) +
+    labs(
+      title = paste("Visit 1: AUC Density - Original vs", method),
+      x = "AUC",
+      y = "Density"
+    ) +
+    theme(
+      legend.position = "bottom",
+      strip.text = element_text(size = 9)
+    )
+  
+  print(p)
+}
+
+dev.off()
+
+#visit 2
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/AUC_Separated_V2.pdf", width = 16, height = 10)
+
+for (method in methods_to_compare) {
+  
+  #subset the original
+  df_sub <- visit2_auc_df %>%
+    filter(Method %in% c("Original", method))
+  
+  p <- ggplot(df_sub, aes(x = AUC, fill = Method, color = Method)) +
+    geom_density(alpha = 0.4, linewidth = 0.8) +
+    facet_wrap(~ Metabolite, scales = "free") +
+    theme_minimal(base_size = 12) +
+    labs(
+      title = paste("Visit 2: AUC Density - Original vs", method),
+      x = "AUC",
+      y = "Density"
+    ) +
+    theme(
+      legend.position = "bottom",
+      strip.text = element_text(size = 9)
+    )
+  
+  print(p)
+}
+
+dev.off()
+
 
 
 # --------------------------------------------------------

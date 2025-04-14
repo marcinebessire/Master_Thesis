@@ -927,6 +927,34 @@ ggplot(nrmse_visit2_tot, aes(x = factor(percentage), y = NRMSE, fill = Imputatio
     legend.title = element_blank()
   )
 
+ggplot(nrmse_visit1_tot, aes(x = reorder(Metabolite, NRMSE), y = NRMSE, fill = Imputation_method)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "NRMSE per Metabolite (Visit 1 - All Methods)",
+    x = "Metabolite",
+    y = "NRMSE",
+    fill = "Imputation Method"
+  ) +
+  theme(axis.text.y = element_text(size = 10)) +
+  scale_fill_brewer(palette = "Set2")
+
+ggplot(nrmse_visit2_tot, aes(x = reorder(Metabolite, NRMSE), y = NRMSE, fill = Imputation_method)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "NRMSE per Metabolite (Visit 1 - All Methods)",
+    x = "Metabolite",
+    y = "NRMSE",
+    fill = "Imputation Method"
+  ) +
+  theme(axis.text.y = element_text(size = 10)) +
+  scale_fill_brewer(palette = "Set2")
+
+
+
 dev.off()
 
 

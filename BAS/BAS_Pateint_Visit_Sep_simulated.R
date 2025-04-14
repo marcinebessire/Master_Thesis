@@ -1398,7 +1398,7 @@ ggplot(nrmse_visit1_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation
     axis.text = element_text(size = 12)
   ) +
   labs(
-    title = "NRMSE of Imputed Values Only (Visit 1 - MCAR)",
+    title = "NRMSE of Imputed Values Only (Visit 1)",
     x = "Imputation Method",
     y = "Normalized RMSE"
   ) +
@@ -1416,7 +1416,7 @@ ggplot(nrmse_visit2_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation
     axis.text = element_text(size = 12)
   ) +
   labs(
-    title = "NRMSE of Imputed Values Only (Visit 2 - MCAR)",
+    title = "NRMSE of Imputed Values Only (Visit 2)",
     x = "Imputation Method",
     y = "Normalized RMSE"
   ) +
@@ -1441,7 +1441,7 @@ ggplot(nrmse_visit2_tot, aes(x = reorder(Metabolite, NRMSE), y = NRMSE, fill = I
   coord_flip() +
   theme_minimal(base_size = 14) +
   labs(
-    title = "NRMSE per Metabolite (Visit 1 - All Methods)",
+    title = "NRMSE per Metabolite (Visit 2 - All Methods)",
     x = "Metabolite",
     y = "NRMSE",
     fill = "Imputation Method"
@@ -2011,7 +2011,7 @@ for (method in methods_to_compare) {
     facet_wrap(~ Metabolite, scales = "free") +
     theme_minimal(base_size = 12) +
     labs(
-      title = paste("Visit 1: AUC Density - Original vs", method),
+      title = paste("Visit 2: AUC Density - Original vs", method),
       x = "AUC",
       y = "Density"
     ) +
@@ -2238,4 +2238,60 @@ plot_pearson_bar(pearson_results_v2_lstm, method_name = "LSTM", visit_label = "V
 
 dev.off()
 
+# --------------------
+# Part 6: All together
+# ---------------------
+
+
+#put all results together
+#visit 1
+pearson_v1_all_methods <- bind_rows(
+  mutate(pearson_results_v1_interp, Method = "Interpolation"),
+  mutate(pearson_results_v1_kalman, Method = "Kalman"),
+  mutate(pearson_results_v1_loess, Method = "LOESS + RF"),
+  mutate(pearson_results_v1_lwma, Method = "LWMA"),
+  mutate(pearson_results_v1_lstm, Method = "LSTM")
+)
+
+#visit 2
+pearson_v2_all_methods <- bind_rows(
+  mutate(pearson_results_v2_interp, Method = "Interpolation"),
+  mutate(pearson_results_v2_kalman, Method = "Kalman"),
+  mutate(pearson_results_v2_loess, Method = "LOESS + RF"),
+  mutate(pearson_results_v2_lwma, Method = "LWMA"),
+  mutate(pearson_results_v2_lstm, Method = "LSTM")
+)
+
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/Pearson_Corr_separated.pdf", width = 16, height = 10)
+
+ggplot(pearson_v1_all_methods, aes(x = reorder(Metabolite, Pearson_Correlation), y = Pearson_Correlation, fill = Method)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Visit 1: Pearson Correlation per Metabolite and Method",
+    x = "Metabolite",
+    y = "Pearson Correlation",
+    fill = "Method"
+  ) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "darkgreen") +
+  geom_hline(yintercept = 0.5, linetype = "dotted", color = "orange") +
+  ylim(-0.1, 1.05)
+
+ggplot(pearson_v2_all_methods, aes(x = reorder(Metabolite, Pearson_Correlation), y = Pearson_Correlation, fill = Method)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Visit 2: Pearson Correlation per Metabolite and Method",
+    x = "Metabolite",
+    y = "Pearson Correlation",
+    fill = "Method"
+  ) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "darkgreen") +
+  geom_hline(yintercept = 0.5, linetype = "dotted", color = "orange") +
+  ylim(-0.1, 1.05)
+
+dev.off()
 
