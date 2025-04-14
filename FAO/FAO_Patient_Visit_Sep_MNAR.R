@@ -376,7 +376,7 @@ impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
   df_imputed <- df
   metabolite_cols <- names(df)[6:ncol(df)]
   
-  #step 1: Apply log transform (avoid log(0))
+  #apply log transform (avoid log(0))
   log_transformed <- df
   log_transformed[, metabolite_cols] <- log(df[, metabolite_cols] + 1)
   
@@ -428,13 +428,13 @@ impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
     }
   }
   
-  #step 2: RF on log-transformed data
+  #RF on log-transformed data
   message("Running Random Forest refinement with missForest...")
   rf_data <- log_transformed[, metabolite_cols]
   rf_imputed <- missForest(rf_data)$ximp
   log_transformed[, metabolite_cols] <- rf_imputed
   
-  #step 3: back-transform (inverse log)
+  #back-transform (inverse log)
   df_imputed[, metabolite_cols] <- exp(log_transformed[, metabolite_cols]) - 1
   
   return(df_imputed)
@@ -469,7 +469,7 @@ p10_v2_loess <- impute_loess_then_rf(p10_v2_mnar)
 # Part 5: LSTM
 # --------------------------------
 
-#step 1: create array/list of the dataframes 
+#step 1:create array/list of the dataframes 
 
 #combine into one array
 #visit1
@@ -489,7 +489,7 @@ all_mnar_list_v2 <- list(
   p9_v2_mnar, p10_v2_mnar
 )
 
-#step 2: create function for LSTM imputation
+#step 2:create function for LSTM imputation
 impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n_epochs = 200, batch_size = 4, verbose = 0) {
   #get metabolite columns
   metabolite_cols <- colnames(mnar_df_list[[1]])[meta_start_col:ncol(mnar_df_list[[1]])]
@@ -500,19 +500,19 @@ impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n
   for (metabolite in metabolite_cols) {
     message("Running LSTM imputation for: ", metabolite)
     
-    #step 1: extract the sequences for the current metabolite
+    #extract the sequences for the current metabolite
     sequences <- lapply(mnar_df_list, function(df) df[[metabolite]])
     sequences <- do.call(rbind, sequences)  #shape: patients x timepoints
     
-    #step 2: replace NA with 0 for masking later
+    #replace NA with 0 for masking later
     X <- sequences
     X[is.na(X)] <- 0  #0 will be masked
     
-    #reshape to 3D: [samples, timesteps, features]
+    #reshape to 3D [samples, timesteps, features]
     X_array <- array(X, dim = c(nrow(X), ncol(X), 1))
     Y_array <- X_array  #autoencoder style: predict the full sequence
     
-    #step 3: define LSTM model
+    #define LSTM model
     #bidericteion + deeper LSTM model
     model <- keras_model_sequential() %>% #linear stack of layers, each layer feeds into the next
       layer_masking(mask_value = 0, input_shape = c(ncol(X), 1)) %>% #tells the LTM to ignore (mask) any time step with value 0
@@ -543,11 +543,11 @@ impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n
       verbose = verbose
     )
     
-    #step 4: predict missing values
+    #predict missing values
     predicted <- model %>% predict(X_array)
     pred_matrix <- predicted[, , 1]  #shape: same as original
     
-    #step 5: only replace the missing values
+    #only replace the missing values
     for (i in seq_along(mnar_df_list)) {
       na_idx <- which(is.na(mnar_df_list[[i]][[metabolite]]))
       if (length(na_idx) > 0) {
@@ -555,17 +555,17 @@ impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n
       }
     }
     
-    updated_list <- mnar_df_list  #save updated version
+    updated_list <- mnar_df_list  
   }
   
   return(updated_list)
 }
 
-#step 3: call function to get missing values via lstm
+#step 3:call function to get missing values via lstm
 lstm_v1 <- impute_with_lstm_all_metabolites(all_mnar_list_v1)
 lstm_v2 <- impute_with_lstm_all_metabolites(all_mnar_list_v2)
 
-#step 4: fill those imputed values from lsit back into dataframe & create new dataframe
+#step 4:fill those imputed values back into dataframe & create new dataframe
 #lists of original MNAR dataframes for each visit
 original_v1 <- list(p1_v1_mnar, p2_v1_mnar, p3_v1_mnar, p4_v1_mnar, p5_v1_mnar,
                     p6_v1_mnar, p7_v1_mnar, p8_v1_mnar, p9_v1_mnar, p10_v1_mnar)
@@ -1990,6 +1990,9 @@ original_v2 <- bind_rows(
   p6_visit2, p7_visit2, p8_visit2, p9_visit2, p10_visit2
 )
 
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/Pearson_Corr_MNAR.pdf", width = 16, height = 10)
+
+
 # ----------------------
 # Part 1: Interpolation
 # ----------------------
@@ -2119,4 +2122,5 @@ pearson_results_v2_lstm <- calculate_pearson_corr_visit(original_v2, lstm_v2_com
 plot_pearson_bar(pearson_results_v1_lstm, method_name = "LSTM", visit_label = "Visit 1")
 plot_pearson_bar(pearson_results_v2_lstm, method_name = "LSTM", visit_label = "Visit 2")
 
+dev.off()
 
