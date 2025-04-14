@@ -18,19 +18,18 @@ library(keras) #for LSTM
 #load data
 BAS_data <- read.csv("/Users/marcinebessire/Desktop/Master_Thesis/BAS_data.csv", check.names = FALSE) #34 metabolites
 
-#count msising values and where they are
+#count missing values and where they are
 na_long <- BAS_data %>%
   pivot_longer(cols = 6:ncol(.), names_to = "Variable", values_to = "Value") %>%
   filter(is.na(Value)) %>%
   group_by(Patient, Visit, Variable) %>%
   summarise(Missing_Count = n(), .groups = "drop")
 
-print(na_long)
+sum(na_long$Missing_Count) #total of 32 missing values 
 
-
-# --------------------------------------
-# TITLE: MISSING VALUE SIMULATION
-# --------------------------------------
+# ------------------------
+# TITLE: Data Preparation
+# ------------------------
 # ---------------------------------------------------
 # Part 1: Split Dataframe according to Patient and Visit
 # ----------------------------------------------------
@@ -57,7 +56,7 @@ p10_visit1 <- BAS_data[108:113,]
 p10_visit2 <- BAS_data[114:119,]
 
 # -------------------------------
-# Part 2: Patient 4, missing t=120
+# Part 2: Patient 4 add row
 # -------------------------------
 
 #function to impute row T = 120 for patient 4
@@ -65,7 +64,7 @@ add_row_120 <- function(data){
   data_copy <- data
   
   #new row using metadata from existing row (e.g., row with Time_min == 60)
-  template_row <- data_copy[which.min(abs(data_copy$Time_min - 120)), ]  # Closest row (e.g., 60)
+  template_row <- data_copy[which.min(abs(data_copy$Time_min - 120)), ]  #closest row (e.g., 60)
   
   new_row <- template_row
   new_row$Time_min <- 120
@@ -81,12 +80,42 @@ add_row_120 <- function(data){
 #call function for patient 4 visit 1 (NA introduced)
 p4_visit1_complete <- add_row_120(p4_visit1)
 
-#assume linear interpolation for this time point 
-#p4_visit1_full <- interpolate_missing(p4_visit1_complete)
+# ----------------------------------
+# Part 3: Interpolate T=120 in p4_v1
+# ----------------------------------
 
-# --------------------------------------
-# Part 3: MNAR Simulation
-# --------------------------------------
+#function to interpolate only row T = 120
+interpolate_only_row_120 <- function(data, time_col = "Time_min", target_time = 120) {
+  data_copy <- data
+  row_index <- which(data_copy[[time_col]] == target_time)
+  if (length(row_index) == 0) stop("No row found with ", time_col, " == ", target_time)
+  
+  metabolite_cols <- names(data_copy)[6:ncol(data_copy)]
+  
+  for (col in metabolite_cols) {
+    if (is.na(data_copy[[col]][row_index])) {
+      valid_idx <- which(!is.na(data_copy[[col]]))
+      if (length(valid_idx) >= 2) {
+        interpolated <- approx(
+          x = data_copy[[time_col]][valid_idx],
+          y = data_copy[[col]][valid_idx],
+          xout = target_time,
+          rule = 2
+        )$y
+        data_copy[[col]][row_index] <- interpolated
+      }
+    }
+  }
+  
+  return(data_copy)
+}
+
+#call function to interpolate row
+p4_visit1 <-  interpolate_only_row_120(p4_visit1_complete)
+
+# ---------------------------
+# Part 4: MNAR Simulation
+# ---------------------------
 
 # #function to introduce 1 MNAR per dataframe (one missing value)
 # MNAR_manipulation_lowest <- function(data){
@@ -157,14 +186,21 @@ p4_visit1_complete <- add_row_120(p4_visit1)
 # Part 1: Linear interpolation
 # --------------------------------------
 
-#interpolate missing data 
+#interpolate missing data & fallback option
 interpolate_missing <- function(data) {
   data_copy <- data
   
   data_copy[, 6:ncol(data_copy)] <- lapply(data_copy[, 6:ncol(data_copy)], function(col) {
     if (is.numeric(col)) {
-      #interpolate and extrapolate both ends if needed
-      return(na.approx(col, na.rm = FALSE, rule = 2))
+      #try interpolation
+      interp <- na.approx(col, na.rm = FALSE, rule = 2)
+      
+      #alternative: if any NA still present, apply LOCF and then BOCF
+      if (any(is.na(interp))) {
+        interp <- na_locf(interp)  #forward fill
+        interp <- na_locf(interp, option = "backward")  #backward fill
+      }
+      return(interp)
     } else {
       return(col)
     }
@@ -172,6 +208,7 @@ interpolate_missing <- function(data) {
   
   return(data_copy)
 }
+
 
 
 #call interpolation function on mnar data
@@ -185,7 +222,7 @@ p2_v2_mnar_interpolation <- interpolate_missing(p2_visit2)
 p3_v1_mnar_interpolation <- interpolate_missing(p3_visit1)
 p3_v2_mnar_interpolation <- interpolate_missing(p3_visit2)
 #p4
-p4_v1_mnar_interpolation <- interpolate_missing(p4_visit1_complete) #all interpolated missing adn 120
+p4_v1_mnar_interpolation <- interpolate_missing(p4_visit1) 
 p4_v2_mnar_interpolation <- interpolate_missing(p4_visit2)
 #p5
 p5_v1_mnar_interpolation <- interpolate_missing(p5_visit1)
@@ -219,16 +256,25 @@ kalman_imputation_fallback <- function(data) {
       non_na_count <- sum(!is.na(col))
       
       if (non_na_count >= 3) {
-        #try kalman
+        #try Kalman
         tryCatch({
           return(na_kalman(col, model = "StructTS", smooth = TRUE))
         }, error = function(e) {
-          message("Kalman failed – use linear interpolation: ", e$message)
-          return(na.approx(col, na.rm = FALSE, rule = 2))  #linear interpolation
+          message("Kalman failed – using interpolation: ", e$message)
+          return(na.approx(col, na.rm = FALSE, rule = 2))
         })
-      } else {
-        message("Not enough values – use linear interpoaltion")
+      } else if (non_na_count >= 2) {
+        #not enough for Kalman, but enough for interpolation
         return(na.approx(col, na.rm = FALSE, rule = 2))
+      } else if (non_na_count == 1) {
+        #only one value then use LOCF then BOCF
+        message("Only one value – using LOCF + BOCF fallback")
+        col <- na_locf(col, option = "locf", na_remaining = "rev")  #last observation carried forward
+        col <- na_locf(col, option = "nocb", na_remaining = "rev")  #backward fill if still NA
+        return(col)
+      } else {
+        #all values NA
+        return(col)
       }
     } else {
       return(col)
@@ -237,8 +283,9 @@ kalman_imputation_fallback <- function(data) {
   
   return(data_copy)
 }
-#call function for kalman smoothing
 
+
+#call function for kalman smoothing
 #MNAR
 #p1
 p1_v1_mnar_kalman <- kalman_imputation_fallback(p1_visit1)
@@ -250,7 +297,7 @@ p2_v2_mnar_kalman <- kalman_imputation_fallback(p2_visit2)
 p3_v1_mnar_kalman <- kalman_imputation_fallback(p3_visit1)
 p3_v2_mnar_kalman <- kalman_imputation_fallback(p3_visit2)
 #4
-p4_v1_mnar_kalman <- kalman_imputation_fallback(p4_visit1_complete) #linear interpolation
+p4_v1_mnar_kalman <- kalman_imputation_fallback(p4_visit1)
 p4_v2_mnar_kalman <- kalman_imputation_fallback(p4_visit2) #linear interpolation
 #5
 p5_v1_mnar_kalman <- kalman_imputation_fallback(p5_visit1) #linear interpolation
@@ -285,15 +332,22 @@ weighted_mov_average_fallback <- function(data, window = 3) {
       non_na_count <- sum(!is.na(col))
       
       if (non_na_count >= 2) {
+        #try LWMA
         tryCatch({
           return(na_ma(col, k = window, weighting = "exponential"))
         }, error = function(e) {
           message("LWMA failed – use linear interpolation: ", e$message)
           return(na.approx(col, na.rm = FALSE, rule = 2))
         })
+      } else if (non_na_count == 1) {
+        #only one value, try LOCF then BOCF
+        message("Only one value – using LOCF + BOCF fallback")
+        col <- na_locf(col, option = "locf", na_remaining = "rev")
+        col <- na_locf(col, option = "nocb", na_remaining = "rev")
+        return(col)
       } else {
-        message("Too few values for LWMA – use linear interpolation.")
-        return(na.approx(col, na.rm = FALSE, rule = 2))
+        #all NAs
+        return(col)
       }
     } else {
       return(col)
@@ -303,8 +357,8 @@ weighted_mov_average_fallback <- function(data, window = 3) {
   return(data_copy)
 }
 
-#call function for LWMA
 
+#call function for LWMA
 #MNAR
 #p1
 p1_v1_mnar_lwma <- weighted_mov_average_fallback(p1_visit1)
@@ -316,7 +370,7 @@ p2_v2_mnar_lwma <- weighted_mov_average_fallback(p2_visit2)
 p3_v1_mnar_lwma <- weighted_mov_average_fallback(p3_visit1)
 p3_v2_mnar_lwma <- weighted_mov_average_fallback(p3_visit2)
 #4
-p4_v1_mnar_lwma <- weighted_mov_average_fallback(p4_visit1_complete)
+p4_v1_mnar_lwma <- weighted_mov_average_fallback(p4_visit1)
 p4_v2_mnar_lwma <- weighted_mov_average_fallback(p4_visit2) #linear interpolation
 #5
 p5_v1_mnar_lwma <- weighted_mov_average_fallback(p5_visit1) #linear interpolation
@@ -342,17 +396,84 @@ p10_v2_mnar_lwma <- weighted_mov_average_fallback(p10_visit2)
 # Part 4: LOESS + RF
 # --------------------------------
 
-#LOESS (locally estimated scatterplot smoothing)
-#LOESS + Random Forest Imputation
+# #LOESS (locally estimated scatterplot smoothing)
+# #LOESS + Random Forest Imputation
+# impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
+#   df_imputed <- df
+#   metabolite_cols <- names(df)[6:ncol(df)]
+#   
+#   for (metabolite in metabolite_cols) {
+#     message("LOESS for: ", metabolite)
+#     
+#     time <- df[[time_col]]
+#     y <- df[[metabolite]]
+#     na_indices <- which(is.na(y))
+#     if (length(na_indices) == 0) next
+#     
+#     #require at least 3 non-missing values to fit LOESS
+#     if (sum(!is.na(y)) < 3) {
+#       message("  -> Skipping LOESS: not enough non-missing values.")
+#       next
+#     }
+#     
+#     #calculate variability and choose span
+#     variability <- sd(y, na.rm = TRUE)
+#     span <- max(0.6, ifelse(variability < sd_threshold, 0.4, 0.75))
+#     message("  -> Using span = ", span, " (SD = ", round(variability, 2), ")")
+#     
+#     #fit LOESS
+#     df_non_na <- data.frame(time = time[!is.na(y)], y = y[!is.na(y)])
+#     loess_fit <- tryCatch({
+#       loess(y ~ time, data = df_non_na, span = span, degree = 1, control = loess.control(surface = "direct"))
+#     }, error = function(e) {
+#       warning("  -> LOESS failed for ", metabolite, ": ", e$message)
+#       return(NULL)
+#     })
+#     
+#     #skip if model failed
+#     if (is.null(loess_fit)) next
+#     
+#     #predict only for values within the fitting range
+#     for (na_index in na_indices) {
+#       t_missing <- time[na_index]
+#       
+#       #only predict if within time range
+#       if (t_missing >= min(df_non_na$time) && t_missing <= max(df_non_na$time)) {
+#         predicted <- predict(loess_fit, newdata = data.frame(time = t_missing))
+#         if (!is.na(predicted)) {
+#           df_imputed[[metabolite]][na_index] <- predicted
+#         } else {
+#           message("  -> LOESS could not predict at time = ", t_missing)
+#         }
+#       } else {
+#         message("  -> Time = ", t_missing, " is outside LOESS fitting range.")
+#       }
+#     }
+#   }
+#   
+#   #random Forest 
+#   message("Running Random Forest refinement with missForest...")
+#   rf_data <- df_imputed[, metabolite_cols]
+#   rf_imputed <- missForest(rf_data)$ximp
+#   df_imputed[, metabolite_cols] <- rf_imputed
+#   
+#   return(df_imputed)
+# }
+
+#LOESS + Random Forest Imputation with Log Transform
 impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
   df_imputed <- df
   metabolite_cols <- names(df)[6:ncol(df)]
+  
+  #step 1: Apply log transform (avoid log(0))
+  log_transformed <- df
+  log_transformed[, metabolite_cols] <- log(df[, metabolite_cols] + 1)
   
   for (metabolite in metabolite_cols) {
     message("LOESS for: ", metabolite)
     
     time <- df[[time_col]]
-    y <- df[[metabolite]]
+    y <- log_transformed[[metabolite]]
     na_indices <- which(is.na(y))
     if (length(na_indices) == 0) next
     
@@ -367,27 +488,26 @@ impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
     span <- max(0.6, ifelse(variability < sd_threshold, 0.4, 0.75))
     message("  -> Using span = ", span, " (SD = ", round(variability, 2), ")")
     
-    #fit LOESS
+    #fit LOESS model
     df_non_na <- data.frame(time = time[!is.na(y)], y = y[!is.na(y)])
     loess_fit <- tryCatch({
-      loess(y ~ time, data = df_non_na, span = span, degree = 1, control = loess.control(surface = "direct"))
+      loess(y ~ time, data = df_non_na, span = span, degree = 1,
+            control = loess.control(surface = "direct"))
     }, error = function(e) {
       warning("  -> LOESS failed for ", metabolite, ": ", e$message)
       return(NULL)
     })
     
-    #skip if model failed
+    #skip if LOESS model failed
     if (is.null(loess_fit)) next
     
-    #predict only for values within the fitting range
+    #predict and fill NA values within LOESS range
     for (na_index in na_indices) {
       t_missing <- time[na_index]
-      
-      #only predict if within time range
       if (t_missing >= min(df_non_na$time) && t_missing <= max(df_non_na$time)) {
         predicted <- predict(loess_fit, newdata = data.frame(time = t_missing))
         if (!is.na(predicted)) {
-          df_imputed[[metabolite]][na_index] <- predicted
+          log_transformed[[metabolite]][na_index] <- predicted
         } else {
           message("  -> LOESS could not predict at time = ", t_missing)
         }
@@ -397,22 +517,24 @@ impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
     }
   }
   
-  #random Forest 
+  #step 2: RF on log-transformed data
   message("Running Random Forest refinement with missForest...")
-  rf_data <- df_imputed[, metabolite_cols]
+  rf_data <- log_transformed[, metabolite_cols]
   rf_imputed <- missForest(rf_data)$ximp
-  df_imputed[, metabolite_cols] <- rf_imputed
+  log_transformed[, metabolite_cols] <- rf_imputed
+  
+  #step 3: back-transform (inverse log)
+  df_imputed[, metabolite_cols] <- exp(log_transformed[, metabolite_cols]) - 1
   
   return(df_imputed)
 }
-
 
 #call function for loess + rf imputation
 #visit 1
 p1_v1_loess <- impute_loess_then_rf(p1_visit1)
 p2_v1_loess <- impute_loess_then_rf(p2_visit1)
 p3_v1_loess <- impute_loess_then_rf(p3_visit1)
-p4_v1_loess <- impute_loess_then_rf(p4_visit1_complete)
+p4_v1_loess <- impute_loess_then_rf(p4_visit1)
 p5_v1_loess <- impute_loess_then_rf(p5_visit1)
 p6_v1_loess <- impute_loess_then_rf(p6_visit1)
 p7_v1_loess <- impute_loess_then_rf(p7_visit1)
@@ -435,13 +557,12 @@ p10_v2_loess <- impute_loess_then_rf(p10_visit2)
 # Part 5: LSTM
 # --------------------------------
 
-#step 1: create array/list of the dataframes 
-
+#step 1:create array/list of the dataframes 
 #combine into one array
 #visit1
 all_list_v1 <- list(
   p1_visit1, p2_visit1, 
-  p3_visit1, p4_visit1_complete,
+  p3_visit1, p4_visit1,
   p5_visit1, p6_visit1,
   p7_visit1, p8_visit1,
   p9_visit1, p10_visit1
@@ -455,7 +576,7 @@ all_list_v2 <- list(
   p9_visit2, p10_visit2
 )
 
-#step 2: create function for LSTM imputation
+#step 2:function for LSTM imputation
 impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n_epochs = 200, batch_size = 4, verbose = 0) {
   #get metabolite columns
   metabolite_cols <- colnames(mnar_df_list[[1]])[meta_start_col:ncol(mnar_df_list[[1]])]
@@ -466,19 +587,19 @@ impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n
   for (metabolite in metabolite_cols) {
     message("Running LSTM imputation for: ", metabolite)
     
-    #step 1: extract the sequences for the current metabolite
+    #extract the sequences for the current metabolite
     sequences <- lapply(mnar_df_list, function(df) df[[metabolite]])
     sequences <- do.call(rbind, sequences)  #shape: patients x timepoints
     
-    #step 2: replace NA with 0 for masking later
+    #replace NA with 0 for masking later
     X <- sequences
     X[is.na(X)] <- 0  #0 will be masked
     
-    #reshape to 3D: [samples, timesteps, features]
+    #reshape to 3D [samples, timesteps, features]
     X_array <- array(X, dim = c(nrow(X), ncol(X), 1))
     Y_array <- X_array  #autoencoder style: predict the full sequence
     
-    #step 3: define LSTM model
+    #define LSTM model
     #bidericteion + deeper LSTM model
     model <- keras_model_sequential() %>% #linear stack of layers, each layer feeds into the next
       layer_masking(mask_value = 0, input_shape = c(ncol(X), 1)) %>% #tells the LTM to ignore (mask) any time step with value 0
@@ -509,11 +630,11 @@ impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n
       verbose = verbose
     )
     
-    #step 4: predict missing values
+    #predict missing values
     predicted <- model %>% predict(X_array)
     pred_matrix <- predicted[, , 1]  #shape: same as original
     
-    #step 5: only replace the missing values
+    #only replace the missing values
     for (i in seq_along(mnar_df_list)) {
       na_idx <- which(is.na(mnar_df_list[[i]][[metabolite]]))
       if (length(na_idx) > 0) {
@@ -527,13 +648,13 @@ impute_with_lstm_all_metabolites <- function(mnar_df_list, meta_start_col = 6, n
   return(updated_list)
 }
 
-#step 3: call function to get missing values via lstm
+#step 3:call function to get missing values via lstm
 lstm_v1 <- impute_with_lstm_all_metabolites(all_list_v1)
 lstm_v2 <- impute_with_lstm_all_metabolites(all_list_v2)
 
-#step 4: fill those imputed values from lsit back into dataframe & create new dataframe
+#step 4:fill those imputed values from lsit back into dataframe & create new dataframe
 #lists of original MNAR dataframes for each visit
-original_v1 <- list(p1_visit1, p2_visit1, p3_visit1, p4_visit1_complete, p5_visit1,
+original_v1 <- list(p1_visit1, p2_visit1, p3_visit1, p4_visit1, p5_visit1,
                     p6_visit1, p7_visit1, p8_visit1, p9_visit1, p10_visit1)
 
 original_v2 <- list(p1_visit2, p2_visit2, p3_visit2, p4_visit2, p5_visit2,
@@ -939,14 +1060,14 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BA
 ggplot(nrmse_mnar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MNAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 1",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 2",
        y = "NRMSE", x = "Patient")
 
 dev.off()
@@ -1051,6 +1172,8 @@ dev.off()
 #p1
 nrmse_lwma_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_mnar_lwma, method = "LWMA")
 nrmse_lwma_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_mnar_lwma, method = "LWMA")
+
+
 #p2
 nrmse_lwma_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_mnar_lwma, method = "LWMA")
 nrmse_lwma_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_lwma, method = "LWMA")
@@ -1225,37 +1348,36 @@ dev.off()
 # --------------------------
 
 #call function to calcualte nrms
-#LWMA
 #p1
 nrmse_lstm_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_lstm, method = "LSTM")
-nrmse_lstm_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_loess, method = "LSTM")
+nrmse_lstm_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_lstm, method = "LSTM")
 #p2
 nrmse_lstm_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_lstm, method = "LSTM")
-nrmse_lstm_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_loess, method = "LSTM")
+nrmse_lstm_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_lstm, method = "LSTM")
 #p3
 nrmse_lstm_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_lstm, method = "LSTM")
-nrmse_lstm_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_loess, method = "LSTM")
+nrmse_lstm_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_lstm, method = "LSTM")
 #p4
 nrmse_lstm_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_lstm, method = "LSTM")
-nrmse_lstm_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_loess, method = "LSTM")
+nrmse_lstm_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_lstm, method = "LSTM")
 #p5
 nrmse_lstm_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_lstm, method = "LSTM")
-nrmse_lstm_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_loess, method = "LSTM")
+nrmse_lstm_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_lstm, method = "LSTM")
 #p6
 nrmse_lstm_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_lstm, method = "LSTM")
-nrmse_lstm_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_loess, method = "LSTM")
+nrmse_lstm_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_lstm, method = "LSTM")
 #p7
 nrmse_lstm_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_lstm, method = "LSTM")
-nrmse_lstm_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_loess, method = "LSTM")
+nrmse_lstm_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_lstm, method = "LSTM")
 #p8
 nrmse_lstm_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_lstm, method = "LSTM")
-nrmse_lstm_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_loess, method = "LSTM")
+nrmse_lstm_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_lstm, method = "LSTM")
 #p9
 nrmse_lstm_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_lstm, method = "LSTM")
-nrmse_lstm_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_loess, method = "LSTM")
+nrmse_lstm_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_lstm, method = "LSTM")
 #p10
 nrmse_lstm_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_lstm, method = "LSTM")
-nrmse_lstm_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_loess, method = "LSTM")
+nrmse_lstm_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_lstm, method = "LSTM")
 
 #combine visit 1 
 nrmse_lstm_mnar_visit1 <- bind_rows(
@@ -1346,7 +1468,7 @@ ggplot(nrmse_visit1_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation
     x = "Imputation Method",
     y = "Normalized RMSE"
   ) +
-  ylim(0,2)
+  ylim(0,0.5)
 
 #plot visit 1
 ggplot(nrmse_visit2_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation_method)) +
@@ -1364,7 +1486,7 @@ ggplot(nrmse_visit2_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation
     x = "Imputation Method",
     y = "Normalized RMSE"
   ) +
-  ylim(0,2)
+  ylim(0,0.5)
 
 dev.off()
 
@@ -1945,7 +2067,7 @@ plot_pearson_bar <- function(corr_df, method_name = "Interpolation", visit_label
 #combine original data
 #v1
 original_v1 <- bind_rows(
-  p1_visit1, p2_visit1, p3_visit1, p4_visit1_complete, p5_visit1,
+  p1_visit1, p2_visit1, p3_visit1, p4_visit1, p5_visit1,
   p6_visit1, p7_visit1, p8_visit1, p9_visit1, p10_visit1
 )
 

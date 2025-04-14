@@ -154,7 +154,7 @@ interpolate_missing <- function(data) {
   data_copy[, 6:ncol(data_copy)] <- lapply(data_copy[, 6:ncol(data_copy)], function(col) {
     if (is.numeric(col)) {
       #interpolate and extrapolate both ends if needed
-      return(na.approx(col, na.rm = FALSE, rule = 2))
+      return(na.approx(col, na.rm = FALSE, rule = 2)) #rule 2 allows extrapolation on both ends (otherwise stays NA)
     } else {
       return(col)
     }
@@ -307,17 +307,84 @@ p10_v2_mnar_lwma <- weighted_mov_average(p10_v2_mnar)
 # Part 4: LOESS + RF
 # --------------------------------
 
-#LOESS (locally estimated scatterplot smoothing)
-#LOESS + Random Forest Imputation
+# #LOESS (locally estimated scatterplot smoothing)
+# #LOESS + Random Forest Imputation
+# impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
+#   df_imputed <- df
+#   metabolite_cols <- names(df)[6:ncol(df)]
+#   
+#   for (metabolite in metabolite_cols) {
+#     message("LOESS for: ", metabolite)
+#     
+#     time <- df[[time_col]]
+#     y <- df[[metabolite]]
+#     na_indices <- which(is.na(y))
+#     if (length(na_indices) == 0) next
+#     
+#     #require at least 3 non-missing values to fit LOESS
+#     if (sum(!is.na(y)) < 3) {
+#       message("-> Skipping LOESS: not enough non-missing values.")
+#       next
+#     }
+#     
+#     #calculate variability and choose span
+#     variability <- sd(y, na.rm = TRUE)
+#     span <- max(0.6, ifelse(variability < sd_threshold, 0.4, 0.75))
+#     message("  -> Using span = ", span, " (SD = ", round(variability, 2), ")")
+#     
+#     #fit LOESS
+#     df_non_na <- data.frame(time = time[!is.na(y)], y = y[!is.na(y)])
+#     loess_fit <- tryCatch({ #tries to fit first-degress loess model (linear local fit)
+#       loess(y ~ time, data = df_non_na, span = span, degree = 1, control = loess.control(surface = "direct"))
+#     }, error = function(e) {
+#       warning("  -> LOESS failed for ", metabolite, ": ", e$message)
+#       return(NULL)
+#     })
+#     
+#     #skip if model failed
+#     if (is.null(loess_fit)) next
+#     
+#     #predict only for values within the fitting range
+#     for (na_index in na_indices) {
+#       t_missing <- time[na_index]
+#       
+#       #only predict if within time range (no extrapolation outsie)
+#       if (t_missing >= min(df_non_na$time) && t_missing <= max(df_non_na$time)) {
+#         predicted <- predict(loess_fit, newdata = data.frame(time = t_missing))
+#         if (!is.na(predicted)) {
+#           df_imputed[[metabolite]][na_index] <- predicted
+#         } else {
+#           message("  -> LOESS could not predict at time = ", t_missing)
+#         }
+#       } else {
+#         message("  -> Time = ", t_missing, " is outside LOESS fitting range.")
+#       }
+#     }
+#   }
+#   
+#   #random Forest to fill in any remaining NA
+#   message("Running Random Forest refinement with missForest...")
+#   rf_data <- df_imputed[, metabolite_cols]
+#   rf_imputed <- missForest(rf_data)$ximp
+#   df_imputed[, metabolite_cols] <- rf_imputed
+#   
+#   return(df_imputed)
+# }
+
+#LOESS + Random Forest Imputation with Log Transform
 impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
   df_imputed <- df
   metabolite_cols <- names(df)[6:ncol(df)]
+  
+  #step 1: Apply log transform (avoid log(0))
+  log_transformed <- df
+  log_transformed[, metabolite_cols] <- log(df[, metabolite_cols] + 1)
   
   for (metabolite in metabolite_cols) {
     message("LOESS for: ", metabolite)
     
     time <- df[[time_col]]
-    y <- df[[metabolite]]
+    y <- log_transformed[[metabolite]]
     na_indices <- which(is.na(y))
     if (length(na_indices) == 0) next
     
@@ -332,27 +399,26 @@ impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
     span <- max(0.6, ifelse(variability < sd_threshold, 0.4, 0.75))
     message("  -> Using span = ", span, " (SD = ", round(variability, 2), ")")
     
-    #fit LOESS
+    #fit LOESS model
     df_non_na <- data.frame(time = time[!is.na(y)], y = y[!is.na(y)])
     loess_fit <- tryCatch({
-      loess(y ~ time, data = df_non_na, span = span, degree = 1, control = loess.control(surface = "direct"))
+      loess(y ~ time, data = df_non_na, span = span, degree = 1,
+            control = loess.control(surface = "direct"))
     }, error = function(e) {
       warning("  -> LOESS failed for ", metabolite, ": ", e$message)
       return(NULL)
     })
     
-    #skip if model failed
+    #skip if LOESS model failed
     if (is.null(loess_fit)) next
     
-    #predict only for values within the fitting range
+    #predict and fill NA values within LOESS range
     for (na_index in na_indices) {
       t_missing <- time[na_index]
-      
-      #only predict if within time range
       if (t_missing >= min(df_non_na$time) && t_missing <= max(df_non_na$time)) {
         predicted <- predict(loess_fit, newdata = data.frame(time = t_missing))
         if (!is.na(predicted)) {
-          df_imputed[[metabolite]][na_index] <- predicted
+          log_transformed[[metabolite]][na_index] <- predicted
         } else {
           message("  -> LOESS could not predict at time = ", t_missing)
         }
@@ -362,11 +428,14 @@ impute_loess_then_rf <- function(df, time_col = "Time_min", sd_threshold = 5) {
     }
   }
   
-  #random Forest 
+  #step 2: RF on log-transformed data
   message("Running Random Forest refinement with missForest...")
-  rf_data <- df_imputed[, metabolite_cols]
+  rf_data <- log_transformed[, metabolite_cols]
   rf_imputed <- missForest(rf_data)$ximp
-  df_imputed[, metabolite_cols] <- rf_imputed
+  log_transformed[, metabolite_cols] <- rf_imputed
+  
+  #step 3: back-transform (inverse log)
+  df_imputed[, metabolite_cols] <- exp(log_transformed[, metabolite_cols]) - 1
   
   return(df_imputed)
 }
@@ -589,7 +658,7 @@ plot_imputed_vs_original <- function(original, imputed, visit, type){
 # ----------------------------
 
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/Interpolation/MNAR_Interpolation_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/Interpolation/MNAR_Interpolation_1MV.pdf", width = 14, height = 10)
 
 #MNAR
 #p1
@@ -630,7 +699,7 @@ dev.off()
 # Part 2: Kalman Smoothing
 # ----------------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/Kalman/MNAR_Kalman_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/Kalman/MNAR_Kalman_1MV.pdf", width = 14, height = 10)
 
 #MNAR
 #p1
@@ -671,7 +740,7 @@ dev.off()
 # ----------------------------
 
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LWMA/MNAR_LWMA_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/LWMA/MNAR_LWMA_1MV.pdf", width = 14, height = 10)
 
 #MNAR
 #p1
@@ -712,7 +781,7 @@ dev.off()
 # Part 4: LEOSS + RF
 # ----------------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LOESS_RF/MNAR_LOESS_RF_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/LOESS_RF/MNAR_LOESS_RF_1MV.pdf", width = 14, height = 10)
 
 #call function
 #MCAR
@@ -754,7 +823,7 @@ dev.off()
 # Part 5: LSTM
 # ----------------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LSTM/MNAR_LSTM_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/LSTM/MNAR_LSTM_1MV.pdf", width = 14, height = 10)
 
 #call function
 #MCAR
@@ -898,7 +967,7 @@ nrmse_mnar_visit2 <- bind_rows(
 )
 
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/Interpolation/MNAR_Interpolation_1MV_NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/Interpolation/MNAR_Interpolation_1MV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
 ggplot(nrmse_mnar_visit1, aes(x = Patient, y = NRMSE)) +
@@ -985,7 +1054,7 @@ nrmse_kalman_mnar_visit2 <- bind_rows(
   nrmse_kalman_p10v2_mnar %>% mutate(Patient = "P10")
 )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/Kalman/MNAR_Kalman_1MV_NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/Kalman/MNAR_Kalman_1MV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
 ggplot(nrmse_kalman_mnar_visit1, aes(x = Patient, y = NRMSE)) +
@@ -1072,7 +1141,7 @@ nrmse_lwma_mnar_visit2 <- bind_rows(
   nrmse_lwma_p10v2_mnar %>% mutate(Patient = "P10")
 )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LWMA/MNAR_LWMA_1MV_NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/LWMA/MNAR_LWMA_1MV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
 ggplot(nrmse_lwma_mnar_visit1, aes(x = Patient, y = NRMSE)) +
@@ -1161,7 +1230,7 @@ nrmse_loess_mnar_visit2 <- bind_rows(
   nrmse_loess_p10v2_mnar %>% mutate(Patient = "P10")
 )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LOESS_RF/MNAR_LOESS_1MV_NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/LOESS_RF/MNAR_LOESS_1MV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
 ggplot(nrmse_loess_mnar_visit1, aes(x = Patient, y = NRMSE)) +
@@ -1252,7 +1321,7 @@ nrmse_lstm_mnar_visit2 <- bind_rows(
 )
 
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/LSTM/MNAR_LSTM_1MV_NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/LSTM/MNAR_LSTM_1MV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
 ggplot(nrmse_loess_mnar_visit1, aes(x = Patient, y = NRMSE)) +
@@ -1293,7 +1362,7 @@ nrmse_visit2_tot <- bind_rows(
   nrmse_lstm_mnar_visit2
 )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/NRMSE_MNAR_Imputation_methods.pdf", width = 16, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/NRMSE_MNAR_Imputation_methods.pdf", width = 16, height = 10)
 
 #plot visit 1
 ggplot(nrmse_visit1_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation_method)) +
@@ -1806,7 +1875,7 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "LSTM",          Visit = "Visit 2", stack(auc_p10v2_lstm))
 ) %>% rename(AUC = values, Metabolite = ind)
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/AUC_Density_MNAR.pdf", width = 16, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/AUC_Density_MNAR.pdf", width = 16, height = 10)
 
 #now plot the density of AUC 
 #Visit 1
