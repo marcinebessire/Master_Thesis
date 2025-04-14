@@ -1194,35 +1194,35 @@ dev.off()
 #call function to calcualte nrms
 #LWMA
 #p1
-nrmse_loess_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_loess, method = "LOESS")
-nrmse_loess_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_loess, method = "LOESS")
+nrmse_loess_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_loess, method = "LOESS + RF")
+nrmse_loess_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_loess, method = "LOESS + RF")
 #p2
-nrmse_loess_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_loess, method = "LOESS")
-nrmse_loess_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_loess, method = "LOESS")
+nrmse_loess_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_loess, method = "LOESS + RF")
+nrmse_loess_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_loess, method = "LOESS + RF")
 #p3
-nrmse_loess_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_loess, method = "LOESS")
-nrmse_loess_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_loess, method = "LOESS")
+nrmse_loess_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_loess, method = "LOESS + RF")
+nrmse_loess_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_loess, method = "LOESS + RF")
 #p4
-nrmse_loess_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_loess, method = "LOESS")
-nrmse_loess_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_loess, method = "LOESS")
+nrmse_loess_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_loess, method = "LOESS + RF")
+nrmse_loess_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_loess, method = "LOESS + RF")
 #p5
-nrmse_loess_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_loess, method = "LOESS")
-nrmse_loess_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_loess, method = "LOESS")
+nrmse_loess_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_loess, method = "LOESS + RF")
+nrmse_loess_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_loess, method = "LOESS + RF")
 #p6
-nrmse_loess_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_loess, method = "LOESS")
-nrmse_loess_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_loess, method = "LOESS")
+nrmse_loess_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_loess, method = "LOESS + RF")
+nrmse_loess_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_loess, method = "LOESS + RF")
 #p7
-nrmse_loess_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_loess, method = "LOESS")
-nrmse_loess_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_loess, method = "LOESS")
+nrmse_loess_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_loess, method = "LOESS + RF")
+nrmse_loess_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_loess, method = "LOESS + RF")
 #p8
-nrmse_loess_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_loess, method = "LOESS")
-nrmse_loess_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_loess, method = "LOESS")
+nrmse_loess_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_loess, method = "LOESS + RF")
+nrmse_loess_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_loess, method = "LOESS + RF")
 #p9
-nrmse_loess_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_loess, method = "LOESS")
-nrmse_loess_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_loess, method = "LOESS")
+nrmse_loess_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_loess, method = "LOESS + RF")
+nrmse_loess_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_loess, method = "LOESS + RF")
 #p10
-nrmse_loess_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_loess, method = "LOESS")
-nrmse_loess_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_loess, method = "LOESS")
+nrmse_loess_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_loess, method = "LOESS + RF")
+nrmse_loess_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_loess, method = "LOESS + RF")
 
 #combine visit 1 
 nrmse_loess_mnar_visit1 <- bind_rows(
@@ -1422,6 +1422,34 @@ ggplot(nrmse_visit2_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation
   ) +
   ylim(0,0.5)
 
+
+ggplot(nrmse_visit1_tot, aes(x = reorder(Metabolite, NRMSE), y = NRMSE, fill = Imputation_method)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "NRMSE per Metabolite (Visit 1 - All Methods)",
+    x = "Metabolite",
+    y = "NRMSE",
+    fill = "Imputation Method"
+  ) +
+  theme(axis.text.y = element_text(size = 10)) +
+  scale_fill_brewer(palette = "Set2")
+
+ggplot(nrmse_visit2_tot, aes(x = reorder(Metabolite, NRMSE), y = NRMSE, fill = Imputation_method)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "NRMSE per Metabolite (Visit 1 - All Methods)",
+    x = "Metabolite",
+    y = "NRMSE",
+    fill = "Imputation Method"
+  ) +
+  theme(axis.text.y = element_text(size = 10)) +
+  scale_fill_brewer(palette = "Set2")
+
+
 dev.off()
 
 # ------------------------
@@ -1442,7 +1470,7 @@ calculate_auc <- function(data){
 }
 
 # ----------------------------------
-# Part 1: For MNAR (1MV)
+# Part 1: All in one plot
 # -----------------------------------
 
 #original AUC
@@ -1931,6 +1959,72 @@ ggplot(visit2_auc_df, aes(x = AUC, fill = Method, color = Method)) +
   )
 
 dev.off()
+
+# ----------------------
+# Part 2: Each separately
+# -----------------------
+
+#get imputation methods
+methods_to_compare <- unique(visit1_auc_df$Method)
+methods_to_compare <- methods_to_compare[methods_to_compare != "Original"]
+
+#visit 1
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/AUC_Separated_V1.pdf", width = 16, height = 10)
+
+for (method in methods_to_compare) {
+  
+  #subset original
+  df_sub <- visit1_auc_df %>%
+    filter(Method %in% c("Original", method))
+  
+  p <- ggplot(df_sub, aes(x = AUC, fill = Method, color = Method)) +
+    geom_density(alpha = 0.4, linewidth = 0.8) +
+    facet_wrap(~ Metabolite, scales = "free") +
+    theme_minimal(base_size = 12) +
+    labs(
+      title = paste("Visit 1: AUC Density - Original vs", method),
+      x = "AUC",
+      y = "Density"
+    ) +
+    theme(
+      legend.position = "bottom",
+      strip.text = element_text(size = 9)
+    )
+  
+  print(p)
+}
+
+dev.off()
+
+
+#visit 2
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/AUC_Separated_V2.pdf", width = 16, height = 10)
+
+for (method in methods_to_compare) {
+  
+  #subset the original
+  df_sub <- visit2_auc_df %>%
+    filter(Method %in% c("Original", method))
+  
+  p <- ggplot(df_sub, aes(x = AUC, fill = Method, color = Method)) +
+    geom_density(alpha = 0.4, linewidth = 0.8) +
+    facet_wrap(~ Metabolite, scales = "free") +
+    theme_minimal(base_size = 12) +
+    labs(
+      title = paste("Visit 1: AUC Density - Original vs", method),
+      x = "AUC",
+      y = "Density"
+    ) +
+    theme(
+      legend.position = "bottom",
+      strip.text = element_text(size = 9)
+    )
+  
+  print(p)
+}
+
+dev.off()
+
 
 # --------------------------------------------------------
 # TITLE: Pearson Correlation between original and imputed 
