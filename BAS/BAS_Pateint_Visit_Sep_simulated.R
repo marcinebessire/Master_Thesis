@@ -2306,7 +2306,7 @@ reshape_for_pca <- function(df) {
     mutate(Visit = gsub(" ", "", Visit)) %>% #Visit 1 to Visit1
     mutate(PatientVisit = paste0(Patient, "_", Visit)) #new column e.g. P1_Visit1
   
-  metadata_cols <- c("ID", "Patient", "Date", "Time_min", "Visit", "PateintVisit") #metadatae
+  metadata_cols <- c("ID", "Patient", "Date", "Time_min", "Visit", "PatientVisit") #metadatae
   metabolite_cols <- setdiff(names(df)[sapply(df, is.numeric)], metadata_cols) #metabolite data
   
   df %>%

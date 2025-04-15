@@ -9,6 +9,7 @@ library(imputeTS) #for imputation methods
 library(pracma) #for AUC calculation
 library(missForest) #for RF
 library(keras) #for LSTM
+library(vegan) #for pca
 
 
 # --------------------------------------
@@ -567,11 +568,11 @@ lstm_v2 <- impute_with_lstm_all_metabolites(all_mnar_list_v2)
 
 #step 4:fill those imputed values back into dataframe & create new dataframe
 #lists of original MNAR dataframes for each visit
-original_v1 <- list(p1_v1_mnar, p2_v1_mnar, p3_v1_mnar, p4_v1_mnar, p5_v1_mnar,
-                    p6_v1_mnar, p7_v1_mnar, p8_v1_mnar, p9_v1_mnar, p10_v1_mnar)
+original_v1 <- list(p1_visit1, p2_visit1, p3_visit1, p4_visit1_full, p5_visit1,
+                    p6_visit1, p7_visit1, p8_visit1, p9_visit1, p10_visit1)
 
-original_v2 <- list(p1_v2_mnar, p2_v2_mnar, p3_v2_mnar, p4_v2_mnar, p5_v2_mnar,
-                    p6_v2_mnar, p7_v2_mnar, p8_v2_mnar, p9_v2_mnar, p10_v2_mnar)
+original_v2 <- list(p1_visit2, p2_visit2, p3_visit2, p4_visit2, p5_visit2,
+                    p6_visit2, p7_visit2, p8_visit2, p9_visit2, p10_visit2)
 
 #create values names
 output_names_v1 <- paste0("p", 1:10, "_v1_lstm")
@@ -671,7 +672,7 @@ plot_imputed_vs_original(p2_visit2, p2_v2_mnar_interpolation, visit = "Visit 2",
 plot_imputed_vs_original(p3_visit1, p3_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p3_visit2, p3_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p4_visit1_full, p4_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p4_visit2, p4_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
 #p5
 plot_imputed_vs_original(p5_visit1, p5_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
@@ -712,7 +713,7 @@ plot_imputed_vs_original(p2_visit2, p2_v2_mnar_kalman, visit = "Visit 2", type =
 plot_imputed_vs_original(p3_visit1, p3_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p3_visit2, p3_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p4_visit1_full, p4_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p4_visit2, p4_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
 #p5
 plot_imputed_vs_original(p5_visit1, p5_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
@@ -753,7 +754,7 @@ plot_imputed_vs_original(p2_visit2, p2_v2_mnar_lwma, visit = "Visit 2", type = "
 plot_imputed_vs_original(p3_visit1, p3_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p3_visit2, p3_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p4_visit1_full, p4_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p4_visit2, p4_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
 #p5
 plot_imputed_vs_original(p5_visit1, p5_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
@@ -795,7 +796,7 @@ plot_imputed_vs_original(p2_visit2, p2_v2_loess, visit = "Visit 2", type = "MNAR
 plot_imputed_vs_original(p3_visit1, p3_v1_loess, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p3_visit2, p3_v2_loess, visit = "Visit 2", type = "MNAR")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_loess, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p4_visit1_full, p4_v1_loess, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p4_visit2, p4_v2_loess, visit = "Visit 2", type = "MNAR")
 #p5
 plot_imputed_vs_original(p5_visit1, p5_v1_loess, visit = "Visit 1", type = "MNAR")
@@ -837,7 +838,7 @@ plot_imputed_vs_original(p2_visit2, p2_v2_lstm, visit = "Visit 2", type = "MNAR"
 plot_imputed_vs_original(p3_visit1, p3_v1_lstm, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p3_visit2, p3_v2_lstm, visit = "Visit 2", type = "MNAR")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_lstm, visit = "Visit 1", type = "MNAR")
+plot_imputed_vs_original(p4_visit1_full, p4_v1_lstm, visit = "Visit 1", type = "MNAR")
 plot_imputed_vs_original(p4_visit2, p4_v2_lstm, visit = "Visit 2", type = "MNAR")
 #p5
 plot_imputed_vs_original(p5_visit1, p5_v1_lstm, visit = "Visit 1", type = "MNAR")
@@ -917,7 +918,7 @@ nrmse_interp_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_interpolation, m
 nrmse_interp_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_interpolation, method = "Linear Interpolation")
 nrmse_interp_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_interpolation, method = "Linear Interpolation")
 #p4
-nrmse_interp_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_interpolation, method = "Linear Interpolation")
+nrmse_interp_p4v1_mnar <- calculate_nrsme(p4_visit1_full, p4_v1_mnar_interpolation, method = "Linear Interpolation")
 nrmse_interp_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_interpolation, method = "Linear Interpolation")
 #p5
 nrmse_interp_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_interpolation, method = "Linear Interpolation")
@@ -973,14 +974,14 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FA
 ggplot(nrmse_mnar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MNAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 1",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 2",
        y = "NRMSE", x = "Patient")
 
 dev.off()
@@ -1005,7 +1006,7 @@ nrmse_kalman_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_kalman, method =
 nrmse_kalman_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_kalman, method = "Kalman Smoothing")
 nrmse_kalman_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_kalman, method = "Kalman Smoothing")
 #p4
-nrmse_kalman_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p4v1_mnar <- calculate_nrsme(p4_visit1_full, p4_v1_mnar_kalman, method = "Kalman Smoothing")
 nrmse_kalman_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_kalman, method = "Kalman Smoothing")
 #p5
 nrmse_kalman_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_kalman, method = "Kalman Smoothing")
@@ -1060,14 +1061,14 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FA
 ggplot(nrmse_kalman_mnar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MNAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 1",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_kalman_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 2",
        y = "NRMSE", x = "Patient")
 
 dev.off()
@@ -1092,7 +1093,7 @@ nrmse_lwma_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_lwma, method = "LW
 nrmse_lwma_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_lwma, method = "LWMA")
 nrmse_lwma_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_lwma, method = "LWMA")
 #p4
-nrmse_lwma_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_lwma, method = "LWMA")
+nrmse_lwma_p4v1_mnar <- calculate_nrsme(p4_visit1_full, p4_v1_mnar_lwma, method = "LWMA")
 nrmse_lwma_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_lwma, method = "LWMA")
 #p5
 nrmse_lwma_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_lwma, method = "LWMA")
@@ -1147,14 +1148,14 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FA
 ggplot(nrmse_lwma_mnar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MNAR 1 MV)",
+  labs(title = "NRMSE per Patient: Visit 1",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_lwma_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MNAR 1 MV)",
+  labs(title = "NRMSE per Patient: Visit 2",
        y = "NRMSE", x = "Patient")
 
 dev.off()
@@ -1171,35 +1172,35 @@ dev.off()
 #call function to calcualte nrms
 #LWMA
 #p1
-nrmse_loess_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_loess, method = "LOESS")
-nrmse_loess_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_loess, method = "LOESS")
+nrmse_loess_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_loess, method = "LOESS + RF")
+nrmse_loess_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_loess, method = "LOESS + RF")
 #p2
-nrmse_loess_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_loess, method = "LOESS")
-nrmse_loess_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_loess, method = "LOESS")
+nrmse_loess_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_loess, method = "LOESS + RF")
+nrmse_loess_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_loess, method = "LOESS + RF")
 #p3
-nrmse_loess_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_loess, method = "LOESS")
-nrmse_loess_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_loess, method = "LOESS")
+nrmse_loess_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_loess, method = "LOESS + RF")
+nrmse_loess_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_loess, method = "LOESS + RF")
 #p4
-nrmse_loess_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_loess, method = "LOESS")
-nrmse_loess_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_loess, method = "LOESS")
+nrmse_loess_p4v1_mnar <- calculate_nrsme(p4_visit1_full, p4_v1_loess, method = "LOESS + RF")
+nrmse_loess_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_loess, method = "LOESS + RF")
 #p5
-nrmse_loess_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_loess, method = "LOESS")
-nrmse_loess_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_loess, method = "LOESS")
+nrmse_loess_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_loess, method = "LOESS + RF")
+nrmse_loess_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_loess, method = "LOESS + RF")
 #p6
-nrmse_loess_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_loess, method = "LOESS")
-nrmse_loess_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_loess, method = "LOESS")
+nrmse_loess_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_loess, method = "LOESS + RF")
+nrmse_loess_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_loess, method = "LOESS + RF")
 #p7
-nrmse_loess_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_loess, method = "LOESS")
-nrmse_loess_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_loess, method = "LOESS")
+nrmse_loess_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_loess, method = "LOESS + RFS")
+nrmse_loess_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_loess, method = "LOESS + RF")
 #p8
-nrmse_loess_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_loess, method = "LOESS")
-nrmse_loess_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_loess, method = "LOESS")
+nrmse_loess_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_loess, method = "LOESS + RF")
+nrmse_loess_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_loess, method = "LOESS + RF")
 #p9
-nrmse_loess_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_loess, method = "LOESS")
-nrmse_loess_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_loess, method = "LOESS")
+nrmse_loess_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_loess, method = "LOESS + RF")
+nrmse_loess_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_loess, method = "LOESS + RF")
 #p10
-nrmse_loess_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_loess, method = "LOESS")
-nrmse_loess_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_loess, method = "LOESS")
+nrmse_loess_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_loess, method = "LOESS + RF")
+nrmse_loess_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_loess, method = "LOESS + RF")
 
 #combine visit 1 
 nrmse_loess_mnar_visit1 <- bind_rows(
@@ -1236,14 +1237,14 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FA
 ggplot(nrmse_loess_mnar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MCAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 1",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_loess_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MCAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 2",
        y = "NRMSE", x = "Patient")
 
 dev.off()
@@ -1255,7 +1256,7 @@ dev.off()
 # ----------------------------
 
 # --------------------------
-# Part 4.1: NRMSE (MCAR)
+# Part 4.1: NRMSE
 # --------------------------
 
 #call function to calcualte nrms
@@ -1270,7 +1271,7 @@ nrmse_lstm_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_loess, method = "LSTM")
 nrmse_lstm_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_lstm, method = "LSTM")
 nrmse_lstm_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_loess, method = "LSTM")
 #p4
-nrmse_lstm_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_lstm, method = "LSTM")
+nrmse_lstm_p4v1_mnar <- calculate_nrsme(p4_visit1_full, p4_v1_lstm, method = "LSTM")
 nrmse_lstm_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_loess, method = "LSTM")
 #p5
 nrmse_lstm_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_lstm, method = "LSTM")
@@ -1327,14 +1328,14 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FA
 ggplot(nrmse_loess_mnar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1 (MCAR 1 MV)",
+  labs(title = "NRMSE per Patient: Visit 1",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_loess_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2 (MCAR 1 MV in middle)",
+  labs(title = "NRMSE per Patient: Visit 2",
        y = "NRMSE", x = "Patient")
 
 dev.off()
@@ -1376,7 +1377,7 @@ ggplot(nrmse_visit1_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation
     axis.text = element_text(size = 12)
   ) +
   labs(
-    title = "NRMSE of Imputed Values Only (Visit 1 - MCAR)",
+    title = "NRMSE of Imputed Values Only (Visit 1)",
     x = "Imputation Method",
     y = "Normalized RMSE"
   ) +
@@ -1394,7 +1395,7 @@ ggplot(nrmse_visit2_tot, aes(x = Imputation_method, y = NRMSE, fill = Imputation
     axis.text = element_text(size = 12)
   ) +
   labs(
-    title = "NRMSE of Imputed Values Only (Visit 2 - MCAR)",
+    title = "NRMSE of Imputed Values Only (Visit 2)",
     x = "Imputation Method",
     y = "Normalized RMSE"
   ) +
@@ -1454,7 +1455,7 @@ calculate_auc <- function(data){
 auc_p1v1_original <- calculate_auc(p1_visit1)
 auc_p2v1_original <- calculate_auc(p2_visit1)
 auc_p3v1_original <- calculate_auc(p3_visit1)
-auc_p4v1_original <- calculate_auc(p4_visit1)
+auc_p4v1_original <- calculate_auc(p4_visit1_full)
 auc_p5v1_original <- calculate_auc(p5_visit1)
 auc_p6v1_original <- calculate_auc(p6_visit1)
 auc_p7v1_original <- calculate_auc(p7_visit1)
@@ -1945,7 +1946,7 @@ methods_to_compare <- unique(visit1_auc_df$Method)
 methods_to_compare <- methods_to_compare[methods_to_compare != "Original"]
 
 #visit 1
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/AUC_Separated_V1.pdf", width = 16, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/AUC_Separated_V1.pdf", width = 16, height = 10)
 
 for (method in methods_to_compare) {
   
@@ -1973,7 +1974,7 @@ for (method in methods_to_compare) {
 dev.off()
 
 #visit 2
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/AUC_Separated_V2.pdf", width = 16, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/AUC_Separated_V2.pdf", width = 16, height = 10)
 
 for (method in methods_to_compare) {
   
@@ -1999,7 +2000,6 @@ for (method in methods_to_compare) {
 }
 
 dev.off()
-
 
 
 # --------------------------------------------------------
@@ -2214,4 +2214,301 @@ plot_pearson_bar(pearson_results_v1_lstm, method_name = "LSTM", visit_label = "V
 plot_pearson_bar(pearson_results_v2_lstm, method_name = "LSTM", visit_label = "Visit 2")
 
 dev.off()
+
+
+# --------------------
+# Part 6: All together
+# ---------------------
+
+
+#put all results together
+#visit 1
+pearson_v1_all_methods <- bind_rows(
+  mutate(pearson_results_v1_interp, Method = "Interpolation"),
+  mutate(pearson_results_v1_kalman, Method = "Kalman"),
+  mutate(pearson_results_v1_loess, Method = "LOESS + RF"),
+  mutate(pearson_results_v1_lwma, Method = "LWMA"),
+  mutate(pearson_results_v1_lstm, Method = "LSTM")
+)
+
+#visit 2
+pearson_v2_all_methods <- bind_rows(
+  mutate(pearson_results_v2_interp, Method = "Interpolation"),
+  mutate(pearson_results_v2_kalman, Method = "Kalman"),
+  mutate(pearson_results_v2_loess, Method = "LOESS + RF"),
+  mutate(pearson_results_v2_lwma, Method = "LWMA"),
+  mutate(pearson_results_v2_lstm, Method = "LSTM")
+)
+
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/Pearson_Corr_separated.pdf", width = 16, height = 10)
+
+ggplot(pearson_v1_all_methods, aes(x = reorder(Metabolite, Pearson_Correlation), y = Pearson_Correlation, fill = Method)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Visit 1: Pearson Correlation per Metabolite and Method",
+    x = "Metabolite",
+    y = "Pearson Correlation",
+    fill = "Method"
+  ) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "darkgreen") +
+  geom_hline(yintercept = 0.5, linetype = "dotted", color = "orange") +
+  ylim(-0.1, 1.05)
+
+ggplot(pearson_v2_all_methods, aes(x = reorder(Metabolite, Pearson_Correlation), y = Pearson_Correlation, fill = Method)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+  coord_flip() +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Visit 2: Pearson Correlation per Metabolite and Method",
+    x = "Metabolite",
+    y = "Pearson Correlation",
+    fill = "Method"
+  ) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "darkgreen") +
+  geom_hline(yintercept = 0.5, linetype = "dotted", color = "orange") +
+  ylim(-0.1, 1.05)
+
+dev.off()
+
+# ------------------
+# TITLE: PCA
+# ------------------
+
+#Function 1: reshape for PCA into wide format
+reshape_for_pca <- function(df) {
+  df <- df %>%
+    mutate(Visit = gsub(" ", "", Visit)) %>% #Visit 1 to Visit1
+    mutate(PatientVisit = paste0(Patient, "_", Visit)) #new column e.g. P1_Visit1
+  
+  metadata_cols <- c("ID", "Patient", "Date", "Time_min", "Visit", "PatientVisit") #metadatae
+  metabolite_cols <- setdiff(names(df)[sapply(df, is.numeric)], metadata_cols) #metabolite data
+  
+  df %>%
+    pivot_longer(cols = all_of(metabolite_cols), names_to = "Metabolite", values_to = "Value") %>% #each metabolite in one row (new columns are PatientVisit, Time_min, Metabolite, Value)
+    mutate(Feature = paste0(Metabolite, "_T", Time_min)) %>% #new metabolite name e.g. Lysin_T0
+    select(PatientVisit, Feature, Value) %>% 
+    pivot_wider(names_from = Feature, values_from = Value) %>% #one row per PatientVisit, one column per Metabolite_Time
+    arrange(PatientVisit)
+}
+
+#call function to reshape data
+#v1
+original_wide_v1 <- reshape_for_pca(original_v1)
+interp_wide_v1 <- reshape_for_pca(interpolation_v1)
+kalman_wide_v1 <- reshape_for_pca(kalman_v1)
+lwma_wide_v1 <- reshape_for_pca(lwma_v1)
+loess_wide_v1 <- reshape_for_pca(loess_v1)
+lstm_wide_v1 <- reshape_for_pca(lstm_v1_combined)
+#v2
+original_wide_v2 <- reshape_for_pca(original_v2)
+interp_wide_v2 <- reshape_for_pca(interpolation_v2)
+kalman_wide_v2 <- reshape_for_pca(kalman_v2)
+lwma_wide_v2 <- reshape_for_pca(lwma_v2)
+loess_wide_v2 <- reshape_for_pca(loess_v2)
+lstm_wide_v2 <- reshape_for_pca(lstm_v2_combined)
+
+#Function 2: run PCA
+#scaling function to handle columns with zero variance
+scale_safe <- function(x) {
+  apply(x, 2, function(col) {
+    sd_col <- sd(col)
+    if (sd_col == 0) return(rep(0, length(col)))  #constant columns
+    (col - mean(col)) / sd_col
+  })
+}
+
+#run PCA
+run_pca <- function(df_wide) {
+  #save row IDs
+  row_ids <- df_wide$PatientVisit
+  
+  #separate features from ID
+  data_mat <- df_wide %>%
+    column_to_rownames("PatientVisit") %>%
+    as.matrix()
+  
+  #identify zero-variance columns (because of LSTM)
+  var_vec <- apply(data_mat, 2, var)
+  zero_var_cols <- names(var_vec[var_vec == 0])
+  
+  #drop zero-variance columns
+  data_for_pca <- data_mat[, var_vec > 0, drop = FALSE]
+  
+  #standardize (scale and center)
+  scaled_data <- scale(data_for_pca)
+  rownames(scaled_data) <- row_ids  #re-apply rownames 
+  
+  #run PCA
+  pca_result <- prcomp(scaled_data, center = TRUE, scale. = TRUE)
+  
+  #attach rownames to the PCA scores matrix
+  rownames(pca_result$x) <- row_ids
+  
+  return(pca_result)
+}
+
+
+#call function to run PCA
+#v1
+original_pca_v1 <- run_pca(original_wide_v1)
+interp_pca_v1 <- run_pca(interp_wide_v1)
+kalman_pca_v1 <- run_pca(kalman_wide_v1)
+lwma_pca_v1 <- run_pca(lwma_wide_v1)
+loess_pca_v1 <- run_pca(loess_wide_v1)
+lstm_pca_v1 <- run_pca(lstm_wide_v1)
+#v2
+original_pca_v2 <- run_pca(original_wide_v2)
+interp_pca_v2 <- run_pca(interp_wide_v2)
+kalman_pca_v2 <- run_pca(kalman_wide_v2)
+lwma_pca_v2 <- run_pca(lwma_wide_v2)
+loess_pca_v2 <- run_pca(loess_wide_v2)
+lstm_pca_v2 <- run_pca(lstm_wide_v2)
+
+#Function 3: compute mean distances 
+#use PC1 and PC2 because they usually explain the most variance in the data, give a 2D comparison of structure, same components you use for PCA plots
+compute_mean_distance <- function(pca1, pca2){
+  scores1 <- as.data.frame(pca1$x[,1:2])
+  scores2 <- as.data.frame(pca2$x[,1:2])
+  
+  common_rows <- intersect(rownames(scores1), rownames(scores2))
+  
+  scores1 <- scores1[common_rows, , drop = FALSE]
+  scores2 <- scores2[common_rows, , drop = FALSE]
+  
+  distances <- sqrt(rowSums((scores1 - scores2)^2))
+  mean(distances)
+}
+
+
+#call function to compare distances
+#v1
+distance_interp_v1 <- compute_mean_distance(original_pca_v1, interp_pca_v1)
+distance_kalman_v1 <- compute_mean_distance(original_pca_v1, kalman_pca_v1)
+distance_lwma_v1   <- compute_mean_distance(original_pca_v1, lwma_pca_v1)
+distance_loess_v1  <- compute_mean_distance(original_pca_v1, loess_pca_v1)
+distance_lstm_v1   <- compute_mean_distance(original_pca_v1, lstm_pca_v1)
+
+#combine into one df
+results_pca_v1 <- tibble(
+  Method = c("Interpolation", "Kalman", "LWMA", "LOESS+RF", "LSTM"),
+  Distance = c(distance_interp_v1, distance_kalman_v1, distance_lwma_v1, distance_loess_v1, distance_lstm_v1)
+)
+
+#v2
+distance_interp_v2 <- compute_mean_distance(original_pca_v2, interp_pca_v2)
+distance_kalman_v2 <- compute_mean_distance(original_pca_v2, kalman_pca_v2)
+distance_lwma_v2   <- compute_mean_distance(original_pca_v2, lwma_pca_v2)
+distance_loess_v2  <- compute_mean_distance(original_pca_v2, loess_pca_v2)
+distance_lstm_v2   <- compute_mean_distance(original_pca_v2, lstm_pca_v2)
+
+#combine into one df
+results_pca_v2 <- tibble(
+  Method = c("Interpolation", "Kalman", "LWMA", "LOESS+RF", "LSTM"),
+  Distance = c(distance_interp_v2, distance_kalman_v2, distance_lwma_v2, distance_loess_v2, distance_lstm_v2)
+)
+
+#Function 4: plot PCA and compare the original with the imputed 
+plot_pca_comparison <- function(pca_orig, pca_imp, method_label = "Imputed", visit_label = "Visit 1"){
+  #get PCA scores
+  scores_orig <- as.data.frame(pca_orig$x[,1:2]) %>%
+    rownames_to_column("PatientVisit") %>%
+    mutate(Type = "Original")
+  
+  scores_imp <- as.data.frame(pca_imp$x[,1:2]) %>%
+    rownames_to_column("PatientVisit") %>%
+    mutate(Type = method_label)
+  
+  #data for arrows
+  arrows <- inner_join(scores_orig, scores_imp, by = "PatientVisit", suffix = c("_orig", "_imp"))
+  
+  
+  ggplot() +
+    #arrows between original and imptued
+    geom_segment(data = arrows,
+                 aes(x = PC1_orig, y = PC2_orig, xend = PC1_imp, yend = PC2_imp),
+                 arrow = arrow(length = unit(0.2, "cm")), color = "gray60") +
+    
+    #original points + labels
+    geom_point(data = scores_orig, aes(x = PC1, y = PC2, color = "Original"), size = 3) +
+    geom_text(data = scores_orig, aes(x = PC1, y = PC2, label = PatientVisit), vjust = -0.6, size = 3) +
+    
+    #imputed points + labels
+    geom_point(data = scores_imp, aes(x = PC1, y = PC2, color = method_label), size = 3) +
+    geom_text(data = scores_imp, aes(x = PC1, y = PC2, label = PatientVisit), vjust = -0.6, size = 3) +
+    
+    labs(
+      title = paste("PCA Comparison -", visit_label, ":", method_label),
+      x = "PC1", y = "PC2", color = "Dataset"
+    ) +
+    theme_minimal()
+}
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/FAO/PCA_comparison.pdf", width = 16, height = 10)
+
+#call function to plot 
+#v1
+plot_pca_comparison(original_pca_v1, interp_pca_v1, method_label = "Interpolation", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, kalman_pca_v1, method_label = "Kalman", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, lwma_pca_v1, method_label = "LWMA", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, loess_pca_v1, method_label = "LOESS + RF", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, lstm_pca_v1, method_label = "LSTM", visit_label = "Visit 1")
+#v2
+plot_pca_comparison(original_pca_v2, interp_pca_v2, method_label = "Interpolation", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, kalman_pca_v2, method_label = "Kalman", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, lwma_pca_v2, method_label = "LWMA", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, loess_pca_v2, method_label = "LOESS + RF", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, lstm_pca_v2, method_label = "LSTM", visit_label = "Visit 2")
+
+dev.off()
+
+# ----------------------
+# TITLE: Procrustes analysis
+# ---------------------------
+
+#Measures how similar two PCA configurations are overall
+
+#visit 1
+#interpolation
+proc_interp_v1 <- procrustes(original_pca_v1$x, interp_pca_v1$x)
+summary(proc_interp_v1)
+#kalman
+proc_kalman_v1 <- procrustes(original_pca_v1$x, kalman_pca_v1$x)
+summary(proc_kalman_v1)
+#LWMA
+proc_lwma_v1 <- procrustes(original_pca_v1$x, lwma_pca_v1$x)
+summary(proc_lwma_v1)
+#LOESS + RF
+proc_loess_v1 <- procrustes(original_pca_v1$x, loess_pca_v1$x)
+summary(proc_loess_v1)
+#LSTM
+proc_lstm_v1 <- procrustes(original_pca_v1$x, lstm_pca_v1$x)
+summary(proc_lstm_v1)
+
+#visit 2
+#interpolation
+proc_interp_v2 <- procrustes(original_pca_v2$x, interp_pca_v2$x)
+summary(proc_interp_v2)
+#kalman
+proc_kalman_v2 <- procrustes(original_pca_v2$x, kalman_pca_v2$x)
+summary(proc_kalman_v2)
+#LWMA
+proc_lwma_v2 <- procrustes(original_pca_v2$x, lwma_pca_v2$x)
+summary(proc_lwma_v2)
+#LOESS + RF
+proc_loess_v2 <- procrustes(original_pca_v2$x, loess_pca_v2$x)
+summary(proc_loess_v2)
+#LSTM
+proc_lstm_v2 <- procrustes(original_pca_v2$x, lstm_pca_v2$x)
+summary(proc_lstm_v2)
+
+
+
+
+
+
+
+
 
