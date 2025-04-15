@@ -9,6 +9,7 @@ library(imputeTS) #for imputation methods
 library(pracma) #for AUC calculation
 library(missForest) #for RF
 library(keras) #for LSTM
+library(vegan) #for procrustes
 
 
 # --------------------------------------
@@ -2294,4 +2295,206 @@ ggplot(pearson_v2_all_methods, aes(x = reorder(Metabolite, Pearson_Correlation),
   ylim(-0.1, 1.05)
 
 dev.off()
+
+# ------------------
+# TITLE: PCA
+# ------------------
+
+#Function 1: reshape for PCA into wide format
+reshape_for_pca <- function(df) {
+  df <- df %>%
+    mutate(Visit = gsub(" ", "", Visit)) %>% #Visit 1 to Visit1
+    mutate(PatientVisit = paste0(Patient, "_", Visit)) #new column e.g. P1_Visit1
+  
+  metadata_cols <- c("ID", "Patient", "Date", "Time_min", "Visit", "PateintVisit") #metadatae
+  metabolite_cols <- setdiff(names(df)[sapply(df, is.numeric)], metadata_cols) #metabolite data
+  
+  df %>%
+    pivot_longer(cols = all_of(metabolite_cols), names_to = "Metabolite", values_to = "Value") %>% #each metabolite in one row (new columns are PatientVisit, Time_min, Metabolite, Value)
+    mutate(Feature = paste0(Metabolite, "_T", Time_min)) %>% #new metabolite name e.g. Lysin_T0
+    select(PatientVisit, Feature, Value) %>% 
+    pivot_wider(names_from = Feature, values_from = Value) %>% #one row per PatientVisit, one column per Metabolite_Time
+    arrange(PatientVisit)
+}
+
+#call function to reshape data
+#v1
+original_wide_v1 <- reshape_for_pca(original_v1)
+interp_wide_v1 <- reshape_for_pca(interpolation_v1)
+kalman_wide_v1 <- reshape_for_pca(kalman_v1)
+lwma_wide_v1 <- reshape_for_pca(lwma_v1)
+loess_wide_v1 <- reshape_for_pca(loess_v1)
+lstm_wide_v1 <- reshape_for_pca(lstm_v1_combined)
+#v2
+original_wide_v2 <- reshape_for_pca(original_v2)
+interp_wide_v2 <- reshape_for_pca(interpolation_v2)
+kalman_wide_v2 <- reshape_for_pca(kalman_v2)
+lwma_wide_v2 <- reshape_for_pca(lwma_v2)
+loess_wide_v2 <- reshape_for_pca(loess_v2)
+lstm_wide_v2 <- reshape_for_pca(lstm_v2_combined)
+
+#Function 2: run PCA
+run_pca <- function(df_wide) {
+  df_scaled <- df_wide %>%
+    column_to_rownames("PatientVisit") %>% #PCA required that rows are sample
+    as.matrix() %>% #numeric matrix
+    scale() #standardizes the data (centers each variable and scales to unit variance)
+  
+  #run PCA 
+  prcomp(df_scaled, center = TRUE, scale. = TRUE) #center = TRUE (subtract mean), scale. = TRUE (divide each column by sd)
+}
+
+#call function to run PCA
+#v1
+original_pca_v1 <- run_pca(original_wide_v1)
+interp_pca_v1 <- run_pca(interp_wide_v1)
+kalman_pca_v1 <- run_pca(kalman_wide_v1)
+lwma_pca_v1 <- run_pca(lwma_wide_v1)
+loess_pca_v1 <- run_pca(loess_wide_v1)
+lstm_pca_v1 <- run_pca(lstm_wide_v1)
+#v2
+original_pca_v2 <- run_pca(original_wide_v2)
+interp_pca_v2 <- run_pca(interp_wide_v2)
+kalman_pca_v2 <- run_pca(kalman_wide_v2)
+lwma_pca_v2 <- run_pca(lwma_wide_v2)
+loess_pca_v2 <- run_pca(loess_wide_v2)
+lstm_pca_v2 <- run_pca(lstm_wide_v2)
+
+#Function 3: compute mean distances 
+#use PC1 and PC2 because they usually explain the most variance in the data, give a 2D comparison of structure, same components you use for PCA plots
+compute_mean_distance <- function(pca1, pca2){
+  scores1 <- as.data.frame(pca1$x[,1:2]) #PCA score for original data, only using first two principle components
+  scores2 <- as.data.frame(pca2$x[,1:2])
+  
+  #rows should match between the two 
+  stopifnot(rownames(scores1) == rownames(scores2))
+  distances <- sqrt(rowSums((scores1 - scores2)^2))
+  
+  #averages all those distances to get a single number
+  mean(distances)
+}
+
+#call function to compare distances
+#v1
+distance_interp_v1 <- compute_mean_distance(original_pca_v1, interp_pca_v1)
+distance_kalman_v1 <- compute_mean_distance(original_pca_v1, kalman_pca_v1)
+distance_lwma_v1   <- compute_mean_distance(original_pca_v1, lwma_pca_v1)
+distance_loess_v1  <- compute_mean_distance(original_pca_v1, loess_pca_v1)
+distance_lstm_v1   <- compute_mean_distance(original_pca_v1, lstm_pca_v1)
+
+#combine into one df
+results_pca_v1 <- tibble(
+  Method = c("Interpolation", "Kalman", "LWMA", "LOESS+RF", "LSTM"),
+  Distance = c(distance_interp_v1, distance_kalman_v1, distance_lwma_v1, distance_loess_v1, distance_lstm_v1)
+)
+
+#v2
+distance_interp_v2 <- compute_mean_distance(original_pca_v2, interp_pca_v2)
+distance_kalman_v2 <- compute_mean_distance(original_pca_v2, kalman_pca_v2)
+distance_lwma_v2   <- compute_mean_distance(original_pca_v2, lwma_pca_v2)
+distance_loess_v2  <- compute_mean_distance(original_pca_v2, loess_pca_v2)
+distance_lstm_v2   <- compute_mean_distance(original_pca_v2, lstm_pca_v2)
+
+#combine into one df
+results_pca_v2 <- tibble(
+  Method = c("Interpolation", "Kalman", "LWMA", "LOESS+RF", "LSTM"),
+  Distance = c(distance_interp_v2, distance_kalman_v2, distance_lwma_v2, distance_loess_v2, distance_lstm_v2)
+)
+
+#Function 4: plot PCA and compare the original with the imputed 
+plot_pca_comparison <- function(pca_orig, pca_imp, method_label = "Imputed", visit_label = "Visit 1"){
+  #get PCA scores
+  scores_orig <- as.data.frame(pca_orig$x[,1:2]) %>%
+    rownames_to_column("PatientVisit") %>%
+    mutate(Type = "Original")
+  
+  scores_imp <- as.data.frame(pca_imp$x[,1:2]) %>%
+    rownames_to_column("PatientVisit") %>%
+    mutate(Type = method_label)
+  
+  #data for arrows
+  arrows <- inner_join(scores_orig, scores_imp, by = "PatientVisit", suffix = c("_orig", "_imp"))
+  
+  
+  ggplot() +
+    #arrows between original and imptued
+    geom_segment(data = arrows,
+                 aes(x = PC1_orig, y = PC2_orig, xend = PC1_imp, yend = PC2_imp),
+                 arrow = arrow(length = unit(0.2, "cm")), color = "gray60") +
+    
+    #original points + labels
+    geom_point(data = scores_orig, aes(x = PC1, y = PC2, color = "Original"), size = 3) +
+    geom_text(data = scores_orig, aes(x = PC1, y = PC2, label = PatientVisit), vjust = -0.6, size = 3) +
+    
+    #imputed points + labels
+    geom_point(data = scores_imp, aes(x = PC1, y = PC2, color = method_label), size = 3) +
+    geom_text(data = scores_imp, aes(x = PC1, y = PC2, label = PatientVisit), vjust = -0.6, size = 3) +
+    
+    labs(
+      title = paste("PCA Comparison -", visit_label, ":", method_label),
+      x = "PC1", y = "PC2", color = "Dataset"
+    ) +
+    theme_minimal()
+}
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/PCA_comparison.pdf", width = 16, height = 10)
+
+#call function to plot 
+#v1
+plot_pca_comparison(original_pca_v1, interp_pca_v1, method_label = "Interpolation", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, kalman_pca_v1, method_label = "Kalman", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, lwma_pca_v1, method_label = "LWMA", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, loess_pca_v1, method_label = "LOESS + RF", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, lstm_pca_v1, method_label = "LSTM", visit_label = "Visit 1")
+#v2
+plot_pca_comparison(original_pca_v2, interp_pca_v2, method_label = "Interpolation", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, kalman_pca_v2, method_label = "Kalman", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, lwma_pca_v2, method_label = "LWMA", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, loess_pca_v2, method_label = "LOESS + RF", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, lstm_pca_v2, method_label = "LSTM", visit_label = "Visit 2")
+
+dev.off()
+
+# ----------------------
+# TITLE: Procrustes analysis
+# ---------------------------
+
+#Measures how similar two PCA configurations are overall
+
+#visit 1
+#interpolation
+proc_interp_v1 <- procrustes(original_pca_v1$x, interp_pca_v1$x)
+summary(proc_interp_v1)
+#kalman
+proc_kalman_v1 <- procrustes(original_pca_v1$x, kalman_pca_v1$x)
+summary(proc_kalman_v1)
+#LWMA
+proc_lwma_v1 <- procrustes(original_pca_v1$x, lwma_pca_v1$x)
+summary(proc_lwma_v1)
+#LOESS + RF
+proc_loess_v1 <- procrustes(original_pca_v1$x, loess_pca_v1$x)
+summary(proc_loess_v1)
+#LSTM
+proc_lstm_v1 <- procrustes(original_pca_v1$x, lstm_pca_v1$x)
+summary(proc_lstm_v1)
+
+#visit 2
+#interpolation
+proc_interp_v2 <- procrustes(original_pca_v2$x, interp_pca_v2$x)
+summary(proc_interp_v2)
+#kalman
+proc_kalman_v2 <- procrustes(original_pca_v2$x, kalman_pca_v2$x)
+summary(proc_kalman_v2)
+#LWMA
+proc_lwma_v2 <- procrustes(original_pca_v2$x, lwma_pca_v2$x)
+summary(proc_lwma_v2)
+#LOESS + RF
+proc_loess_v2 <- procrustes(original_pca_v2$x, loess_pca_v2$x)
+summary(proc_loess_v2)
+#LSTM
+proc_lstm_v2 <- procrustes(original_pca_v2$x, lstm_pca_v2$x)
+summary(proc_lstm_v2)
+
+
+
 
