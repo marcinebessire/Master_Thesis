@@ -232,7 +232,6 @@ find_mnar_locations(p9_visit2, p9_v2_mnar)
 find_mnar_locations(p10_visit1, p10_v1_mnar)
 find_mnar_locations(p10_visit2, p10_v2_mnar)
 
-
 # --------------------------------------
 # TITLE: IMPUTATION METHODS
 # --------------------------------------
@@ -1016,7 +1015,7 @@ nrmse_interp_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_mnar_interpolation
 nrmse_interp_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_mnar_interpolation, method = "Linear Interpolation")
 
 #combine visit 1 
-nrmse_mnar_visit1 <- bind_rows(
+nrmse_interp_visit1 <- bind_rows(
   nrmse_interp_p1v1_mnar %>% mutate(Patient = "P1"),
   nrmse_interp_p2v1_mnar %>% mutate(Patient = "P2"),
   nrmse_interp_p3v1_mnar %>% mutate(Patient = "P3"),
@@ -1030,7 +1029,7 @@ nrmse_mnar_visit1 <- bind_rows(
 )
 
 #combine visit 2
-nrmse_mnar_visit2 <- bind_rows(
+nrmse_interp_visit2 <- bind_rows(
   nrmse_interp_p1v2_mnar %>% mutate(Patient = "P1"),
   nrmse_interp_p2v2_mnar %>% mutate(Patient = "P2"),
   nrmse_interp_p3v2_mnar %>% mutate(Patient = "P3"),
@@ -1047,14 +1046,14 @@ nrmse_mnar_visit2 <- bind_rows(
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/Interpolation/MNAR_Interpolation_1MV_NRMSE.pdf", width = 14, height = 10)
 
 #plot visit 1
-ggplot(nrmse_mnar_visit1, aes(x = Patient, y = NRMSE)) +
+ggplot(nrmse_interp_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
   labs(title = "NRMSE per Patient: Visit 1, Linear Interpolation",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
-ggplot(nrmse_mnar_visit2, aes(x = Patient, y = NRMSE)) +
+ggplot(nrmse_interp_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
   labs(title = "NRMSE per Patient: Visit 2, Linear Interpolation",
@@ -1073,35 +1072,35 @@ dev.off()
 #call function to calcualte nrms
 #kalman
 #p1
-nrmse_kalman_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p1v1_mnar <- calculate_nrsme(p1_visit1, p1_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p1v2_mnar <- calculate_nrsme(p1_visit2, p1_v2_mnar_kalman, method = "Kalman")
 #p2
-nrmse_kalman_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p2v1_mnar <- calculate_nrsme(p2_visit1, p2_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p2v2_mnar <- calculate_nrsme(p2_visit2, p2_v2_mnar_kalman, method = "Kalman")
 #p3
-nrmse_kalman_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p3v1_mnar <- calculate_nrsme(p3_visit1, p3_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p3v2_mnar <- calculate_nrsme(p3_visit2, p3_v2_mnar_kalman, method = "Kalman")
 #p4
-nrmse_kalman_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p4v1_mnar <- calculate_nrsme(p4_visit1, p4_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p4v2_mnar <- calculate_nrsme(p4_visit2, p4_v2_mnar_kalman, method = "Kalman")
 #p5
-nrmse_kalman_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p5v1_mnar <- calculate_nrsme(p5_visit1, p5_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p5v2_mnar <- calculate_nrsme(p5_visit2, p5_v2_mnar_kalman, method = "Kalman")
 #p6
-nrmse_kalman_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p6v1_mnar <- calculate_nrsme(p6_visit1, p6_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p6v2_mnar <- calculate_nrsme(p6_visit2, p6_v2_mnar_kalman, method = "Kalman")
 #p7
-nrmse_kalman_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p7v1_mnar <- calculate_nrsme(p7_visit1, p7_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p7v2_mnar <- calculate_nrsme(p7_visit2, p7_v2_mnar_kalman, method = "Kalman")
 #p8
-nrmse_kalman_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p8v1_mnar <- calculate_nrsme(p8_visit1, p8_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p8v2_mnar <- calculate_nrsme(p8_visit2, p8_v2_mnar_kalman, method = "Kalman")
 #p9
-nrmse_kalman_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p9v1_mnar <- calculate_nrsme(p9_visit1, p9_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p9v2_mnar <- calculate_nrsme(p9_visit2, p9_v2_mnar_kalman, method = "Kalman")
 #p10
-nrmse_kalman_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_mnar_kalman, method = "Kalman Smoothing")
-nrmse_kalman_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_mnar_kalman, method = "Kalman Smoothing")
+nrmse_kalman_p10v1_mnar <- calculate_nrsme(p10_visit1, p10_v1_mnar_kalman, method = "Kalman")
+nrmse_kalman_p10v2_mnar <- calculate_nrsme(p10_visit2, p10_v2_mnar_kalman, method = "Kalman")
 
 #combine visit 1 
 nrmse_kalman_mnar_visit1 <- bind_rows(
@@ -1137,14 +1136,14 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BA
 ggplot(nrmse_kalman_mnar_visit1, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 1, Kalman Smoothing",
+  labs(title = "NRMSE per Patient: Visit 1, Kalman",
        y = "NRMSE", x = "Patient")
 
 #plot visit 2
 ggplot(nrmse_kalman_mnar_visit2, aes(x = Patient, y = NRMSE)) +
   geom_boxplot(fill = "skyblue") +
   theme_minimal() +
-  labs(title = "NRMSE per Patient: Visit 2, Kalman Smoothing",
+  labs(title = "NRMSE per Patient: Visit 2, Kalman",
        y = "NRMSE", x = "Patient")
 
 dev.off()
@@ -1422,7 +1421,7 @@ dev.off()
 
 #visit1
 nrmse_visit1_tot <- bind_rows(
-  nrmse_mnar_visit1,
+  nrmse_interp_visit1,
   nrmse_kalman_mnar_visit1,
   nrmse_wma_mnar_visit1,
   nrmse_loess_mnar_visit1,
@@ -1431,7 +1430,7 @@ nrmse_visit1_tot <- bind_rows(
 
 #visit2
 nrmse_visit2_tot <- bind_rows(
-  nrmse_mnar_visit2,
+  nrmse_interp_visit2,
   nrmse_kalman_mnar_visit2,
   nrmse_wma_mnar_visit2,
   nrmse_loess_mnar_visit2,
@@ -1854,16 +1853,16 @@ visit1_auc_df <- bind_rows(
   data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p9v1_original)),
   data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p10v1_original)),
   
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p1v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p2v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p3v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p4v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p5v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p6v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p7v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p8v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p9v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p10v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p1v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p2v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p3v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p4v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p5v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p6v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p7v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p8v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p9v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p10v1_interpolation)),
   
   data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p1v1_kalman)),
   data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p2v1_kalman)),
@@ -1923,16 +1922,16 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p9v2_original)),
   data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p10v2_original)),
   
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p1v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p2v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p3v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p4v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p5v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p6v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p7v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p8v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p9v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p10v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p1v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p2v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p3v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p4v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p5v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p6v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p7v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p8v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p9v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p10v2_interpolation)),
   
   data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p1v2_kalman)),
   data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p2v2_kalman)),
@@ -2186,8 +2185,8 @@ pearson_results_v1_interp <- calculate_pearson_corr_visit(original_v1, interpola
 pearson_results_v2_interp <- calculate_pearson_corr_visit(original_v2, interpolation_v2)
 
 #plot results
-plot_pearson_bar(pearson_results_v1_interp, method_name = "Interpolation", visit_label = "Visit 1")
-plot_pearson_bar(pearson_results_v2_interp, method_name = "Interpolation", visit_label = "Visit 2")
+plot_pearson_bar(pearson_results_v1_interp, method_name = "Linear Interpolation", visit_label = "Visit 1")
+plot_pearson_bar(pearson_results_v2_interp, method_name = "Linear Interpolation", visit_label = "Visit 2")
 
 # ----------------------
 # Part 2: Kalman
@@ -2300,7 +2299,7 @@ dev.off()
 #put all results together
 #visit 1
 pearson_v1_all_methods <- bind_rows(
-  mutate(pearson_results_v1_interp, Method = "Interpolation"),
+  mutate(pearson_results_v1_interp, Method = "Linear Interpolation"),
   mutate(pearson_results_v1_kalman, Method = "Kalman"),
   mutate(pearson_results_v1_loess, Method = "LOESS + RF"),
   mutate(pearson_results_v1_wma, Method = "WMA"),
@@ -2309,7 +2308,7 @@ pearson_v1_all_methods <- bind_rows(
 
 #visit 2
 pearson_v2_all_methods <- bind_rows(
-  mutate(pearson_results_v2_interp, Method = "Interpolation"),
+  mutate(pearson_results_v2_interp, Method = "Linear Interpolation"),
   mutate(pearson_results_v2_kalman, Method = "Kalman"),
   mutate(pearson_results_v2_loess, Method = "LOESS + RF"),
   mutate(pearson_results_v2_wma, Method = "WMA"),
@@ -2437,7 +2436,7 @@ distance_lstm_v1   <- compute_mean_distance(original_pca_v1, lstm_pca_v1)
 
 #combine into one df
 results_pca_v1 <- tibble(
-  Method = c("Interpolation", "Kalman", "WMA", "LOESS+RF", "LSTM"),
+  Method = c("Linear Interpolation", "Kalman", "WMA", "LOESS + RF", "LSTM"),
   Distance = c(distance_interp_v1, distance_kalman_v1, distance_wma_v1, distance_loess_v1, distance_lstm_v1)
 )
 
@@ -2450,7 +2449,7 @@ distance_lstm_v2   <- compute_mean_distance(original_pca_v2, lstm_pca_v2)
 
 #combine into one df
 results_pca_v2 <- tibble(
-  Method = c("Interpolation", "Kalman", "WMA", "LOESS+RF", "LSTM"),
+  Method = c("Linear Interpolation", "Kalman", "WMA", "LOESS + RF", "LSTM"),
   Distance = c(distance_interp_v2, distance_kalman_v2, distance_wma_v2, distance_loess_v2, distance_lstm_v2)
 )
 
@@ -2491,16 +2490,15 @@ plot_pca_comparison <- function(pca_orig, pca_imp, method_label = "Imputed", vis
 }
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_simulation/PCA_comparison.pdf", width = 16, height = 10)
-
 #call function to plot 
 #v1
-plot_pca_comparison(original_pca_v1, interp_pca_v1, method_label = "Interpolation", visit_label = "Visit 1")
+plot_pca_comparison(original_pca_v1, interp_pca_v1, method_label = "Linear Interpolation", visit_label = "Visit 1")
 plot_pca_comparison(original_pca_v1, kalman_pca_v1, method_label = "Kalman", visit_label = "Visit 1")
 plot_pca_comparison(original_pca_v1, wma_pca_v1, method_label = "WMA", visit_label = "Visit 1")
 plot_pca_comparison(original_pca_v1, loess_pca_v1, method_label = "LOESS + RF", visit_label = "Visit 1")
 plot_pca_comparison(original_pca_v1, lstm_pca_v1, method_label = "LSTM", visit_label = "Visit 1")
 #v2
-plot_pca_comparison(original_pca_v2, interp_pca_v2, method_label = "Interpolation", visit_label = "Visit 2")
+plot_pca_comparison(original_pca_v2, interp_pca_v2, method_label = "Linear Interpolation", visit_label = "Visit 2")
 plot_pca_comparison(original_pca_v2, kalman_pca_v2, method_label = "Kalman", visit_label = "Visit 2")
 plot_pca_comparison(original_pca_v2, wma_pca_v2, method_label = "WMA", visit_label = "Visit 2")
 plot_pca_comparison(original_pca_v2, loess_pca_v2, method_label = "LOESS + RF", visit_label = "Visit 2")
@@ -2549,5 +2547,195 @@ proc_lstm_v2 <- procrustes(original_pca_v2$x, lstm_pca_v2$x)
 summary(proc_lstm_v2)
 
 
+# -------------------------
+# TITLE: Ranking
+# -------------------------
+# -------------------------
+# Step 1: Get Results
+# -------------------------
+
+# ----------
+# 1.1 NRSME
+# ----------
+
+#average NRMSE per method
+#v1
+nrmse_v1_summary <- nrmse_visit1_tot %>%
+  group_by(Imputation_method) %>%
+  summarise(NRMSE = mean(NRMSE, na.rm = TRUE)) %>%
+  mutate(Visit = "Visit 1")
+#v2
+nrmse_v2_summary <- nrmse_visit2_tot %>%
+  group_by(Imputation_method) %>%
+  summarise(NRMSE = mean(NRMSE, na.rm = TRUE)) %>%
+  mutate(Visit = "Visit 2")
+
+# ----------
+# 1.2 AUC
+# ----------
+
+#function for AUC difference
+get_auc_error <- function(original_df, imputed_df, method_name, visit_label) {
+  original_auc <- calculate_auc(original_df)
+  imputed_auc <- calculate_auc(imputed_df)
+  auc_diff <- abs(original_auc - imputed_auc)
+  
+  data.frame(
+    Method = method_name,
+    Visit = visit_label,
+    AUC_Error = mean(auc_diff, na.rm = TRUE)
+  )
+}
+
+#call function
+auc_interp_v1 <- get_auc_error(original_v1, interpolation_v1, "Linear Interpolation", "Visit 1")
+auc_interp_v2 <- get_auc_error(original_v2, interpolation_v2, "Linear Interpolation", "Visit 2")
+auc_kalman_v1 <- get_auc_error(original_v1, kalman_v1, "Kalman", "Visit 1")
+auc_kalman_v2 <- get_auc_error(original_v2, kalman_v2, "Kalman", "Visit 2")
+auc_wma_v1 <- get_auc_error(original_v1, wma_v1, "WMA", "Visit 1")
+auc_wma_v2 <- get_auc_error(original_v2, wma_v2, "WMA", "Visit 2")
+auc_loess_v1 <- get_auc_error(original_v1, loess_v1, "LOESS + RF", "Visit 1")
+auc_loess_v2 <- get_auc_error(original_v2, loess_v2, "LOESS + RF", "Visit 2")
+auc_lstm_v1 <- get_auc_error(original_v1, lstm_v1_combined, "LSTM", "Visit 1")
+auc_lstm_v2 <- get_auc_error(original_v2, lstm_v2_combined, "LSTM", "Visit 2")
+
+# ------------
+# 1.3 Pearson
+# -------------
+
+#get average per method and visit
+pearson_v1_summary <- pearson_v1_all_methods %>%
+  group_by(Method) %>%
+  summarise(Pearson = mean(Pearson_Correlation, na.rm = TRUE)) %>%
+  mutate(Visit = "Visit 1")
+
+pearson_v2_summary <- pearson_v2_all_methods %>%
+  group_by(Method) %>%
+  summarise(Pearson = mean(Pearson_Correlation, na.rm = TRUE)) %>%
+  mutate(Visit = "Visit 2")
+
+# ----------
+# 1.4 PCA
+# ----------
+
+#reuslts
+results_pca_v1  #has Visit 1 PCA distances
+results_pca_v2  #has Visit 2 PCA distances
+
+#ddd Visit column
+results_pca_v1 <- results_pca_v1 %>% mutate(Visit = "Visit 1") %>% rename(Method = Method, PCA_Distance = Distance)
+results_pca_v2 <- results_pca_v2 %>% mutate(Visit = "Visit 2") %>% rename(Method = Method, PCA_Distance = Distance)
+
+# -------------
+# 1.5 Procrustes
+# --------------
+
+#get RMSE procrustes
+get_procrustes_rmse <- function(proc_obj, method_name, visit_label) {
+  data.frame(
+    Method = method_name,
+    Visit = visit_label,
+    Procrustes_RMSE = summary(proc_obj)$rmse
+  )
+}
+
+#call function
+rmse_interp_v1 <- get_procrustes_rmse(proc_interp_v1, "Linear Interpolation", "Visit 1")
+rmse_interp_v2 <- get_procrustes_rmse(proc_interp_v2, "Linear Interpolation", "Visit 2")
+rmse_kalman_v1 <- get_procrustes_rmse(proc_kalman_v1, "Kalman", "Visit 1")
+rmse_kalman_v2 <- get_procrustes_rmse(proc_kalman_v2, "Kalman", "Visit 2")
+rmse_wma_v1 <- get_procrustes_rmse(proc_wma_v1, "WMA", "Visit 1")
+rmse_wma_v2 <- get_procrustes_rmse(proc_wma_v2, "WMA", "Visit 2")
+rmse_loess_v1 <- get_procrustes_rmse(proc_loess_v1, "LOESS + RF", "Visit 1")
+rmse_loess_v2 <- get_procrustes_rmse(proc_loess_v2, "LOESS + RF", "Visit 2")
+rmse_lstm_v1 <- get_procrustes_rmse(proc_lstm_v1, "LSTM", "Visit 1")
+rmse_lstm_v2 <- get_procrustes_rmse(proc_lstm_v2, "LSTM", "Visit 2")
+
+# -------------------------
+# Step 2: Combine Results
+# -------------------------
+
+#combine NRMSE
+nrmse_all <- bind_rows(nrmse_v1_summary, nrmse_v2_summary) %>%
+  rename(Method = Imputation_method)
+
+#combine AUC
+auc_all <- bind_rows(
+  auc_interp_v1, auc_interp_v2,
+  auc_kalman_v1, auc_kalman_v2,
+  auc_wma_v1, auc_wma_v2,
+  auc_loess_v1, auc_loess_v2,
+  auc_lstm_v1, auc_lstm_v2
+)
+
+#combine Pearson
+pearson_all <- bind_rows(pearson_v1_summary, pearson_v2_summary)
+
+#combine PCA
+pca_all <- bind_rows(results_pca_v1, results_pca_v2)
+
+#combine procrustes
+procrustes_all <- bind_rows(
+  rmse_interp_v1, rmse_interp_v2,
+  rmse_kalman_v1, rmse_kalman_v2,
+  rmse_wma_v1, rmse_wma_v2,
+  rmse_loess_v1, rmse_loess_v2,
+  rmse_lstm_v1, rmse_lstm_v2
+)
+
+#merge into one table
+results_summary <- reduce(
+  list(nrmse_all, auc_all, pearson_all, pca_all, procrustes_all),
+  full_join,
+  by = c("Method", "Visit")
+)
+
+
+# -------------------------------------
+# Step 3: Normalize each metric (0–1)
+# -------------------------------------
+
+#this is the ranking step: best value gets 0, worst gets 1 and everything else is proportionally scalled in middle 
+#lowest value is 0, highest value is 1 => everything else is proportionally in between 0 or 1 
+#function to nromalize
+normalize_min_max <- function(x) {
+  rng <- range(x, na.rm = TRUE) #returns minimum and max of x and skips NA
+  if (diff(rng) == 0) return(rep(0, length(x)))  #if max-min is zero terns vecotr of 0 meaning no variabiltiy
+  (x - rng[1]) / (rng[2] - rng[1]) #min-max normalization rng[1] is min => normlized = x-min(x) / max(x)-min(x)
+}
+
+#results normlaized for all
+results_normalized <- results_summary %>%
+  group_by(Visit) %>% #because separately scroed
+  mutate(
+    NRMSE_norm = normalize_min_max(NRMSE),
+    AUC_Error_norm = normalize_min_max(AUC_Error),
+    Pearson_norm = normalize_min_max(max(Pearson, na.rm = TRUE) - Pearson),  #reverse Pearson (highest=0)
+    PCA_Distance_norm = normalize_min_max(PCA_Distance),
+    Procrustes_RMSE_norm = normalize_min_max(Procrustes_RMSE)
+  ) %>%
+  ungroup()
+
+# -------------------------------------
+# Step 4: Compute Final Score
+# -------------------------------------
+
+results_ranked <- results_normalized %>%
+  rowwise() %>% #each row indepenently
+  mutate(
+    Final_Score = mean(c_across(ends_with("_norm")), na.rm = TRUE) #selects normalized columns and calcualtes mean over all 
+  ) %>%
+  ungroup() %>%
+  arrange(Visit, Final_Score)
+
+# -------------------------------------
+# Step 4: Show Final Ranking
+# -------------------------------------
+
+ranking_output <- results_ranked %>%
+  select(Method, Visit, Final_Score) %>%
+  arrange(Visit, Final_Score)
+
+print(ranking_output)
 
 
