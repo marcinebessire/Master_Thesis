@@ -2599,6 +2599,23 @@ auc_loess_v2 <- get_auc_error(original_v2, loess_v2, "LOESS + RF", "Visit 2")
 auc_lstm_v1 <- get_auc_error(original_v1, lstm_v1_combined, "LSTM", "Visit 1")
 auc_lstm_v2 <- get_auc_error(original_v2, lstm_v2_combined, "LSTM", "Visit 2")
 
+#total output
+auc_v1_errors <- bind_rows(
+  auc_interp_v1,
+  auc_kalman_v1,
+  auc_wma_v1,
+  auc_loess_v1,
+  auc_lstm_v1,
+)
+
+auc_v2_errors <- bind_rows(
+  auc_interp_v2,
+  auc_kalman_v2,
+  auc_wma_v2,
+  auc_loess_v2,
+  auc_lstm_v2,
+)
+
 # ------------
 # 1.3 Pearson
 # -------------
@@ -2642,7 +2659,7 @@ get_procrustes_rmse <- function(proc_obj, method_name, visit_label) {
 #call function
 rmse_interp_v1 <- get_procrustes_rmse(proc_interp_v1, "Linear Interpolation", "Visit 1")
 rmse_interp_v2 <- get_procrustes_rmse(proc_interp_v2, "Linear Interpolation", "Visit 2")
-rmse_kalman_v1 <- get_procrustes_rmse(proc_kalman_v1, "Kalman", "Visit 1")
+rmse_interp_v1 <- get_procrustes_rmse(proc_kalman_v1, "Kalman", "Visit 1")
 rmse_kalman_v2 <- get_procrustes_rmse(proc_kalman_v2, "Kalman", "Visit 2")
 rmse_wma_v1 <- get_procrustes_rmse(proc_wma_v1, "WMA", "Visit 1")
 rmse_wma_v2 <- get_procrustes_rmse(proc_wma_v2, "WMA", "Visit 2")
@@ -2650,6 +2667,23 @@ rmse_loess_v1 <- get_procrustes_rmse(proc_loess_v1, "LOESS + RF", "Visit 1")
 rmse_loess_v2 <- get_procrustes_rmse(proc_loess_v2, "LOESS + RF", "Visit 2")
 rmse_lstm_v1 <- get_procrustes_rmse(proc_lstm_v1, "LSTM", "Visit 1")
 rmse_lstm_v2 <- get_procrustes_rmse(proc_lstm_v2, "LSTM", "Visit 2")
+
+#total 
+procruses_v1_tot <- bind_rows(
+  rmse_interp_v1,
+  rmse_interp_v1,
+  rmse_wma_v1,
+  rmse_loess_v1,
+  rmse_lstm_v1
+)
+
+procruses_v2_tot <- bind_rows(
+  rmse_interp_v2,
+  rmse_interp_v2,
+  rmse_wma_v2,
+  rmse_loess_v2,
+  rmse_lstm_v2
+)
 
 # -------------------------
 # Step 2: Combine Results
@@ -2704,7 +2738,7 @@ normalize_min_max <- function(x) {
   (x - rng[1]) / (rng[2] - rng[1]) #min-max normalization rng[1] is min => normlized = x-min(x) / max(x)-min(x)
 }
 
-#results normlaized for all
+#results normalized for all
 results_normalized <- results_summary %>%
   group_by(Visit) %>% #because separately scroed
   mutate(
@@ -2721,7 +2755,7 @@ results_normalized <- results_summary %>%
 # -------------------------------------
 
 results_ranked <- results_normalized %>%
-  rowwise() %>% #each row indepenently
+  rowwise() %>% #each row independently
   mutate(
     Final_Score = mean(c_across(ends_with("_norm")), na.rm = TRUE) #selects normalized columns and calcualtes mean over all 
   ) %>%

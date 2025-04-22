@@ -4,7 +4,7 @@ library(dplyr)
 library(tidyr)
 library(tidyverse)
 library(openxlsx)
-library(zoo) #for interpolation
+library(zoo) #for Linear Interpolation
 library(imputeTS) #for imputation methods
 library(pracma) #for AUC calculation
 library(missForest) #for RF
@@ -320,7 +320,7 @@ p10_v2_mnar_kalman <- kalman_imputation_fallback(p10_visit1)
 
 
 # -----------------------------------------------------------
-# Part 3: Linear Weighted Moving Average (LWMA)
+# Part 3: Weighted Moving Average (WMA)
 # ----------------------------------------------------------
 
 #function to make weighted moving average imputation
@@ -332,11 +332,11 @@ weighted_mov_average_fallback <- function(data, window = 3) {
       non_na_count <- sum(!is.na(col))
       
       if (non_na_count >= 2) {
-        #try LWMA
+        #try WMA
         tryCatch({
-          return(na_ma(col, k = window, weighting = "exponential"))
+          return(na_ma(col, k = window, weighting = "exponential")) #exponential
         }, error = function(e) {
-          message("LWMA failed – use linear interpolation: ", e$message)
+          message("WMA failed – use linear interpolation: ", e$message)
           return(na.approx(col, na.rm = FALSE, rule = 2))
         })
       } else if (non_na_count == 1) {
@@ -358,38 +358,38 @@ weighted_mov_average_fallback <- function(data, window = 3) {
 }
 
 
-#call function for LWMA
+#call function for WMA
 #MNAR
 #p1
-p1_v1_mnar_lwma <- weighted_mov_average_fallback(p1_visit1)
-p1_v2_mnar_lwma <- weighted_mov_average_fallback(p1_visit2)
+p1_v1_mnar_wma <- weighted_mov_average_fallback(p1_visit1)
+p1_v2_mnar_wma <- weighted_mov_average_fallback(p1_visit2)
 #2
-p2_v1_mnar_lwma <- weighted_mov_average_fallback(p2_visit1)
-p2_v2_mnar_lwma <- weighted_mov_average_fallback(p2_visit2)
+p2_v1_mnar_wma <- weighted_mov_average_fallback(p2_visit1)
+p2_v2_mnar_wma <- weighted_mov_average_fallback(p2_visit2)
 #3
-p3_v1_mnar_lwma <- weighted_mov_average_fallback(p3_visit1)
-p3_v2_mnar_lwma <- weighted_mov_average_fallback(p3_visit2)
+p3_v1_mnar_wma <- weighted_mov_average_fallback(p3_visit1)
+p3_v2_mnar_wma <- weighted_mov_average_fallback(p3_visit2)
 #4
-p4_v1_mnar_lwma <- weighted_mov_average_fallback(p4_visit1)
-p4_v2_mnar_lwma <- weighted_mov_average_fallback(p4_visit2) #linear interpolation
+p4_v1_mnar_wma <- weighted_mov_average_fallback(p4_visit1)
+p4_v2_mnar_wma <- weighted_mov_average_fallback(p4_visit2) #linear interpolation
 #5
-p5_v1_mnar_lwma <- weighted_mov_average_fallback(p5_visit1) #linear interpolation
-p5_v2_mnar_lwma <- weighted_mov_average_fallback(p5_visit2) #linear interpolation
+p5_v1_mnar_wma <- weighted_mov_average_fallback(p5_visit1) #linear interpolation
+p5_v2_mnar_wma <- weighted_mov_average_fallback(p5_visit2) #linear interpolation
 #6
-p6_v1_mnar_lwma <- weighted_mov_average_fallback(p6_visit1)
-p6_v2_mnar_lwma <- weighted_mov_average_fallback(p6_visit2)
+p6_v1_mnar_wma <- weighted_mov_average_fallback(p6_visit1)
+p6_v2_mnar_wma <- weighted_mov_average_fallback(p6_visit2)
 #7
-p7_v1_mnar_lwma <- weighted_mov_average_fallback(p7_visit1)
-p7_v2_mnar_lwma <- weighted_mov_average_fallback(p7_visit2)
+p7_v1_mnar_wma <- weighted_mov_average_fallback(p7_visit1)
+p7_v2_mnar_wma <- weighted_mov_average_fallback(p7_visit2)
 #8
-p8_v1_mnar_lwma <- weighted_mov_average_fallback(p8_visit1)
-p8_v2_mnar_lwma <- weighted_mov_average_fallback(p8_visit2)
+p8_v1_mnar_wma <- weighted_mov_average_fallback(p8_visit1)
+p8_v2_mnar_wma <- weighted_mov_average_fallback(p8_visit2)
 #9
-p9_v1_mnar_lwma <- weighted_mov_average_fallback(p9_visit1)
-p9_v2_mnar_lwma <- weighted_mov_average_fallback(p9_visit2)
+p9_v1_mnar_wma <- weighted_mov_average_fallback(p9_visit1)
+p9_v2_mnar_wma <- weighted_mov_average_fallback(p9_visit2)
 #10
-p10_v1_mnar_lwma <- weighted_mov_average_fallback(p10_visit1)
-p10_v2_mnar_lwma <- weighted_mov_average_fallback(p10_visit2)
+p10_v1_mnar_wma <- weighted_mov_average_fallback(p10_visit1)
+p10_v2_mnar_wma <- weighted_mov_average_fallback(p10_visit2)
 
 
 # --------------------------------
@@ -749,35 +749,35 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BA
 
 #MNAR
 #p1
-plot_imputed_vs_original(p1_visit1, p1_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p1_visit2, p1_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p1_visit1, p1_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p1_visit2, p1_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p2
-plot_imputed_vs_original(p2_visit1, p2_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p2_visit2, p2_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p2_visit1, p2_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p2_visit2, p2_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p3
-plot_imputed_vs_original(p3_visit1, p3_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p3_visit2, p3_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p3_visit1, p3_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p3_visit2, p3_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p4_visit2, p4_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p4_visit1, p4_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p4_visit2, p4_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p5
-plot_imputed_vs_original(p5_visit1, p5_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p5_visit2, p5_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p5_visit1, p5_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p5_visit2, p5_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p6
-plot_imputed_vs_original(p6_visit1, p6_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p6_visit2, p6_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p6_visit1, p6_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p6_visit2, p6_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p7
-plot_imputed_vs_original(p7_visit1, p7_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p7_visit2, p7_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p7_visit1, p7_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p7_visit2, p7_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p8
-plot_imputed_vs_original(p8_visit1, p8_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p8_visit2, p8_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p8_visit1, p8_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p8_visit2, p8_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p9
-plot_imputed_vs_original(p9_visit1, p9_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p9_visit2, p9_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p9_visit1, p9_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p9_visit2, p9_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 #p10
-plot_imputed_vs_original(p10_visit1, p10_v1_mnar_interpolation, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p10_visit2, p10_v2_mnar_interpolation, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p10_visit1, p10_v1_mnar_interpolation, visit = "Visit 1", type = "Linear Interpolation")
+plot_imputed_vs_original(p10_visit2, p10_v2_mnar_interpolation, visit = "Visit 2", type = "Linear Interpolation")
 
 dev.off()
 
@@ -790,76 +790,76 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BA
 
 #MNAR
 #p1
-plot_imputed_vs_original(p1_visit1, p1_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p1_visit2, p1_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p1_visit1, p1_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p1_visit2, p1_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p2
-plot_imputed_vs_original(p2_visit1, p2_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p2_visit2, p2_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p2_visit1, p2_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p2_visit2, p2_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p3
-plot_imputed_vs_original(p3_visit1, p3_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p3_visit2, p3_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p3_visit1, p3_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p3_visit2, p3_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p4_visit2, p4_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p4_visit1, p4_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p4_visit2, p4_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p5
-plot_imputed_vs_original(p5_visit1, p5_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p5_visit2, p5_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p5_visit1, p5_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p5_visit2, p5_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p6
-plot_imputed_vs_original(p6_visit1, p6_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p6_visit2, p6_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p6_visit1, p6_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p6_visit2, p6_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p7
-plot_imputed_vs_original(p7_visit1, p7_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p7_visit2, p7_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p7_visit1, p7_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p7_visit2, p7_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p8
-plot_imputed_vs_original(p8_visit1, p8_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p8_visit2, p8_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p8_visit1, p8_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p8_visit2, p8_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p9
-plot_imputed_vs_original(p9_visit1, p9_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p9_visit2, p9_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p9_visit1, p9_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p9_visit2, p9_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 #p10
-plot_imputed_vs_original(p10_visit1, p10_v1_mnar_kalman, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p10_visit2, p10_v2_mnar_kalman, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p10_visit1, p10_v1_mnar_kalman, visit = "Visit 1", type = "Kalman")
+plot_imputed_vs_original(p10_visit2, p10_v2_mnar_kalman, visit = "Visit 2", type = "Kalman")
 
 dev.off()
 
 # ----------------------------
-# Part 3: LWMA
+# Part 3: wma
 # ----------------------------
 
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_original/LWMA/MNAR_LWMA_1MV.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BAS_original/WMA/MNAR_WMA_1MV.pdf", width = 14, height = 10)
 
 #MNAR
 #p1
-plot_imputed_vs_original(p1_visit1, p1_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p1_visit2, p1_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p1_visit1, p1_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p1_visit2, p1_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p2
-plot_imputed_vs_original(p2_visit1, p2_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p2_visit2, p2_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p2_visit1, p2_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p2_visit2, p2_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p3
-plot_imputed_vs_original(p3_visit1, p3_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p3_visit2, p3_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p3_visit1, p3_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p3_visit2, p3_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p4_visit2, p4_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p4_visit1, p4_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p4_visit2, p4_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p5
-plot_imputed_vs_original(p5_visit1, p5_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p5_visit2, p5_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p5_visit1, p5_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p5_visit2, p5_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p6
-plot_imputed_vs_original(p6_visit1, p6_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p6_visit2, p6_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p6_visit1, p6_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p6_visit2, p6_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p7
-plot_imputed_vs_original(p7_visit1, p7_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p7_visit2, p7_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p7_visit1, p7_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p7_visit2, p7_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p8
-plot_imputed_vs_original(p8_visit1, p8_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p8_visit2, p8_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p8_visit1, p8_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p8_visit2, p8_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p9
-plot_imputed_vs_original(p9_visit1, p9_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p9_visit2, p9_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p9_visit1, p9_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p9_visit2, p9_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 #p10
-plot_imputed_vs_original(p10_visit1, p10_v1_mnar_lwma, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p10_visit2, p10_v2_mnar_lwma, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p10_visit1, p10_v1_mnar_wma, visit = "Visit 1", type = "WMA")
+plot_imputed_vs_original(p10_visit2, p10_v2_mnar_wma, visit = "Visit 2", type = "WMA")
 
 dev.off()
 
@@ -873,35 +873,35 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BA
 #call function
 #MCAR
 #p1
-plot_imputed_vs_original(p1_visit1, p1_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p1_visit2, p1_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p1_visit1, p1_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p1_visit2, p1_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p2
-plot_imputed_vs_original(p2_visit1, p2_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p2_visit2, p2_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p2_visit1, p2_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p2_visit2, p2_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p3
-plot_imputed_vs_original(p3_visit1, p3_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p3_visit2, p3_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p3_visit1, p3_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p3_visit2, p3_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p4_visit2, p4_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p4_visit1, p4_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p4_visit2, p4_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p5
-plot_imputed_vs_original(p5_visit1, p5_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p5_visit2, p5_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p5_visit1, p5_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p5_visit2, p5_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p6
-plot_imputed_vs_original(p6_visit1, p6_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p6_visit2, p6_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p6_visit1, p6_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p6_visit2, p6_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p7
-plot_imputed_vs_original(p7_visit1, p7_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p7_visit2, p7_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p7_visit1, p7_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p7_visit2, p7_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p8
-plot_imputed_vs_original(p8_visit1, p8_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p8_visit2, p8_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p8_visit1, p8_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p8_visit2, p8_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p9
-plot_imputed_vs_original(p9_visit1, p9_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p9_visit2, p9_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p9_visit1, p9_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p9_visit2, p9_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 #p10
-plot_imputed_vs_original(p10_visit1, p10_v1_loess, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p10_visit2, p10_v2_loess, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p10_visit1, p10_v1_loess, visit = "Visit 1", type = "LOESS + RF")
+plot_imputed_vs_original(p10_visit2, p10_v2_loess, visit = "Visit 2", type = "LOESS + RF")
 
 dev.off()
 
@@ -915,35 +915,35 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/Patient_Visit_Separated/MNAR/BA
 #call function
 #MCAR
 #p1
-plot_imputed_vs_original(p1_visit1, p1_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p1_visit2, p1_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p1_visit1, p1_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p1_visit2, p1_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p2
-plot_imputed_vs_original(p2_visit1, p2_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p2_visit2, p2_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p2_visit1, p2_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p2_visit2, p2_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p3
-plot_imputed_vs_original(p3_visit1, p3_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p3_visit2, p3_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p3_visit1, p3_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p3_visit2, p3_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p4
-plot_imputed_vs_original(p4_visit1, p4_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p4_visit2, p4_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p4_visit1, p4_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p4_visit2, p4_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p5
-plot_imputed_vs_original(p5_visit1, p5_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p5_visit2, p5_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p5_visit1, p5_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p5_visit2, p5_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p6
-plot_imputed_vs_original(p6_visit1, p6_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p6_visit2, p6_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p6_visit1, p6_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p6_visit2, p6_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p7
-plot_imputed_vs_original(p7_visit1, p7_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p7_visit2, p7_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p7_visit1, p7_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p7_visit2, p7_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p8
-plot_imputed_vs_original(p8_visit1, p8_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p8_visit2, p8_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p8_visit1, p8_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p8_visit2, p8_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p9
-plot_imputed_vs_original(p9_visit1, p9_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p9_visit2, p9_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p9_visit1, p9_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p9_visit2, p9_v2_lstm, visit = "Visit 2", type = "LSTM")
 #p10
-plot_imputed_vs_original(p10_visit1, p10_v1_lstm, visit = "Visit 1", type = "MNAR")
-plot_imputed_vs_original(p10_visit2, p10_v2_lstm, visit = "Visit 2", type = "MNAR")
+plot_imputed_vs_original(p10_visit1, p10_v1_lstm, visit = "Visit 1", type = "LSTM")
+plot_imputed_vs_original(p10_visit2, p10_v2_lstm, visit = "Visit 2", type = "LSTMs")
 
 dev.off()
 
@@ -1123,56 +1123,56 @@ kalman_visit2_auc <- bind_rows(
   auc_p10v2_kalman
 )
 
-#LWMA AUC
+#WMA AUC
 #visit 1
-auc_p1v1_lwma <- calculate_auc(p1_v1_mnar_lwma)
-auc_p2v1_lwma <- calculate_auc(p2_v1_mnar_lwma)
-auc_p3v1_lwma <- calculate_auc(p3_v1_mnar_lwma)
-auc_p4v1_lwma <- calculate_auc(p4_v1_mnar_lwma)
-auc_p5v1_lwma <- calculate_auc(p5_v1_mnar_lwma)
-auc_p6v1_lwma <- calculate_auc(p6_v1_mnar_lwma)
-auc_p7v1_lwma <- calculate_auc(p7_v1_mnar_lwma)
-auc_p8v1_lwma <- calculate_auc(p8_v1_mnar_lwma)
-auc_p9v1_lwma <- calculate_auc(p9_v1_mnar_lwma)
-auc_p10v1_lwma <- calculate_auc(p10_v1_mnar_lwma)
+auc_p1v1_wma <- calculate_auc(p1_v1_mnar_wma)
+auc_p2v1_wma <- calculate_auc(p2_v1_mnar_wma)
+auc_p3v1_wma <- calculate_auc(p3_v1_mnar_wma)
+auc_p4v1_wma <- calculate_auc(p4_v1_mnar_wma)
+auc_p5v1_wma <- calculate_auc(p5_v1_mnar_wma)
+auc_p6v1_wma <- calculate_auc(p6_v1_mnar_wma)
+auc_p7v1_wma <- calculate_auc(p7_v1_mnar_wma)
+auc_p8v1_wma <- calculate_auc(p8_v1_mnar_wma)
+auc_p9v1_wma <- calculate_auc(p9_v1_mnar_wma)
+auc_p10v1_wma <- calculate_auc(p10_v1_mnar_wma)
 #visit 2
-auc_p1v2_lwma <- calculate_auc(p1_v2_mnar_lwma)
-auc_p2v2_lwma <- calculate_auc(p2_v2_mnar_lwma)
-auc_p3v2_lwma <- calculate_auc(p3_v2_mnar_lwma)
-auc_p4v2_lwma <- calculate_auc(p4_v2_mnar_lwma)
-auc_p5v2_lwma <- calculate_auc(p5_v2_mnar_lwma)
-auc_p6v2_lwma <- calculate_auc(p6_v2_mnar_lwma)
-auc_p7v2_lwma <- calculate_auc(p7_v2_mnar_lwma)
-auc_p8v2_lwma <- calculate_auc(p8_v2_mnar_lwma)
-auc_p9v2_lwma <- calculate_auc(p9_v2_mnar_lwma)
-auc_p10v2_lwma <- calculate_auc(p10_v2_mnar_lwma)
+auc_p1v2_wma <- calculate_auc(p1_v2_mnar_wma)
+auc_p2v2_wma <- calculate_auc(p2_v2_mnar_wma)
+auc_p3v2_wma <- calculate_auc(p3_v2_mnar_wma)
+auc_p4v2_wma <- calculate_auc(p4_v2_mnar_wma)
+auc_p5v2_wma <- calculate_auc(p5_v2_mnar_wma)
+auc_p6v2_wma <- calculate_auc(p6_v2_mnar_wma)
+auc_p7v2_wma <- calculate_auc(p7_v2_mnar_wma)
+auc_p8v2_wma <- calculate_auc(p8_v2_mnar_wma)
+auc_p9v2_wma <- calculate_auc(p9_v2_mnar_wma)
+auc_p10v2_wma <- calculate_auc(p10_v2_mnar_wma)
 
 #combine
 #visit 1
-lwma_visit1_auc <- bind_rows(
-  auc_p1v1_lwma, 
-  auc_p2v1_lwma,
-  auc_p3v1_lwma,
-  auc_p4v1_lwma,
-  auc_p5v1_lwma,
-  auc_p6v1_lwma,
-  auc_p7v1_lwma,
-  auc_p8v1_lwma,
-  auc_p9v1_lwma,
-  auc_p10v1_lwma
+wma_visit1_auc <- bind_rows(
+  auc_p1v1_wma, 
+  auc_p2v1_wma,
+  auc_p3v1_wma,
+  auc_p4v1_wma,
+  auc_p5v1_wma,
+  auc_p6v1_wma,
+  auc_p7v1_wma,
+  auc_p8v1_wma,
+  auc_p9v1_wma,
+  auc_p10v1_wma
 )
 #visit 2
-lwma_visit2_auc <- bind_rows(
-  auc_p1v2_lwma, 
-  auc_p2v2_lwma,
-  auc_p3v2_lwma,
-  auc_p4v2_lwma,
-  auc_p5v2_lwma,
-  auc_p6v2_lwma,
-  auc_p7v2_lwma,
-  auc_p8v2_lwma,
-  auc_p8v2_lwma,
-  auc_p10v2_lwma
+wma_visit2_auc <- bind_rows(
+  auc_p1v2_wma, 
+  auc_p2v2_wma,
+  auc_p3v2_wma,
+  auc_p4v2_wma,
+  auc_p5v2_wma,
+  auc_p6v2_wma,
+  auc_p7v2_wma,
+  auc_p8v2_wma,
+  auc_p8v2_wma,
+  auc_p10v2_wma
 )
 
 
@@ -1295,16 +1295,16 @@ visit1_auc_df <- bind_rows(
   data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p9v1_original)),
   data.frame(Method = "Original",      Visit = "Visit 1", stack(auc_p10v1_original)),
   
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p1v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p2v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p3v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p4v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p5v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p6v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p7v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p8v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p9v1_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 1", stack(auc_p10v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p1v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p2v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p3v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p4v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p5v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p6v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p7v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p8v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p9v1_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 1", stack(auc_p10v1_interpolation)),
   
   data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p1v1_kalman)),
   data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p2v1_kalman)),
@@ -1317,16 +1317,16 @@ visit1_auc_df <- bind_rows(
   data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p9v1_kalman)),
   data.frame(Method = "Kalman",        Visit = "Visit 1", stack(auc_p10v1_kalman)),
   
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p1v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p2v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p3v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p4v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p5v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p6v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p7v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p8v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p9v1_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 1", stack(auc_p10v1_lwma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p1v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p2v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p3v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p4v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p5v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p6v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p7v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p8v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p9v1_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 1", stack(auc_p10v1_wma)),
   
   data.frame(Method = "LOESS + RF",          Visit = "Visit 1", stack(auc_p1v1_loess)),
   data.frame(Method = "LOESS + RF",          Visit = "Visit 1", stack(auc_p2v1_loess)),
@@ -1364,16 +1364,16 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p9v2_original)),
   data.frame(Method = "Original",      Visit = "Visit 2", stack(auc_p10v2_original)),
   
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p1v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p2v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p3v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p4v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p5v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p6v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p7v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p8v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p9v2_interpolation)),
-  data.frame(Method = "Interpolation", Visit = "Visit 2", stack(auc_p10v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p1v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p2v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p3v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p4v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p5v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p6v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p7v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p8v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p9v2_interpolation)),
+  data.frame(Method = "Linear Interpolation", Visit = "Visit 2", stack(auc_p10v2_interpolation)),
   
   data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p1v2_kalman)),
   data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p2v2_kalman)),
@@ -1386,16 +1386,16 @@ visit2_auc_df <- bind_rows(
   data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p9v2_kalman)),
   data.frame(Method = "Kalman",        Visit = "Visit 2", stack(auc_p10v2_kalman)),
   
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p1v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p2v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p3v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p4v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p5v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p6v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p7v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p8v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p9v2_lwma)),
-  data.frame(Method = "LWMA",          Visit = "Visit 2", stack(auc_p10v2_lwma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p1v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p2v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p3v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p4v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p5v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p6v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p7v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p8v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p9v2_wma)),
+  data.frame(Method = "WMA",          Visit = "Visit 2", stack(auc_p10v2_wma)),
   
   data.frame(Method = "LOESS + RF",          Visit = "Visit 2", stack(auc_p1v2_loess)),
   data.frame(Method = "LOESS + RF",          Visit = "Visit 2", stack(auc_p2v2_loess)),
@@ -1520,268 +1520,5 @@ for (method in methods_to_compare) {
 }
 
 dev.off()
-
-# ------------------------
-# TITLE: NMD 
-# ------------------------
-
-calculate_nmd_patient_visit <- function(patient_id, visit, original_df, imputed_list) {
-  # Visit label
-  visit_label <- paste("Visit", visit)
-  
-  # Loop over all imputed methods
-  results <- lapply(names(imputed_list), function(method_name) {
-    imputed_df <- imputed_list[[method_name]]
-    
-    metabolite_cols <- colnames(original_df)[6:ncol(original_df)]
-    
-    nmd_values <- sapply(metabolite_cols, function(col) {
-      orig <- original_df[[col]]
-      imp <- imputed_df[[col]]
-      
-      valid_idx <- which(!is.na(orig) & !is.na(imp))
-      
-      if (length(valid_idx) > 2) {
-        mean_diff <- mean(abs(orig[valid_idx] - imp[valid_idx]))
-        norm_factor <- mean(abs(orig[valid_idx]), na.rm = TRUE)
-        
-        if (norm_factor > 0) {
-          return(mean_diff / norm_factor)
-        } else {
-          return(NA)
-        }
-      } else {
-        return(NA)
-      }
-    })
-    
-    data.frame(
-      Patient = paste("Patient", gsub("^p", "", patient_id)),
-      Visit = visit_label,
-      Metabolite = metabolite_cols,
-      Method = method_name,
-      NMD = nmd_values,
-      stringsAsFactors = FALSE
-    )
-  })
-  
-  # Combine results from all methods
-  bind_rows(results)
-}
-
-#original dataframes
-#v1
-original_p1v1 <- p1_visit1
-original_p2v1 <- p2_visit1
-original_p3v1 <- p3_visit1
-original_p4v1 <- p4_visit1
-original_p5v1 <- p5_visit1
-original_p6v1 <- p6_visit1
-original_p7v1 <- p7_visit1
-original_p8v1 <- p8_visit1
-original_p9v1 <- p9_visit1
-original_p10v1 <- p10_visit1
-
-#v2
-original_p1v2 <- p1_visit2
-original_p2v2 <- p2_visit2
-original_p3v2 <- p3_visit2
-original_p4v2 <- p4_visit2
-original_p5v2 <- p5_visit2
-original_p6v2 <- p6_visit2
-original_p7v2 <- p7_visit2
-original_p8v2 <- p8_visit2
-original_p9v2 <- p9_visit2
-original_p10v2 <- p10_visit2
-
-#v1
-#p1
-imputed_list_p1v1 <- list(
-  "Interpolation" = p1_v1_mnar_interpolation,
-  "Kalman"        = p1_v1_mnar_kalman,
-  "LWMA"          = p1_v1_mnar_lwma,
-  "LOESS + RF"    = p1_v1_loess,
-  "LSTM"          = p1_v1_lstm
-)
-#p2
-imputed_list_p2v1 <- list(
-  "Interpolation" = p2_v1_mnar_interpolation,
-  "Kalman"        = p2_v1_mnar_kalman,
-  "LWMA"          = p2_v1_mnar_lwma,
-  "LOESS + RF"    = p2_v1_loess,
-  "LSTM"          = p2_v1_lstm
-)
-#p3
-imputed_list_p3v1 <- list(
-  "Interpolation" = p3_v1_mnar_interpolation,
-  "Kalman"        = p3_v1_mnar_kalman,
-  "LWMA"          = p3_v1_mnar_lwma,
-  "LOESS + RF"    = p3_v1_loess,
-  "LSTM"          = p3_v1_lstm
-)
-#p4
-imputed_list_p4v1 <- list(
-  "Interpolation" = p4_v1_mnar_interpolation,
-  "Kalman"        = p4_v1_mnar_kalman,
-  "LWMA"          = p4_v1_mnar_lwma,
-  "LOESS + RF"    = p4_v1_loess,
-  "LSTM"          = p4_v1_lstm
-)
-#p5
-imputed_list_p5v1 <- list(
-  "Interpolation" = p5_v1_mnar_interpolation,
-  "Kalman"        = p5_v1_mnar_kalman,
-  "LWMA"          = p5_v1_mnar_lwma,
-  "LOESS + RF"    = p5_v1_loess,
-  "LSTM"          = p5_v1_lstm
-)
-#p6
-imputed_list_p6v1 <- list(
-  "Interpolation" = p6_v1_mnar_interpolation,
-  "Kalman"        = p6_v1_mnar_kalman,
-  "LWMA"          = p6_v1_mnar_lwma,
-  "LOESS + RF"    = p6_v1_loess,
-  "LSTM"          = p6_v1_lstm
-)
-#p7
-imputed_list_p7v1 <- list(
-  "Interpolation" = p7_v1_mnar_interpolation,
-  "Kalman"        = p7_v1_mnar_kalman,
-  "LWMA"          = p7_v1_mnar_lwma,
-  "LOESS + RF"    = p7_v1_loess,
-  "LSTM"          = p7_v1_lstm
-)
-#p8
-imputed_list_p8v1 <- list(
-  "Interpolation" = p8_v1_mnar_interpolation,
-  "Kalman"        = p8_v1_mnar_kalman,
-  "LWMA"          = p8_v1_mnar_lwma,
-  "LOESS + RF"    = p8_v1_loess,
-  "LSTM"          = p8_v1_lstm
-)
-#p9
-imputed_list_p9v1 <- list(
-  "Interpolation" = p9_v1_mnar_interpolation,
-  "Kalman"        = p9_v1_mnar_kalman,
-  "LWMA"          = p9_v1_mnar_lwma,
-  "LOESS + RF"    = p9_v1_loess,
-  "LSTM"          = p9_v1_lstm
-)
-#p10
-imputed_list_p10v1 <- list(
-  "Interpolation" = p10_v1_mnar_interpolation,
-  "Kalman"        = p10_v1_mnar_kalman,
-  "LWMA"          = p10_v1_mnar_lwma,
-  "LOESS + RF"    = p10_v1_loess,
-  "LSTM"          = p10_v1_lstm
-)
-
-
-#v2
-#p1
-imputed_list_p1v2 <- list(
-  "Interpolation" = p1_v2_mnar_interpolation,
-  "Kalman"        = p1_v2_mnar_kalman,
-  "LWMA"          = p1_v2_mnar_lwma,
-  "LOESS + RF"    = p1_v2_loess,
-  "LSTM"          = p1_v2_lstm
-)
-#p2
-imputed_list_p2v2 <- list(
-  "Interpolation" = p2_v2_mnar_interpolation,
-  "Kalman"        = p2_v2_mnar_kalman,
-  "LWMA"          = p2_v2_mnar_lwma,
-  "LOESS + RF"    = p2_v2_loess,
-  "LSTM"          = p2_v2_lstm
-)
-#p3
-imputed_list_p3v2 <- list(
-  "Interpolation" = p3_v2_mnar_interpolation,
-  "Kalman"        = p3_v2_mnar_kalman,
-  "LWMA"          = p3_v2_mnar_lwma,
-  "LOESS + RF"    = p3_v2_loess,
-  "LSTM"          = p3_v2_lstm
-)
-#p4
-imputed_list_p4v2 <- list(
-  "Interpolation" = p4_v2_mnar_interpolation,
-  "Kalman"        = p4_v2_mnar_kalman,
-  "LWMA"          = p4_v2_mnar_lwma,
-  "LOESS + RF"    = p4_v2_loess,
-  "LSTM"          = p4_v2_lstm
-)
-#p5
-imputed_list_p5v2 <- list(
-  "Interpolation" = p5_v2_mnar_interpolation,
-  "Kalman"        = p5_v2_mnar_kalman,
-  "LWMA"          = p5_v2_mnar_lwma,
-  "LOESS + RF"    = p5_v2_loess,
-  "LSTM"          = p5_v2_lstm
-)
-#p6
-imputed_list_p6v2 <- list(
-  "Interpolation" = p6_v2_mnar_interpolation,
-  "Kalman"        = p6_v2_mnar_kalman,
-  "LWMA"          = p6_v2_mnar_lwma,
-  "LOESS + RF"    = p6_v2_loess,
-  "LSTM"          = p6_v2_lstm
-)
-#p7
-imputed_list_p7v2 <- list(
-  "Interpolation" = p7_v2_mnar_interpolation,
-  "Kalman"        = p7_v2_mnar_kalman,
-  "LWMA"          = p7_v2_mnar_lwma,
-  "LOESS + RF"    = p7_v2_loess,
-  "LSTM"          = p7_v2_lstm
-)
-#p8
-imputed_list_p8v2 <- list(
-  "Interpolation" = p8_v2_mnar_interpolation,
-  "Kalman"        = p8_v2_mnar_kalman,
-  "LWMA"          = p8_v2_mnar_lwma,
-  "LOESS + RF"    = p8_v2_loess,
-  "LSTM"          = p8_v2_lstm
-)
-#p9
-imputed_list_p9v2 <- list(
-  "Interpolation" = p9_v2_mnar_interpolation,
-  "Kalman"        = p9_v2_mnar_kalman,
-  "LWMA"          = p9_v2_mnar_lwma,
-  "LOESS + RF"    = p9_v2_loess,
-  "LSTM"          = p9_v2_lstm
-)
-#p10
-imputed_list_p10v2 <- list(
-  "Interpolation" = p10_v2_mnar_interpolation,
-  "Kalman"        = p10_v2_mnar_kalman,
-  "LWMA"          = p10_v2_mnar_lwma,
-  "LOESS + RF"    = p10_v2_loess,
-  "LSTM"          = p10_v2_lstm
-)
-
-#call the function
-#v1
-nmd_p1_v1 <- calculate_nmd_patient_visit("p1", 1, original_p1v1, imputed_list_p1v1)
-nmd_p2_v1 <- calculate_nmd_patient_visit("p2", 1, original_p2v1, imputed_list_p2v1)
-nmd_p3_v1 <- calculate_nmd_patient_visit("p3", 1, original_p3v1, imputed_list_p3v1)
-nmd_p4_v1 <- calculate_nmd_patient_visit("p4", 1, original_p4v1, imputed_list_p4v1)
-nmd_p5_v1 <- calculate_nmd_patient_visit("p5", 1, original_p5v1, imputed_list_p5v1)
-nmd_p6_v1 <- calculate_nmd_patient_visit("p6", 1, original_p6v1, imputed_list_p6v1)
-nmd_p7_v1 <- calculate_nmd_patient_visit("p7", 1, original_p7v1, imputed_list_p7v1)
-nmd_p8_v1 <- calculate_nmd_patient_visit("p8", 1, original_p8v1, imputed_list_p8v1)
-nmd_p9_v1 <- calculate_nmd_patient_visit("p9", 1, original_p9v1, imputed_list_p9v1)
-nmd_p10_v1 <- calculate_nmd_patient_visit("p10", 1, original_p10v1, imputed_list_p10v1)
-#v2
-nmd_p1_v2 <- calculate_nmd_patient_visit("p1", 2, original_p1v2, imputed_list_p1v2)
-nmd_p2_v2 <- calculate_nmd_patient_visit("p2", 2, original_p2v2, imputed_list_p2v2)
-nmd_p3_v2 <- calculate_nmd_patient_visit("p3", 2, original_p3v2, imputed_list_p3v2)
-nmd_p4_v2 <- calculate_nmd_patient_visit("p4", 2, original_p4v2, imputed_list_p4v2)
-nmd_p5_v2 <- calculate_nmd_patient_visit("p5", 2, original_p5v2, imputed_list_p5v2)
-nmd_p6_v2 <- calculate_nmd_patient_visit("p6", 2, original_p6v2, imputed_list_p6v2)
-nmd_p7_v2 <- calculate_nmd_patient_visit("p7", 2, original_p7v2, imputed_list_p7v2)
-nmd_p8_v2 <- calculate_nmd_patient_visit("p8", 2, original_p8v2, imputed_list_p8v2)
-nmd_p9_v2 <- calculate_nmd_patient_visit("p9", 2, original_p9v2, imputed_list_p9v2)
-nmd_p10_v2 <- calculate_nmd_patient_visit("p10", 2, original_p10v2, imputed_list_p10v2)
-
 
 
