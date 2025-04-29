@@ -8,6 +8,7 @@ library(reshape2) #for melt
 library(gtools) #for mixedsort
 library(missForest)
 library(imputeLCMD)
+library(FSA) #for Dunns test
 
 #open data 
 data_full <- read.csv("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids_data.csv", check.names = FALSE)
@@ -736,7 +737,7 @@ visit_statistical_tests <- function(data){
 
 #call function to compare Visit 1 vs. Visit 2
 #original 
-stats_origina <- visit_statistical_tests(data)  #0 and 0
+stats_original <- visit_statistical_tests(data)  #0 and 0
 #Halfmin
 visit_Halfmin10pct_res <- visit_statistical_tests(halfmin_10pct_tot) #0 and 0
 visit_Halfmin20pct_res <- visit_statistical_tests(halfmin_20pct_tot) #0 and 0
@@ -816,15 +817,686 @@ ggplot(stats_long, aes(x = Percentage, y = Significant_Lipids, fill = Test)) +
 dev.off()
 
 
+# ---------------
+# TITLE: NRMSE
+# ---------------
+
+#function to calcualte NRMSE
+calculate_weighted_nrmse <- function(original, imputed, method, percentage){
+  #numeric columns 
+  numeric_col_names <- colnames(original)[6:ncol(original)]
+  
+  #calculate nrmse for each column
+  nrmse_values <- sapply(numeric_col_names, function(col){
+    actual_val <- original[[col]]
+    imputed_val <- imputed[[col]]
+    
+    #ensure no missing value 
+    valid_indices <- !is.na(actual_val) & !is.na(imputed_val)
+    
+    if (sum(valid_indices) > 2) { #if enough data
+      mse <- mean((actual_val[valid_indices] - imputed_val[valid_indices])^2) #mean squared error
+      rmse <- sqrt(mse) #root mean squared error
+      norm_factor <- max(actual_val[valid_indices], na.rm = TRUE) - min(actual_val[valid_indices], na.rm = TRUE)
+        
+      if (norm_factor > 0){
+        nrmse <- rmse / norm_factor
+        weighted_nrmse <- nrmse * percentage
+        return(weighted_nrmse)
+      } else {
+        return(NA)
+      }
+    } else {
+      return(NA)
+    }
+  })
+  
+  return(data.frame(
+    Lipid = numeric_col_names,
+    Imputation_Method = method,
+    MNAR_proportion = (percentage * 100),
+    Weighted_NRMSE = nrmse_values
+  ))
+}
 
 
+#call function to compute NRMSE
+#Halfmin
+#visit 1
+nrmse_res1_halfmin_10pct <- calculate_weighted_nrmse(data_original_v1, halfmin_10pct_v1, "Halfmin", 0.1)
+nrmse_res1_halfmin_20pct <- calculate_weighted_nrmse(data_original_v1, halfmin_20pct_v1, "Halfmin", 0.2)
+nrmse_res1_halfmin_30pct <- calculate_weighted_nrmse(data_original_v1, halfmin_30pct_v1, "Halfmin", 0.3)
+nrmse_res1_halfmin_40pct <- calculate_weighted_nrmse(data_original_v1, halfmin_40pct_v1, "Halfmin", 0.4)
+#visit 2
+nrmse_res2_halfmin_10pct <- calculate_weighted_nrmse(data_original_v2, halfmin_10pct_v2, "Halfmin", 0.1)
+nrmse_res2_halfmin_20pct <- calculate_weighted_nrmse(data_original_v2, halfmin_20pct_v2, "Halfmin", 0.2)
+nrmse_res2_halfmin_30pct <- calculate_weighted_nrmse(data_original_v2, halfmin_30pct_v2, "Halfmin", 0.3)
+nrmse_res2_halfmin_40pct <- calculate_weighted_nrmse(data_original_v2, halfmin_40pct_v2, "Halfmin", 0.4)
+#KNN
+#visit 1
+nrmse_res1_KNN_10pct <- calculate_weighted_nrmse(data_original_v1, knn_10pct_v1, "KNN", 0.1)
+nrmse_res1_KNN_20pct <- calculate_weighted_nrmse(data_original_v1, knn_20pct_v1, "KNN", 0.2)
+nrmse_res1_KNN_30pct <- calculate_weighted_nrmse(data_original_v1, knn_30pct_v1, "KNN", 0.3)
+nrmse_res1_KNN_40pct <- calculate_weighted_nrmse(data_original_v1, knn_40pct_v1, "KNN", 0.4)
+#visit 2
+nrmse_res2_KNN_10pct <- calculate_weighted_nrmse(data_original_v2, knn_10pct_v2, "KNN", 0.1)
+nrmse_res2_KNN_20pct <- calculate_weighted_nrmse(data_original_v2, knn_20pct_v2, "KNN", 0.2)
+nrmse_res2_KNN_30pct <- calculate_weighted_nrmse(data_original_v2, knn_30pct_v2, "KNN", 0.3)
+nrmse_res2_KNN_40pct <- calculate_weighted_nrmse(data_original_v2, knn_40pct_v2, "KNN", 0.4)
+#RF
+#visit 1
+nrmse_res1_RF_10pct <- calculate_weighted_nrmse(data_original_v1, rf_10pct_v1, "RF", 0.1)
+nrmse_res1_RF_20pct <- calculate_weighted_nrmse(data_original_v1, rf_20pct_v1, "RF", 0.2)
+nrmse_res1_RF_30pct <- calculate_weighted_nrmse(data_original_v1, rf_30pct_v1, "RF", 0.3)
+nrmse_res1_RF_40pct <- calculate_weighted_nrmse(data_original_v1, rf_40pct_v1, "RF", 0.4)
+#visit 2
+nrmse_res2_RF_10pct <- calculate_weighted_nrmse(data_original_v2, rf_10pct_v2, "RF", 0.1)
+nrmse_res2_RF_20pct <- calculate_weighted_nrmse(data_original_v2, rf_20pct_v2, "RF", 0.2)
+nrmse_res2_RF_30pct <- calculate_weighted_nrmse(data_original_v2, rf_30pct_v2, "RF", 0.3)
+nrmse_res2_RF_40pct <- calculate_weighted_nrmse(data_original_v2, rf_40pct_v2, "RF", 0.4)
+#QRILC
+#visit 1
+nrmse_res1_QRILC_10pct <- calculate_weighted_nrmse(data_original_v1, qrilc_10pct_v1, "QRILC", 0.1)
+nrmse_res1_QRILC_20pct <- calculate_weighted_nrmse(data_original_v1, qrilc_20pct_v1, "QRILC", 0.2)
+nrmse_res1_QRILC_30pct <- calculate_weighted_nrmse(data_original_v1, qrilc_30pct_v1, "QRILC", 0.3)
+nrmse_res1_QRILC_40pct <- calculate_weighted_nrmse(data_original_v1, qrilc_40pct_v1, "QRILC", 0.4)
+#visit 2
+nrmse_res2_QRILC_10pct <- calculate_weighted_nrmse(data_original_v2, qrilc_10pct_v2, "QRILC", 0.1)
+nrmse_res2_QRILC_20pct <- calculate_weighted_nrmse(data_original_v2, qrilc_20pct_v2, "QRILC", 0.2)
+nrmse_res2_QRILC_30pct <- calculate_weighted_nrmse(data_original_v2, qrilc_30pct_v2, "QRILC", 0.3)
+nrmse_res2_QRILC_40pct <- calculate_weighted_nrmse(data_original_v2, qrilc_40pct_v2, "QRILC", 0.4)
+
+# --------------------
+# Part 1: NRMSE Plot 
+# --------------------
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/NRMSE.pdf", width = 14, height = 10)
+
+#combine all nrmse results in one dataframe
+#visit 1
+nrmse_data1 <- bind_rows(
+  nrmse_res1_halfmin_10pct, nrmse_res1_halfmin_20pct, 
+  nrmse_res1_halfmin_30pct, nrmse_res1_halfmin_40pct,
+  
+  nrmse_res1_KNN_10pct, nrmse_res1_KNN_20pct, 
+  nrmse_res1_KNN_30pct, nrmse_res1_KNN_40pct,
+  
+  nrmse_res1_RF_10pct, nrmse_res1_RF_20pct, 
+  nrmse_res1_RF_30pct, nrmse_res1_RF_40pct,
+  
+  nrmse_res1_QRILC_10pct, nrmse_res1_QRILC_20pct, 
+  nrmse_res1_QRILC_30pct, nrmse_res1_QRILC_40pct
+)
+
+#convert MNAR as factor
+nrmse_data1$MNAR_proportion <- factor(nrmse_data1$MNAR_proportion)
+
+#plot with ggplot
+ggplot(nrmse_data1, aes(x = MNAR_proportion, y = Weighted_NRMSE, fill = Imputation_Method)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) + #boxplot w/o outliers and transparency
+  scale_fill_manual(values = c("lightblue", "orange", "blue", "magenta")) +
+  labs(
+    title = "Weighted NRMSE across Imputation Method and MNAR Proportions (Visit 1)",
+    x = "MNAR Proportion (%)",
+    y = "Weigthed NRMSE", 
+    fill = "Imputation Method"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",  
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(size = 12),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "gray85"),  #light gray grid
+    panel.grid.minor = element_blank()  #remove minor grid
+  ) +
+  ylim(0,0.4)
+
+#visit 2
+nrmse_data2 <- bind_rows(
+  nrmse_res2_halfmin_10pct, nrmse_res2_halfmin_20pct, 
+  nrmse_res2_halfmin_30pct, nrmse_res2_halfmin_40pct,
+  
+  nrmse_res2_KNN_10pct, nrmse_res2_KNN_20pct, 
+  nrmse_res2_KNN_30pct, nrmse_res2_KNN_40pct,
+  
+  nrmse_res2_RF_10pct, nrmse_res2_RF_20pct, 
+  nrmse_res2_RF_30pct, nrmse_res2_RF_40pct,
+  
+  nrmse_res2_QRILC_10pct, nrmse_res2_QRILC_20pct, 
+  nrmse_res2_QRILC_30pct, nrmse_res2_QRILC_40pct
+)
 
 
+#convert MNAR as factor
+nrmse_data2$MNAR_proportion <- factor(nrmse_data2$MNAR_proportion)
+
+#plot with ggplot
+ggplot(nrmse_data2, aes(x = MNAR_proportion, y = Weighted_NRMSE, fill = Imputation_Method)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) + #boxplot w/o outliers and transparency
+  scale_fill_manual(values = c("lightblue", "orange", "blue", "magenta")) +
+  labs(
+    title = "Weighted NRMSE across Imputation Method and MNAR Proportions (Visit 1)",
+    x = "MNAR Proportion (%)",
+    y = "Weigthed NRMSE", 
+    fill = "Imputation Method"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "right",  
+    legend.title = element_text(size = 14, face = "bold"),
+    legend.text = element_text(size = 12),
+    axis.title.x = element_text(size = 16, face = "bold"),
+    axis.title.y = element_text(size = 16, face = "bold"),
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+    panel.grid.major = element_line(color = "gray85"),  #light gray grid
+    panel.grid.minor = element_blank()  #remove minor grid
+  ) +
+  ylim(0,0.4)
+
+dev.off()
+
+# ---------------------------------------
+# TITLE: Normalized Mean Difference (NMD)
+# ---------------------------------------
+
+#function to calculate normalized mean difference 
+norm_mean_diff <- function(original, imputed, method, percentage, visit){
+  #numeric columns
+  numeric_original <- original[, 6:ncol(original)]
+  numeric_imputed <- imputed[, 6:ncol(imputed)]
+  
+  #mean before imputation
+  mean_before <- numeric_original %>%
+    summarise(across(everything(), mean, na.rm = TRUE)) %>%
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Mean_Before")
+  
+  #mean after imputation
+  mean_after <- numeric_imputed %>%
+    summarise(across(everything(), mean, na.rm = TRUE)) %>%
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Mean_After")
+  
+  #merge before and after
+  mean_comparison <- merge(mean_before, mean_after, by = "Lipid")
+  
+  #compute NMD
+  mean_comparison <- mean_comparison %>%
+    mutate(Normalized_Difference = (Mean_After - Mean_Before) / Mean_Before)
+  
+  plot_title <- paste0("Normalized Difference with ", percentage, "% Missing Values using ", method, " Imputation ", "(Visit ", visit, ")")
+  
+  
+  #plot the density of the normalized difference
+  plot <- ggplot(mean_comparison, aes(x = Normalized_Difference)) +
+    geom_density(fill = "blue", alpha = 0.4, color = "black") + 
+    theme_minimal() +
+    labs(title = plot_title,  
+         x = "Normalized Difference",
+         y = "Density") +
+    xlim(-0.2, 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "red")  
+  
+  print(plot)  
+  return(mean_comparison)  
+}
 
 
+#call normalized difference function
+#Halfmin
+#visit 1
+norm_diff1_Halfmin_10pct <- norm_mean_diff(data_original_v1, halfmin_10pct_v1, "Half-min", 10, 1)
+norm_diff1_Halfmin_20pct <- norm_mean_diff(data_original_v1, halfmin_20pct_v1, "Half-min", 20, 1)
+norm_diff1_Halfmin_30pct <- norm_mean_diff(data_original_v1, halfmin_30pct_v1, "Half-min", 30, 1)
+norm_diff1_Halfmin_40pct <- norm_mean_diff(data_original_v1, halfmin_40pct_v1, "Half-min", 40, 1)
+#visit 2
+norm_diff2_Halfmin_10pct <- norm_mean_diff(data_original_v2, halfmin_10pct_v2, "Half-min", 10, 2)
+norm_diff2_Halfmin_20pct <- norm_mean_diff(data_original_v2, halfmin_20pct_v2, "Half-min", 20, 2)
+norm_diff2_Halfmin_30pct <- norm_mean_diff(data_original_v2, halfmin_30pct_v2, "Half-min", 30, 2)
+norm_diff2_Halfmin_40pct <- norm_mean_diff(data_original_v2, halfmin_40pct_v2, "Half-min", 40, 2)
+
+#KNN
+#Visit 1
+norm_diff1_KNN_10pct <- norm_mean_diff(data_original_v1, knn_10pct_v1, "KNN", 10, 1)
+norm_diff1_KNN_20pct <- norm_mean_diff(data_original_v1, knn_20pct_v1, "KNN", 20, 1)
+norm_diff1_KNN_30pct <- norm_mean_diff(data_original_v1, knn_30pct_v1, "KNN", 30, 1)
+norm_diff1_KNN_40pct <- norm_mean_diff(data_original_v1, knn_40pct_v1, "KNN", 40, 1)
+#Visit 2
+norm_diff2_KNN_10pct <- norm_mean_diff(data_original_v2, knn_10pct_v2, "KNN", 10, 2)
+norm_diff2_KNN_20pct <- norm_mean_diff(data_original_v2, knn_20pct_v2, "KNN", 20, 2)
+norm_diff2_KNN_30pct <- norm_mean_diff(data_original_v2, knn_30pct_v2, "KNN", 30, 2)
+norm_diff2_KNN_40pct <- norm_mean_diff(data_original_v2, knn_40pct_v2, "KNN", 40, 2)
+
+#RF
+#Visit 1
+norm_diff1_RF_10pct <- norm_mean_diff(data_original_v1, rf_10pct_v1, "RF", 10, 1)
+norm_diff1_RF_20pct <- norm_mean_diff(data_original_v1, rf_20pct_v1, "RF", 20, 1)
+norm_diff1_RF_30pct <- norm_mean_diff(data_original_v1, rf_30pct_v1, "RF", 30, 1)
+norm_diff1_RF_40pct <- norm_mean_diff(data_original_v1, rf_40pct_v1, "RF", 40, 1)
+#Visit 2
+norm_diff2_RF_10pct <- norm_mean_diff(data_original_v2, rf_10pct_v2, "RF", 10, 2)
+norm_diff2_RF_20pct <- norm_mean_diff(data_original_v2, rf_20pct_v2, "RF", 20, 2)
+norm_diff2_RF_30pct <- norm_mean_diff(data_original_v2, rf_30pct_v2, "RF", 30, 2)
+norm_diff2_RF_40pct <- norm_mean_diff(data_original_v2, rf_40pct_v2, "RF", 40, 2)
+
+#QRILC
+#Visit 1
+norm_diff1_QRILC_10pct <- norm_mean_diff(data_original_v1, qrilc_10pct_v1, "QRILC", 10, 1)
+norm_diff1_QRILC_20pct <- norm_mean_diff(data_original_v1, qrilc_20pct_v1, "QRILC", 20, 1)
+norm_diff1_QRILC_30pct <- norm_mean_diff(data_original_v1, qrilc_30pct_v1, "QRILC", 30, 1)
+norm_diff1_QRILC_40pct <- norm_mean_diff(data_original_v1, qrilc_40pct_v1, "QRILC", 40, 1)
+#Visit 2
+norm_diff2_QRILC_10pct <- norm_mean_diff(data_original_v2, qrilc_10pct_v2, "QRILC", 10, 2)
+norm_diff2_QRILC_20pct <- norm_mean_diff(data_original_v2, qrilc_20pct_v2, "QRILC", 20, 2)
+norm_diff2_QRILC_30pct <- norm_mean_diff(data_original_v2, qrilc_30pct_v2, "QRILC", 30, 2)
+norm_diff2_QRILC_40pct <- norm_mean_diff(data_original_v2, qrilc_40pct_v2, "QRILC", 40, 2)
 
 
+# ---------------------------------------------
+# Part 1: Plot of all NMD per Imputation Method
+# --------------------------------------------
 
+#function to compute and return normalized mean difference data
+norm_mean_diff_data <- function(original, imputed, method, percentage) {
+  #numeric columns
+  original_numeric <- original[, 6:ncol(original)]
+  imputed_numeric <- imputed[, 6:ncol(imputed)]
+  
+  #compute mean before imputation
+  mean_before <- original_numeric %>%
+    summarise(across(everything(), mean, na.rm = TRUE)) %>%
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Mean_Before")
+  
+  #compute mean after imputation
+  mean_after <- imputed_numeric %>%
+    summarise(across(everything(), mean, na.rm = TRUE)) %>%
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Mean_After")
+  
+  #merge before and after mean values
+  mean_comparison <- left_join(mean_before, mean_after, by = "Lipid")
+  
+  #compute normalized difference: (Mean_After - Mean_Before) / Mean_Before
+  mean_comparison <- mean_comparison %>%
+    mutate(Normalized_Difference = (Mean_After - Mean_Before) / Mean_Before,
+           Method = method,
+           Percentage = paste0(percentage, "%"))
+  
+  return(mean_comparison)
+}
+
+#combine all data for each imputation method
+#visit 1
+halfmin_data1 <- bind_rows(
+  norm_mean_diff_data(data_original_v1, halfmin_10pct_v1, "Half-min", 10),
+  norm_mean_diff_data(data_original_v1, halfmin_20pct_v1, "Half-min", 20),
+  norm_mean_diff_data(data_original_v1, halfmin_30pct_v1, "Half-min", 30),
+  norm_mean_diff_data(data_original_v1, halfmin_40pct_v1, "Half-min", 40)
+)
+
+knn_data1 <- bind_rows(
+  norm_mean_diff_data(data_original_v1, knn_10pct_v1, "KNN", 10),
+  norm_mean_diff_data(data_original_v1, knn_20pct_v1, "KNN", 20),
+  norm_mean_diff_data(data_original_v1, knn_30pct_v1, "KNN", 30),
+  norm_mean_diff_data(data_original_v1, knn_40pct_v1, "KNN", 40)
+)
+
+rf_data1 <- bind_rows(
+  norm_mean_diff_data(data_original_v1, rf_10pct_v1, "RF", 10),
+  norm_mean_diff_data(data_original_v1, rf_20pct_v1, "RF", 20),
+  norm_mean_diff_data(data_original_v1, rf_30pct_v1, "RF", 30),
+  norm_mean_diff_data(data_original_v1, rf_40pct_v1, "RF", 40)
+)
+
+qrilc_data1 <- bind_rows(
+  norm_mean_diff_data(data_original_v1, qrilc_10pct_v1, "QRILC", 10),
+  norm_mean_diff_data(data_original_v1, qrilc_20pct_v1, "QRILC", 20),
+  norm_mean_diff_data(data_original_v1, qrilc_30pct_v1, "QRILC", 30),
+  norm_mean_diff_data(data_original_v1, qrilc_40pct_v1, "QRILC", 40)
+)
+
+#function to plot density for each method
+plot_density <- function(data, method, visit) {
+  ggplot(data, aes(x = Normalized_Difference, fill = Percentage, color = Percentage)) +
+    geom_density(alpha = 0.3) +
+    theme_minimal() +
+    labs(title = paste("Normalized Difference for", method, "Imputation (Visit ", visit, ")"),
+         x = "Normalized Difference",
+         y = "Density") +
+    xlim(-0.2, 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+    theme(legend.title = element_blank(), legend.position = "right")
+}
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/NMD.pdf", width = 14, height = 10)
+
+#generate plots
+plot_halfmin1 <- plot_density(halfmin_data1, "Half-min", 1)
+plot_knn1 <- plot_density(knn_data1, "KNN", 1)
+plot_rf1 <- plot_density(rf_data1, "RF", 1)
+plot_qrilc1 <- plot_density(qrilc_data1, "QRILC", 1)
+
+#display plots
+print(plot_halfmin1)
+print(plot_knn1)
+print(plot_rf1)
+print(plot_qrilc1)
+
+#visit 2
+halfmin_data2 <- bind_rows(
+  norm_mean_diff_data(data_original_v2, halfmin_10pct_v2, "Half-min", 10),
+  norm_mean_diff_data(data_original_v2, halfmin_20pct_v2, "Half-min", 20),
+  norm_mean_diff_data(data_original_v2, halfmin_30pct_v2, "Half-min", 30),
+  norm_mean_diff_data(data_original_v2, halfmin_40pct_v2, "Half-min", 40)
+)
+
+knn_data2 <- bind_rows(
+  norm_mean_diff_data(data_original_v2, knn_10pct_v2, "KNN", 10),
+  norm_mean_diff_data(data_original_v2, knn_20pct_v2, "KNN", 20),
+  norm_mean_diff_data(data_original_v2, knn_30pct_v2, "KNN", 30),
+  norm_mean_diff_data(data_original_v2, knn_40pct_v2, "KNN", 40)
+)
+
+rf_data2 <- bind_rows(
+  norm_mean_diff_data(data_original_v2, rf_10pct_v2, "RF", 10),
+  norm_mean_diff_data(data_original_v2, rf_20pct_v2, "RF", 20),
+  norm_mean_diff_data(data_original_v2, rf_30pct_v2, "RF", 30),
+  norm_mean_diff_data(data_original_v2, rf_40pct_v2, "RF", 40)
+)
+
+qrilc_data2 <- bind_rows(
+  norm_mean_diff_data(data_original_v2, qrilc_10pct_v2, "QRILC", 10),
+  norm_mean_diff_data(data_original_v2, qrilc_20pct_v2, "QRILC", 20),
+  norm_mean_diff_data(data_original_v2, qrilc_30pct_v2, "QRILC", 30),
+  norm_mean_diff_data(data_original_v2, qrilc_40pct_v2, "QRILC", 40)
+)
+
+#generate plots
+plot_halfmin2 <- plot_density(halfmin_data2, "Half-min", 2)
+plot_knn2 <- plot_density(knn_data2, "KNN", 2)
+plot_rf2 <- plot_density(rf_data2, "RF", 2)
+plot_qrilc2 <- plot_density(qrilc_data2, "QRILC", 2)
+
+#display plots
+print(plot_halfmin2)
+print(plot_knn2)
+print(plot_rf2)
+print(plot_qrilc2)
+
+#combine and make one plot for visit 1 and one for visit 2
+all_data1 <- bind_rows(halfmin_data1, knn_data1, rf_data1, qrilc_data1)
+all_data2 <- bind_rows(halfmin_data2, knn_data2, rf_data2, qrilc_data2)
+
+ggplot(all_data1, aes(x = Normalized_Difference, fill = Percentage, color = Percentage)) +
+  geom_density(alpha = 0.3) +
+  theme_minimal() +
+  labs(title = "Normalized Difference Across Imputation Methods (Visit 1)",
+       x = "Normalized Difference",
+       y = "Density") +
+  xlim(-0.2, 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  facet_wrap(~Method, scales = "free") +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10, face = "bold"),
+    strip.text = element_text(size = 12, face = "bold"),  # Makes facet labels bold
+    legend.title = element_text(size = 12, face = "bold"),
+    legend.text = element_text(size = 10, face = "bold")
+  )
+
+
+ggplot(all_data2, aes(x = Normalized_Difference, fill = Percentage, color = Percentage)) +
+  geom_density(alpha = 0.3) +
+  theme_minimal() +
+  labs(title = "Normalized Difference Across Imputation Methods (Visit 2)",
+       x = "Normalized Difference",
+       y = "Density") +
+  xlim(-0.2, 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  facet_wrap(~Method, scales = "free") +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    axis.text = element_text(size = 10, face = "bold"),
+    strip.text = element_text(size = 12, face = "bold"),  
+    legend.title = element_text(size = 12, face = "bold"),
+    legend.text = element_text(size = 10, face = "bold")
+  )
+
+dev.off()
+
+# ------------------------------------
+# TITLE: Distribution Plot (Whole Data)
+# ------------------------------------
+
+#function to plot distribution before and after imputation (entire dataset)
+plot_whole_distribution <- function(original, imputed, method, percentage, visit) {
+  #numeric columns 
+  numeric_original <- original[, 6:ncol(original)]
+  numeric_imputed <- imputed[, 6:ncol(imputed)]
+  
+  #convert to long format for plotting
+  original_long <- numeric_original %>%
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Value") %>%
+    mutate(Data = "Original Data")
+  
+  imputed_long <- numeric_imputed %>%
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Value") %>%
+    mutate(Data = "Imputed Data")
+  
+  #identify imputed values
+  imputed_values <- numeric_original != numeric_imputed
+  
+  imputed_only_long <- numeric_imputed %>%
+    as.data.frame() %>%
+    replace(!imputed_values, NA) %>%  #keep only changed (imputed) values
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Value") %>%
+    filter(!is.na(Value)) %>%
+    mutate(Data = "Imputed Values")  
+  
+  #combine both data
+  combined_data <- bind_rows(original_long, imputed_long, imputed_only_long)
+  
+  #compute mean
+  mean_data <- combined_data %>%
+    group_by(Data) %>%
+    summarise(mean_value = mean(Value, na.rm = TRUE), .groups = "drop")
+  
+  
+  #plot overall density distribution
+  plot <- ggplot(combined_data, aes(x = Value, fill = Data)) +
+    geom_density(alpha = 0.5) + 
+    theme_minimal() +
+    labs(title = paste0("Overall Density Distribution Before and After ", method, " Imputation (", percentage, "% Missing, Visit ", ")"),
+         x = "Value",
+         y = "Density") +
+    geom_vline(data = mean_data %>% filter(Data == "Original Data"),
+               aes(xintercept = mean_value, color = "Original Mean"), linewidth = 0.5, linetype = "dashed") + 
+    geom_vline(data = mean_data %>% filter(Data == "Imputed Data"),
+               aes(xintercept = mean_value, color = "Imputed Mean"), linewidth = 0.5, linetype = "dashed") +
+    scale_color_manual(name = "Mean Values", 
+                       values = c("Original Mean" = "blue", "Imputed Mean" = "red")) + 
+    xlim(-100, 400) + 
+    theme(legend.position = "bottom")
+  
+  
+  print(plot)
+  return(combined_data)
+}
+
+#call function to plot whole distribution
+#Halfmin
+#visit 1
+whole_dist1_Halfmin_10pct <- plot_whole_distribution(data_original_v1, halfmin_10pct_v1, "Half-min", 10, 1)
+whole_dist1_Halfmin_40pct <- plot_whole_distribution(data_original_v1, halfmin_40pct_v1, "Half-min", 40, 1)
+#visit 2
+whole_dist2_Halfmin_10pct <- plot_whole_distribution(data_original_v2, halfmin_10pct_v2, "Half-min", 10, 2)
+whole_dist2_Halfmin_40pct <- plot_whole_distribution(data_original_v2, halfmin_40pct_v2, "Half-min", 40, 2)
+
+#KNN
+#visit 1
+whole_dist1_KNN_10pct <- plot_whole_distribution(data_original_v1, knn_10pct_v1, "KNN", 10, 1)
+whole_dist1_KNN_40pct <- plot_whole_distribution(data_original_v1, knn_40pct_v1, "KNN", 40, 1)
+#visit 2
+whole_dist2_KNN_10pct <- plot_whole_distribution(data_original_v2, knn_10pct_v2, "KNN", 10, 2)
+whole_dist2_KNN_40pct <- plot_whole_distribution(data_original_v2, knn_40pct_v2, "KNN", 40, 2)
+
+#RF
+#visit 1
+whole_dist1_RF_10pct <- plot_whole_distribution(data_original_v1, rf_10pct_v1, "RF", 10, 1)
+whole_dist1_RF_40pct <- plot_whole_distribution(data_original_v1, rf_40pct_v1, "RF", 40, 1)
+#visit 2
+whole_dist2_RF_10pct <- plot_whole_distribution(data_original_v2, rf_10pct_v2, "RF", 10, 2)
+whole_dist2_RF_40pct <- plot_whole_distribution(data_original_v2, rf_40pct_v2, "RF", 40, 2)
+
+#QRILC
+#visit 1
+whole_dist1_QRILC_10pct <- plot_whole_distribution(data_original_v1, qrilc_10pct_v1, "QRILC", 10, 1)
+whole_dist1_QRILC_40pct <- plot_whole_distribution(data_original_v1, qrilc_40pct_v1, "QRILC", 40, 1)
+#visit 2
+whole_dist2_QRILC_10pct <- plot_whole_distribution(data_original_v2, qrilc_10pct_v2, "QRILC", 10, 2)
+whole_dist2_QRILC_40pct <- plot_whole_distribution(data_original_v2, qrilc_40pct_v2, "QRILC", 40, 2)
+
+
+# ------------------------------------
+# TITLE: ANOVA
+# ------------------------------------
+
+#fit an ANOVA model with an interaction term between imputation method and missingness level 
+#apply log to normalize data
+
+#ANOVA for Visit 1 and VIisit 2 (effect of imputation and mcar proportion)
+#Visit 1
+anova_visit1 <- aov(log(Weighted_NRMSE) ~ Imputation_Method * MNAR_proportion, data = nrmse_data1)
+summary(anova_visit1)  
+
+#ANOVA for Visit 2
+anova_visit2 <- aov(log(Weighted_NRMSE) ~ Imputation_Method * MNAR_proportion, data = nrmse_data2)
+summary(anova_visit2)  
+
+
+# --------------------------------------------------------
+# Part 1: Check Residuals and Normality for ANOVA result
+# -------------------------------------------------------
+
+#check residuals for normality
+#histogram of residuals (extracts results from anova model)
+#residul look symmetry and a bit bell shaped then it suggests normalizy 
+
+#visit 1
+ggplot(data.frame(residuals = residuals(anova_visit1)), aes(x = residuals)) +
+  geom_histogram(binwidth = 0.05, fill = "blue", alpha = 0.7) +
+  labs(title = "Histogram of Residuals", x = "Residuals", y = "Frequency") +
+  theme_minimal()
+
+#visit 2
+ggplot(data.frame(residuals = residuals(anova_visit2)), aes(x = residuals)) +
+  geom_histogram(binwidth = 0.05, fill = "blue", alpha = 0.7) +
+  labs(title = "Histogram of Residuals", x = "Residuals", y = "Frequency") +
+  theme_minimal()
+
+#Q-Q plot of residuals
+#plot residual against theoretical normal distirbutions
+#red line shows perfect normal distirbution
+#S-shaped pattern = possibles skewness
+
+#visit 1
+qqnorm(residuals(anova_visit1), col = "blue")
+qqline(residuals(anova_visit1), col = "red")
+
+#visit 2
+qqnorm(residuals(anova_visit2), col = "blue")
+qqline(residuals(anova_visit2), col = "red")
+
+#Tukey-Anscombe plot to check residuals vs fitted values
+#x-axis = fitted values (predicted) and y-axis = residueals (error)
+#residuals should be evenly spread, if the points fan out or forma pattern the assumption of homoscedascity is violated 
+
+#visit 1
+plot(fitted(anova_visit1), resid(anova_visit1), 
+     main = "Tukey-Anscombe Plot", 
+     col = "blue", 
+     xlab = "Fitted Values (Predicted by ANOVA Model)", 
+     ylab = "Residuals (Errors)")
+
+#run shapiro test on anova model
+shapiro.test(resid(anova_visit1))
+
+#visit 2
+plot(fitted(anova_visit2), resid(anova_visit2), 
+     main = "Tukey-Anscombe Plot", 
+     col = "blue", 
+     xlab = "Fitted Values (Predicted by ANOVA Model)", 
+     ylab = "Residuals (Errors)")
+
+#run shapiro test on anova model
+shapiro.test(resid(anova_visit2))
+
+# ------------------------------------
+# Part 7: Kruskal-Wallis
+# ------------------------------------
+
+#perform kruskal-wallis test
+
+#visit 1
+v1_kruskal_test <- kruskal.test(Weighted_NRMSE ~ Imputation_Method, data = nrmse_data1)
+v1_kruskal_test2 <- kruskal.test(Weighted_NRMSE ~ MNAR_proportion, data = nrmse_data1)
+#show results
+print(v1_kruskal_test)
+print(v1_kruskal_test2) 
+
+#visit 2
+v2_kruskal_test <- kruskal.test(Weighted_NRMSE ~ Imputation_Method, data = nrmse_data2)
+v2_kruskal_test2 <- kruskal.test(Weighted_NRMSE ~ MNAR_proportion, data = nrmse_data2)
+#show results
+print(v2_kruskal_test)
+print(v2_kruskal_test2) 
+
+#p-value storngly signficant 
+#chi-square = 98.713 (higher value means larger difference between groups)
+#at least one imputation method significantly differs from the others in terms of NRMSE
+
+# ------------------------------------
+# Part 8: Dunn's Test for each imputation
+# ------------------------------------
+
+#perform Dunn's Test for pairwise comparison (BH correction for multiple testing)
+#visit 1
+v1_dunn_test <- dunnTest(Weighted_NRMSE ~ Imputation_Method, data = nrmse_data1, method = "bh")
+v1_dunn_test2 <- dunnTest(Weighted_NRMSE ~ MNAR_proportion, data = nrmse_data1, method = "bh") #for percentage of mcar
+
+#visit 2
+v2_dunn_test <- dunnTest(Weighted_NRMSE ~ Imputation_Method, data = nrmse_data2, method = "bh")
+v2_dunn_test2 <- dunnTest(Weighted_NRMSE ~ MNAR_proportion, data = nrmse_data2, method = "bh") #for percentage of mcar
+
+#print the results
+print(v2_dunn_test)
+print(v2_dunn_test)
+
+#plot Dunns test results
+ggplot(nrmse_data1, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputation_Method)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Pairwise Comparisons of Imputation Methods",
+       x = "Imputation Method",
+       y = "Weighted NRMSE") +
+  ylim(0,0.25)
+
+#plot Dunns test results
+ggplot(nrmse_data2, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputation_Method)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Pairwise Comparisons of Imputation Methods",
+       x = "Imputation Method",
+       y = "Weighted NRMSE") +
+  ylim(0,0.25)
 
 
 
