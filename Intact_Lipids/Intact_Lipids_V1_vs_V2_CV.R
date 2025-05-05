@@ -151,20 +151,23 @@ filter_by_cv_threshold <- function(data, cv_threshold = 30) {
 
 #process data of visit 1 and visit 2
 #20% CV
-data_cv_v1_20 <- filter_by_cv_threshold(data_original_v1, 20)
-data_cv_v2_20 <- filter_by_cv_threshold(data_original_v2, 20)
+data_cv_v1_20 <- filter_by_cv_threshold(data_original_v1, 20) #21 lipids
+data_cv_v2_20 <- filter_by_cv_threshold(data_original_v2, 20) #16 lipids
 #25% CV
-data_cv_v1_25 <- filter_by_cv_threshold(data_original_v1, 25)
-data_cv_v2_25 <- filter_by_cv_threshold(data_original_v2, 25)
+data_cv_v1_25 <- filter_by_cv_threshold(data_original_v1, 25) #33 lipids
+data_cv_v2_25 <- filter_by_cv_threshold(data_original_v2, 25) #40 lipids
 #30% CV
-data_cv_v1_30 <- filter_by_cv_threshold(data_original_v1, 30)
-data_cv_v2_30 <- filter_by_cv_threshold(data_original_v2, 30)
+data_cv_v1_30 <- filter_by_cv_threshold(data_original_v1, 30) #57 lipids
+data_cv_v2_30 <- filter_by_cv_threshold(data_original_v2, 30) #75 lipids
 #35% CV
-data_cv_v1_35 <- filter_by_cv_threshold(data_original_v1, 35)
-data_cv_v2_35 <- filter_by_cv_threshold(data_original_v2, 35)
+data_cv_v1_35 <- filter_by_cv_threshold(data_original_v1, 35) #87 lipids
+data_cv_v2_35 <- filter_by_cv_threshold(data_original_v2, 35) #106 lipids
 #40% CV
-data_cv_v1_40 <- filter_by_cv_threshold(data_original_v1, 40)
-data_cv_v2_40 <- filter_by_cv_threshold(data_original_v2, 40)
+data_cv_v1_40 <- filter_by_cv_threshold(data_original_v1, 40) #117 lipids
+data_cv_v2_40 <- filter_by_cv_threshold(data_original_v2, 40) #132 lipids
+#50% CV
+data_cv_v1_50 <- filter_by_cv_threshold(data_original_v1, 50) #153 lipids
+data_cv_v2_50 <- filter_by_cv_threshold(data_original_v2, 50) #187 lipids
 
 # ---------------------------------
 # TITLE: Introduce Missing Values
@@ -180,35 +183,23 @@ MNAR_simulation <- function(data, missing_percentage){
   #copy dataset 
   data_copy <- data
   
-  #get indices of visit 1 and visit 2
-  v1_indices <- which(data_copy$Visit == "Visit 1")
-  v2_indices <- which(data_copy$Visit == "Visit 2")
-  
   #iterate through numeric cols
   for (col in 6:ncol(data_copy)){
     #skip non-numeric
     if (!is.numeric(data_copy[[col]])) next
     
     #number of NA to introduce based on missingness
-    num_mv_tot <- round(nrow(data_copy) * missing_percentage)
-    num_mv <- floor(num_mv_tot / 2) #even splitting between visit 1 and visit 2
+    num_mv <- round(nrow(data_copy) * missing_percentage)
     
-    if (num_mv > 0 && length(v1_indices) > 0 && length(v2_indices) > 0){
+    if (num_mv > 0){
       #visit 1
-      v1_data <- data_copy[v1_indices, col]
+      col_data <- data_copy[[col]]
       #find incies with lowest value
-      v1_order <- order(v1_data, na.last = NA)
-      v1_missing_indices <- v1_indices[v1_order[1:min(num_mv, length(v1_order))]]
-      
-      #visit 2
-      v2_data <- data_copy[v2_indices, col]
-      #find incies with lowest value
-      v2_order <- order(v2_data, na.last = NA)
-      v2_missing_indices <- v2_indices[v2_order[1:min(num_mv, length(v2_order))]]
-      
+      col_order <- order(col_data, na.last = NA)
+      missing_indices <- col_order[1:min(num_mv, length(col_order))]
+  
       #set values to NA
-      data_copy[v1_missing_indices, col] <- NA
-      data_copy[v2_missing_indices, col] <- NA
+      data_copy[missing_indices, col] <- NA
     }
   }
   
@@ -216,10 +207,16 @@ MNAR_simulation <- function(data, missing_percentage){
 }
 
 #call function to generate MNAR (evenly between visit 1 and visit 2)
-data_10pct <- MNAR_simulation(data, 0.1) #10% missing values
-data_20pct <- MNAR_simulation(data, 0.2) #20% missing values
-data_30pct <- MNAR_simulation(data, 0.3) #30% missing values
-data_40pct <- MNAR_simulation(data, 0.4) #40% missing values
+#CV 20% 
+data_cv20_10pct_v1 <- MNAR_simulation(data_cv_v1_20, 0.1) #10% missing values
+data_cv20_10pct_v2 <- MNAR_simulation(data_cv_v2_20, 0.1) #10% missing values
+data_cv20_20pct_v1 <- MNAR_simulation(data_cv_v1_20, 0.2) #20% missing values
+data_cv20_20pct_v2 <- MNAR_simulation(data_cv_v2_20, 0.2) #20% missing values
+data_cv20_30pct_v1 <- MNAR_simulation(data_cv_v1_20, 0.3) #30% missing values
+data_cv20_30pct_v2 <- MNAR_simulation(data_cv_v2_20, 0.3) #30% missing values
+data_cv20_40pct_v1 <- MNAR_simulation(data_cv_v1_20, 0.4) #40% missing values
+data_cv20_40pct_v2 <- MNAR_simulation(data_cv_v2_20, 0.4) #40% missing values
+
 
 # --------------------------
 # Part 2: Plot MNAR
