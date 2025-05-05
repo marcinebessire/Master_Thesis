@@ -37,6 +37,9 @@ data_na_removed <- numeric_data[, colSums(is.na(numeric_data)) == 0] #remaining 
 #put back together 
 data <- cbind(metadata, data_na_removed)
 
+#separate based on visit (original)
+data_original_v1 <- data %>% filter(Visit == "Visit 1")
+data_original_v2 <- data %>% filter(Visit == "Visit 2")
 
 # ---------------------------------
 # Part 2: Plot Whole Distribution
@@ -70,6 +73,10 @@ plot_overall_distribution <- function(original) {
 plot_overall_distribution(data_full)
 #without NA
 plot_overall_distribution(data)
+#plot visit 1 data
+plot_overall_distribution(data_original_v1)
+#plot visit 2 data
+plot_overall_distribution(data_original_v2)
 
 # ---------------------------------
 # TITLE: Introduce Missing Values
@@ -175,9 +182,6 @@ plot_missing_values(data_40pct, "Missing Data Pattern (40% MNAR)")
 # Part 1: Separate data by Visit
 # ------------------------------------
 
-#original 
-data_original_v1 <- data %>% filter(Visit == "Visit 1")
-data_original_v2 <- data %>% filter(Visit == "Visit 2")
 #simulated
 data_10pct_v1 <- data_10pct %>% filter(Visit == "Visit 1")
 data_10pct_v2 <- data_10pct %>% filter(Visit == "Visit 2")
@@ -195,7 +199,7 @@ data_40pct_v2 <- data_40pct %>% filter(Visit == "Visit 2")
 
 #reshape data into long format (use melt to convert dataframe from wide into long format)
 data_long <- melt(data, id.vars = c("ID", "Patient", "Date", "Time_min", "Visit"),
-                 variable.name = "Lipid", value.name = "Value")
+                  variable.name = "Lipid", value.name = "Value")
 
 #get unique lipids
 lipids <- unique(data_long$Lipid)
@@ -204,7 +208,7 @@ lipids <- unique(data_long$Lipid)
 lipid_groups <- split(lipids, ceiling(seq_along(lipids) / 26))
 
 #open pdf device
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/Lipid_Comparison_Boxplots.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Lipid_Comparison_Boxplots.pdf", width = 14, height = 10)
 
 #generate boxplot for each lipid 
 # Loop through each group and generate a plot
@@ -404,8 +408,8 @@ merge_and_order <- function(data1, data2) {
   
   #convert Participant to a properly sorted factor
   merged_data$Patient <- factor(merged_data$Patient,
-                                    levels = mixedsort(unique(merged_data$Patient)))
- 
+                                levels = mixedsort(unique(merged_data$Patient)))
+  
   #order by patient and date
   merged_data <- merged_data[order(merged_data$Patient, merged_data$Date), ]
   
@@ -532,7 +536,7 @@ shapiro2_qrilc20 <- shapiro_test(qrilc_20pct_v2) #3/174
 shapiro2_qrilc30 <- shapiro_test(qrilc_30pct_v2) #3/274
 shapiro2_qrilc40 <- shapiro_test(qrilc_40pct_v2) #0/274
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/Shapiro_Wilk.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Shapiro_Wilk.pdf", width = 14, height = 10)
 
 #combine all data visit 1
 shapiro_summary1 <- data.frame(
@@ -788,7 +792,7 @@ stats_long <- stats_overall %>%
   pivot_longer(cols = c("Wilcoxon", "TTest"), names_to = "Test", values_to = "Significant_Lipids")
 
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/T_Test_Wilcox.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/T_Test_Wilcox.pdf", width = 14, height = 10)
 
 #ceate grouped bar plot
 ggplot(stats_long, aes(x = Percentage, y = Significant_Lipids, fill = Test)) +
@@ -838,7 +842,7 @@ calculate_weighted_nrmse <- function(original, imputed, method, percentage){
       mse <- mean((actual_val[valid_indices] - imputed_val[valid_indices])^2) #mean squared error
       rmse <- sqrt(mse) #root mean squared error
       norm_factor <- max(actual_val[valid_indices], na.rm = TRUE) - min(actual_val[valid_indices], na.rm = TRUE)
-        
+      
       if (norm_factor > 0){
         nrmse <- rmse / norm_factor
         weighted_nrmse <- nrmse * percentage
@@ -910,7 +914,7 @@ nrmse_res2_QRILC_40pct <- calculate_weighted_nrmse(data_original_v2, qrilc_40pct
 # Part 1: NRMSE Plot 
 # --------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/NRMSE.pdf", width = 14, height = 10)
 
 #combine all nrmse results in one dataframe
 #visit 1
@@ -1172,7 +1176,7 @@ plot_density <- function(data, method, visit) {
     theme(legend.title = element_blank(), legend.position = "right")
 }
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/NMD.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/NMD.pdf", width = 14, height = 10)
 
 #generate plots
 plot_halfmin1 <- plot_density(halfmin_data1, "Half-min", 1)
@@ -1497,6 +1501,4 @@ ggplot(nrmse_data2, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputa
        x = "Imputation Method",
        y = "Weighted NRMSE") +
   ylim(0,0.25)
-
-
 
