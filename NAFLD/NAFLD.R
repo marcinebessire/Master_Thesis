@@ -312,6 +312,38 @@ halfmin_25pct_NASH <- half_min_imputation(NASH_25pct)
 halfmin_30pct_NASH <- half_min_imputation(NASH_30pct)
 halfmin_40pct_NASH <- half_min_imputation(NASH_40pct)
 
+#combined 
+halfmin_datasets <- list(
+  NC_10 = halfmin_10pct_NC,
+  NC_15 = halfmin_15pct_NC,
+  NC_20 = halfmin_20pct_NC,
+  NC_25 = halfmin_25pct_NC,
+  NC_30 = halfmin_30pct_NC,
+  NC_40 = halfmin_40pct_NC,
+  
+  HO_10 = halfmin_10pct_HO,
+  HO_15 = halfmin_15pct_HO,
+  HO_20 = halfmin_20pct_HO,
+  HO_25 = halfmin_25pct_HO,
+  HO_30 = halfmin_30pct_HO,
+  HO_40 = halfmin_40pct_HO,
+  
+  NAFL_10 = halfmin_10pct_NAFL,
+  NAFL_15 = halfmin_15pct_NAFL,
+  NAFL_20 = halfmin_20pct_NAFL,
+  NAFL_25 = halfmin_25pct_NAFL,
+  NAFL_30 = halfmin_30pct_NAFL,
+  NAFL_40 = halfmin_40pct_NAFL,
+  
+  NASH_10 = halfmin_10pct_NASH,
+  NASH_15 = halfmin_15pct_NASH,
+  NASH_20 = halfmin_20pct_NASH,
+  NASH_25 = halfmin_25pct_NASH,
+  NASH_30 = halfmin_30pct_NASH,
+  NASH_40 = halfmin_40pct_NASH
+)
+
+
 # --------------------------
 # Part 2: KNN Imputation
 # --------------------------
@@ -367,7 +399,36 @@ KNN_20pct_NASH <- knn_imputation(NASH_20pct)
 KNN_25pct_NASH <- knn_imputation(NASH_25pct)
 KNN_30pct_NASH <- knn_imputation(NASH_30pct)
 KNN_40pct_NASH <- knn_imputation(NASH_40pct)
-
+#combined 
+KNN_datasets <- list(
+  NC_10 = KNN_10pct_NC,
+  NC_15 = KNN_15pct_NC,
+  NC_20 = KNN_20pct_NC,
+  NC_25 = KNN_25pct_NC,
+  NC_30 = KNN_30pct_NC,
+  NC_40 = KNN_40pct_NC,
+  
+  HO_10 = KNN_10pct_HO,
+  HO_15 = KNN_15pct_HO,
+  HO_20 = KNN_20pct_HO,
+  HO_25 = KNN_25pct_HO,
+  HO_30 = KNN_30pct_HO,
+  HO_40 = KNN_40pct_HO,
+  
+  NAFL_10 = KNN_10pct_NAFL,
+  NAFL_15 = KNN_15pct_NAFL,
+  NAFL_20 = KNN_20pct_NAFL,
+  NAFL_25 = KNN_25pct_NAFL,
+  NAFL_30 = KNN_30pct_NAFL,
+  NAFL_40 = KNN_40pct_NAFL,
+  
+  NASH_10 = KNN_10pct_NASH,
+  NASH_15 = KNN_15pct_NASH,
+  NASH_20 = KNN_20pct_NASH,
+  NASH_25 = KNN_25pct_NASH,
+  NASH_30 = KNN_30pct_NASH,
+  NASH_40 = KNN_40pct_NASH
+)
 
 # ------------------------------------
 # Part 3: RF Imputation
@@ -421,6 +482,36 @@ RF_20pct_NASH <- rf_imputation(NASH_20pct)
 RF_25pct_NASH <- rf_imputation(NASH_25pct)
 RF_30pct_NASH <- rf_imputation(NASH_30pct)
 RF_40pct_NASH <- rf_imputation(NASH_40pct)
+#combined 
+RF_datasets <- list(
+  NC_10 = RF_10pct_NC,
+  NC_15 = RF_15pct_NC,
+  NC_20 = RF_20pct_NC,
+  NC_25 = RF_25pct_NC,
+  NC_30 = RF_30pct_NC,
+  NC_40 = RF_40pct_NC,
+  
+  HO_10 = RF_10pct_HO,
+  HO_15 = RF_15pct_HO,
+  HO_20 = RF_20pct_HO,
+  HO_25 = RF_25pct_HO,
+  HO_30 = RF_30pct_HO,
+  HO_40 = RF_40pct_HO,
+  
+  NAFL_10 = RF_10pct_NAFL,
+  NAFL_15 = RF_15pct_NAFL,
+  NAFL_20 = RF_20pct_NAFL,
+  NAFL_25 = RF_25pct_NAFL,
+  NAFL_30 = RF_30pct_NAFL,
+  NAFL_40 = RF_40pct_NAFL,
+  
+  NASH_10 = RF_10pct_NASH,
+  NASH_15 = RF_15pct_NASH,
+  NASH_20 = RF_20pct_NASH,
+  NASH_25 = RF_25pct_NASH,
+  NASH_30 = RF_30pct_NASH,
+  NASH_40 = RF_40pct_NASH
+)
 
 # --------------------------
 # Part 4: QRILC Imputation
@@ -483,10 +574,451 @@ QRILC_20pct_NASH <- qrilc_imputation(NASH_20pct)
 QRILC_25pct_NASH <- qrilc_imputation(NASH_25pct)
 QRILC_30pct_NASH <- qrilc_imputation(NASH_30pct)
 QRILC_40pct_NASH <- qrilc_imputation(NASH_40pct)
+#combined 
+QRILC_datasets <- list(
+  NC_10 = QRILC_10pct_NC,
+  NC_15 = QRILC_15pct_NC,
+  NC_20 = QRILC_20pct_NC,
+  NC_25 = QRILC_25pct_NC,
+  NC_30 = QRILC_30pct_NC,
+  NC_40 = QRILC_40pct_NC,
+  
+  HO_10 = QRILC_10pct_HO,
+  HO_15 = QRILC_15pct_HO,
+  HO_20 = QRILC_20pct_HO,
+  HO_25 = QRILC_25pct_HO,
+  HO_30 = QRILC_30pct_HO,
+  HO_40 = QRILC_40pct_HO,
+  
+  NAFL_10 = QRILC_10pct_NAFL,
+  NAFL_15 = QRILC_15pct_NAFL,
+  NAFL_20 = QRILC_20pct_NAFL,
+  NAFL_25 = QRILC_25pct_NAFL,
+  NAFL_30 = QRILC_30pct_NAFL,
+  NAFL_40 = QRILC_40pct_NAFL,
+  
+  NASH_10 = QRILC_10pct_NASH,
+  NASH_15 = QRILC_15pct_NASH,
+  NASH_20 = QRILC_20pct_NASH,
+  NASH_25 = QRILC_25pct_NASH,
+  NASH_30 = QRILC_30pct_NASH,
+  NASH_40 = QRILC_40pct_NASH
+)
+
+# --------------------------
+# Part 5: MICE Imputation
+# --------------------------
+
+#function for MICE imputation
+mice_imputation <- function(data,  m = 5, seed = 123){
+  data_copy <- data
+  
+  #select only numeric data
+  numeric_data <- data_copy[, 3:ncol(data_copy)]
+  
+  #metadata
+  meta_data <- data_copy[, 1:2]
+
+  #impute with mice (m = 5 nr of multiple imputation, pmm =  Predictive mean matching, seed to make it reproducible)
+  imputed <- mice(numeric_data, m = m, method = 'pmm', seed = seed)
+  
+  #extract first completed dataset
+  completed_data <- complete(imputed, 1)
+  
+  # Combine metadata with imputed lipid data
+  final_df <- cbind(meta_data, completed_data)
+  
+  return(final_df)
+}
+
+#call function for MICE
+#NC
+mice_10pct_NC <- mice_imputation(NC_10pct)
+mice_15pct_NC <- mice_imputation(NC_15pct)
+mice_20pct_NC <- mice_imputation(NC_20pct)
+mice_25pct_NC <- mice_imputation(NC_25pct)
+mice_30pct_NC <- mice_imputation(NC_30pct)
+mice_40pct_NC <- mice_imputation(NC_40pct)
+#HO
+mice_10pct_HO <- mice_imputation(HO_10pct)
+mice_15pct_HO <- mice_imputation(HO_15pct)
+mice_20pct_HO <- mice_imputation(HO_20pct)
+mice_25pct_HO <- mice_imputation(HO_25pct)
+mice_30pct_HO <- mice_imputation(HO_30pct)
+mice_40pct_HO <- mice_imputation(HO_40pct)
+#NAFL
+mice_10pct_NAFL <- mice_imputation(NAFL_10pct)
+mice_15pct_NAFL <- mice_imputation(NAFL_15pct)
+mice_20pct_NAFL <- mice_imputation(NAFL_20pct)
+mice_25pct_NAFL <- mice_imputation(NAFL_25pct)
+mice_30pct_NAFL <- mice_imputation(NAFL_30pct)
+mice_40pct_NAFL <- mice_imputation(NAFL_40pct)
+#NASH
+mice_10pct_NASH <- mice_imputation(NASH_10pct)
+mice_15pct_NASH <- mice_imputation(NASH_15pct)
+mice_20pct_NASH <- mice_imputation(NASH_20pct)
+mice_25pct_NASH <- mice_imputation(NASH_25pct)
+mice_30pct_NASH <- mice_imputation(NASH_30pct)
+mice_40pct_NASH <- mice_imputation(NASH_40pct)
+#combined 
+mice_datasets <- list(
+  NC_10 = mice_10pct_NC,
+  NC_15 = mice_15pct_NC,
+  NC_20 = mice_20pct_NC,
+  NC_25 = mice_25pct_NC,
+  NC_30 = mice_30pct_NC,
+  NC_40 = mice_40pct_NC,
+  
+  HO_10 = mice_10pct_HO,
+  HO_15 = mice_15pct_HO,
+  HO_20 = mice_20pct_HO,
+  HO_25 = mice_25pct_HO,
+  HO_30 = mice_30pct_HO,
+  HO_40 = mice_40pct_HO,
+  
+  NAFL_10 = mice_10pct_NAFL,
+  NAFL_15 = mice_15pct_NAFL,
+  NAFL_20 = mice_20pct_NAFL,
+  NAFL_25 = mice_25pct_NAFL,
+  NAFL_30 = mice_30pct_NAFL,
+  NAFL_40 = mice_40pct_NAFL,
+  
+  NASH_10 = mice_10pct_NASH,
+  NASH_15 = mice_15pct_NASH,
+  NASH_20 = mice_20pct_NASH,
+  NASH_25 = mice_25pct_NASH,
+  NASH_30 = mice_30pct_NASH,
+  NASH_40 = mice_40pct_NASH
+)
 
 
+# ------------------------------------
+# TITLE: Statistical Tests  
+# ------------------------------------
+
+# --------------------------
+# Part 1: Shapiro-Wilk test
+# --------------------------
+
+#check normality with shapiro wilk test
+shapiro_test <- function(data, label = "") {
+  data_copy <- data 
+  
+  #numeric
+  numeric_data <- data_copy[, 3:ncol(data_copy)]
+  
+  #shapiro test
+  shapiro_results <- apply(numeric_data, 2, function(x) shapiro.test(x)$p.value)
+  adjusted_p_values <- p.adjust(shapiro_results, method = "BH")
+  
+  shapiro_df <- data.frame(
+    Lipid = names(shapiro_results),
+    p_value = shapiro_results,
+    Adjusted_p_values = adjusted_p_values
+  )
+  
+  significant_count <- sum(shapiro_df$Adjusted_p_values < 0.05, na.rm = TRUE)
+  
+  cat("\n---------------------------------------\n")
+  cat("Dataset: ", label, "\n")
+  cat("Number of significant/non-normal Lipids: ", significant_count, "\n")
+  cat("---------------------------------------\n")
+  
+  #return the count for plotting
+  return(list(result = shapiro_df, non_normal_count = significant_count))
+}
 
 
+#call function for each data 
+#original 
+shapiro_orig_NC <- shapiro_test(data_NC, label = "Original") #34
+#Halfmin
+shapiro_res_halfmin <- lapply(names(halfmin_datasets), function(name) {
+  res <- shapiro_test(halfmin_datasets[[name]], label = name)
+  data.frame(Method = "Half-min", Dataset = name, Non_Normal_Count = res$non_normal_count)
+})
 
+#KNN
+shapiro_res_KNN <- lapply(names(KNN_datasets), function(name) {
+  res <- shapiro_test(KNN_datasets[[name]], label = name)
+  data.frame(Method = "KNN", Dataset = name, Non_Normal_Count = res$non_normal_count)
+})
+
+#RF
+shapiro_res_RF <- lapply(names(RF_datasets), function(name) {
+  res <- shapiro_test(RF_datasets[[name]], label = name)
+  data.frame(Method = "RF", Dataset = name, Non_Normal_Count = res$non_normal_count)
+})
+
+#QRILC
+shapiro_res_QRILC <- lapply(names(QRILC_datasets), function(name) {
+  res <- shapiro_test(QRILC_datasets[[name]], label = name)
+  data.frame(Method = "QRILC", Dataset = name, Non_Normal_Count = res$non_normal_count)
+})
+
+#MICE
+shapiro_res_mice <- lapply(names(mice_datasets), function(name) {
+  res <- shapiro_test(mice_datasets[[name]], label = name)
+  data.frame(Method = "MICE", Dataset = name, Non_Normal_Count = res$non_normal_count)
+})
+
+#combine all results of shapiro test
+shapiro_summary <- bind_rows(
+  shapiro_res_halfmin,
+  shapiro_res_KNN,
+  shapiro_res_RF,
+  shapiro_res_QRILC,
+  shapiro_res_mice
+)
+
+#extract number of missingness and condition
+shapiro_summary <- shapiro_summary %>%
+  mutate(
+    Missingness = as.numeric(gsub(".*_(\\d+)$", "\\1", Dataset)),
+    Condition = gsub("_(\\d+)$", "", Dataset)  # Extract 'NC', 'HO', etc.
+  )
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Shapiro.pdf", width = 14, height = 10)
+
+#now plot 
+ggplot(shapiro_summary, aes(x = factor(Missingness), y = Non_Normal_Count, fill = Condition)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_hline(yintercept = 34, linetype = "dashed", color = "darkgreen", size = 1) +
+  facet_wrap(~ Method) +
+  theme_minimal(base_size = 16) +
+  labs(
+    title = "Non-Normal Lipids by Condition and Missingness (Faceted by Imputation Method)",
+    x = "Missingness Percentage (%)",
+    y = "Number of Non-Normal Lipids",
+    fill = "Condition"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+    axis.text.y = element_text(size = 12),
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    plot.title = element_text(size = 16, hjust = 0.5),
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 12),
+    strip.text = element_text(size = 14)
+  )
+
+dev.off()
+
+
+# --------------------------- 
+# Part 2: T-test and Wilcoxon
+# ---------------------------
+
+stats_test <- function(original_data, imputed_data, condition_label) {
+  lipid_cols <- colnames(original_data)[3:ncol(original_data)]
+  
+  #run tests and store raw p-values
+  raw_results <- lapply(lipid_cols, function(lipid) {
+    orig_vals <- original_data[[lipid]]
+    imp_vals  <- imputed_data[[lipid]]
+    
+    t_pval <- tryCatch(t.test(orig_vals, imp_vals)$p.value, error = function(e) NA)
+    w_pval <- tryCatch(wilcox.test(orig_vals, imp_vals)$p.value, error = function(e) NA)
+    
+    data.frame(
+      Lipid = lipid,
+      TTest_p = t_pval,
+      Wilcox_p = w_pval
+    )
+  })
+  
+  df <- do.call(rbind, raw_results)
+  
+  #apply BH adjustment
+  df$TTest_p_adj   <- p.adjust(df$TTest_p, method = "BH")
+  df$Wilcox_p_adj  <- p.adjust(df$Wilcox_p, method = "BH")
+  df$Condition     <- condition_label
+  
+  return(df)
+}
+
+#combine original
+original_datasets <- list(
+  NC_10 = data_NC,
+  NC_15 = data_NC,
+  NC_20 = data_NC,
+  NC_25 = data_NC,
+  NC_30 = data_NC,
+  NC_40 = data_NC,
+  
+  HO_10 = data_HO,
+  HO_15 = data_HO,
+  HO_20 = data_HO,
+  HO_25 = data_HO,
+  HO_30 = data_HO,
+  HO_40 = data_HO,
+  
+  NAFL_10 = data_NAFL,
+  NAFL_15 = data_NAFL,
+  NAFL_20 = data_NAFL,
+  NAFL_25 = data_NAFL,
+  NAFL_30 = data_NAFL,
+  NAFL_40 = data_NAFL,
+  
+  NASH_10 = data_NASH,
+  NASH_15 = data_NASH,
+  NASH_20 = data_NASH,
+  NASH_25 = data_NASH,
+  NASH_30 = data_NASH,
+  NASH_40 = data_NASH
+)
+
+#call function for halfmin
+#halfmin
+results_halfmin <- lapply(names(halfmin_datasets), function(name) {
+  original <- original_datasets[[name]]
+  imputed <- halfmin_datasets[[name]]
+  condition <- gsub("_\\d+$", "", name)
+  missingness <- as.numeric(gsub(".*_(\\d+)$", "\\1", name))
+  
+  df <- stats_test(original, imputed, condition)
+  df$Dataset <- name
+  df$Missingness <- missingness
+  df$Method <- "Half-min"
+  return(df)
+})
+
+#save dataframe
+results_halfmin_df <- do.call(rbind, results_halfmin)
+
+#count singificant p-values
+summary_tests_halfmin <- results_halfmin_df %>%
+  mutate(
+    TTest_signif = TTest_p_adj < 0.05,
+    Wilcox_signif = Wilcox_p_adj < 0.05
+  ) %>%
+  group_by(Method, Condition, Missingness) %>%
+  summarise(
+    TTest_Significant = sum(TTest_signif, na.rm = TRUE),
+    Wilcox_Significant = sum(Wilcox_signif, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+#knn
+results_knn <- lapply(names(KNN_datasets), function(name) {
+  original <- original_datasets[[name]]
+  imputed <- KNN_datasets[[name]]
+  condition <- gsub("_\\d+$", "", name)
+  missingness <- as.numeric(gsub(".*_(\\d+)$", "\\1", name))
+  
+  df <- stats_test(original, imputed, condition)
+  df$Dataset <- name
+  df$Missingness <- missingness
+  df$Method <- "KNN"
+  return(df)
+})
+
+#save dataframe
+results_KNN_df <- do.call(rbind, results_knn)
+
+#knn
+summary_tests_hknn <- results_KNN_df %>%
+  mutate(
+    TTest_signif = TTest_p_adj < 0.05,
+    Wilcox_signif = Wilcox_p_adj < 0.05
+  ) %>%
+  group_by(Method, Condition, Missingness) %>%
+  summarise(
+    TTest_Significant = sum(TTest_signif, na.rm = TRUE),
+    Wilcox_Significant = sum(Wilcox_signif, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+
+#RF
+results_rf <- lapply(names(RF_datasets), function(name) {
+  original <- original_datasets[[name]]
+  imputed <- RF_datasets[[name]]
+  condition <- gsub("_\\d+$", "", name)
+  missingness <- as.numeric(gsub(".*_(\\d+)$", "\\1", name))
+  
+  df <- stats_test(original, imputed, condition)
+  df$Dataset <- name
+  df$Missingness <- missingness
+  df$Method <- "RF"
+  return(df)
+})
+
+#save dataframe
+results_RF_df <- do.call(rbind, results_rf)
+
+#count sign. p-values
+summary_tests_RF <- results_RF_df %>%
+  mutate(
+    TTest_signif = TTest_p_adj < 0.05,
+    Wilcox_signif = Wilcox_p_adj < 0.05
+  ) %>%
+  group_by(Method, Condition, Missingness) %>%
+  summarise(
+    TTest_Significant = sum(TTest_signif, na.rm = TRUE),
+    Wilcox_Significant = sum(Wilcox_signif, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+#QRILC
+results_qrilc <- lapply(names(QRILC_datasets), function(name) {
+  original <- original_datasets[[name]]
+  imputed <- QRILC_datasets[[name]]
+  condition <- gsub("_\\d+$", "", name)
+  missingness <- as.numeric(gsub(".*_(\\d+)$", "\\1", name))
+  
+  df <- stats_test(original, imputed, condition)
+  df$Dataset <- name
+  df$Missingness <- missingness
+  df$Method <- "QRILC"
+  return(df)
+})
+
+#save dataframe
+results_QRILC_df <- do.call(rbind, results_qrilc)
+
+#count sign. p-values
+summary_tests_QRILC <- results_QRILC_df %>%
+  mutate(
+    TTest_signif = TTest_p_adj < 0.05,
+    Wilcox_signif = Wilcox_p_adj < 0.05
+  ) %>%
+  group_by(Method, Condition, Missingness) %>%
+  summarise(
+    TTest_Significant = sum(TTest_signif, na.rm = TRUE),
+    Wilcox_Significant = sum(Wilcox_signif, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+#MICE
+results_mice <- lapply(names(mice_datasets), function(name) {
+  original <- original_datasets[[name]]
+  imputed <- mice_datasets[[name]]
+  condition <- gsub("_\\d+$", "", name)
+  missingness <- as.numeric(gsub(".*_(\\d+)$", "\\1", name))
+  
+  df <- stats_test(original, imputed, condition)
+  df$Dataset <- name
+  df$Missingness <- missingness
+  df$Method <- "MICE"
+  return(df)
+})
+
+#save dataframe
+results_mice_df <- do.call(rbind, results_mice)
+
+#count sign. p-values
+summary_tests_mice <- results_mice_df %>%
+  mutate(
+    TTest_signif = TTest_p_adj < 0.05,
+    Wilcox_signif = Wilcox_p_adj < 0.05
+  ) %>%
+  group_by(Method, Condition, Missingness) %>%
+  summarise(
+    TTest_Significant = sum(TTest_signif, na.rm = TRUE),
+    Wilcox_Significant = sum(Wilcox_signif, na.rm = TRUE),
+    .groups = "drop"
+  )
 
 
