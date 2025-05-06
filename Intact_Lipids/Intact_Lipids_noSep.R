@@ -670,7 +670,7 @@ ggplot(shapiro_summary2, aes(x = Missingness, y = Non_Normal_Count, color = Meth
 dev.off()
 
 # --------------------------
-# Part 2: T-test (Visit 1 vs Visit 2)
+# Part 2: T-test & Wilcox (Visit 1 vs Visit 2)
 # --------------------------
 
 #function to make t-test between original and visit (should not be significantly different if good data)
@@ -1054,15 +1054,15 @@ norm_mean_diff <- function(original, imputed, method, percentage, visit){
 #call normalized difference function
 #Halfmin
 #visit 1
-norm_diff1_Halfmin_10pct <- norm_mean_diff(data_original_v1, halfmin_10pct_v1, "Half-min", 10, 1)
-norm_diff1_Halfmin_20pct <- norm_mean_diff(data_original_v1, halfmin_20pct_v1, "Half-min", 20, 1)
-norm_diff1_Halfmin_30pct <- norm_mean_diff(data_original_v1, halfmin_30pct_v1, "Half-min", 30, 1)
-norm_diff1_Halfmin_40pct <- norm_mean_diff(data_original_v1, halfmin_40pct_v1, "Half-min", 40, 1)
+norm_diff1_halfmin_10pct <- norm_mean_diff(data_original_v1, halfmin_10pct_v1, "Half-min", 10, 1)
+norm_diff1_halfmin_20pct <- norm_mean_diff(data_original_v1, halfmin_20pct_v1, "Half-min", 20, 1)
+norm_diff1_halfmin_30pct <- norm_mean_diff(data_original_v1, halfmin_30pct_v1, "Half-min", 30, 1)
+norm_diff1_halfmin_40pct <- norm_mean_diff(data_original_v1, halfmin_40pct_v1, "Half-min", 40, 1)
 #visit 2
-norm_diff2_Halfmin_10pct <- norm_mean_diff(data_original_v2, halfmin_10pct_v2, "Half-min", 10, 2)
-norm_diff2_Halfmin_20pct <- norm_mean_diff(data_original_v2, halfmin_20pct_v2, "Half-min", 20, 2)
-norm_diff2_Halfmin_30pct <- norm_mean_diff(data_original_v2, halfmin_30pct_v2, "Half-min", 30, 2)
-norm_diff2_Halfmin_40pct <- norm_mean_diff(data_original_v2, halfmin_40pct_v2, "Half-min", 40, 2)
+norm_diff2_halfmin_10pct <- norm_mean_diff(data_original_v2, halfmin_10pct_v2, "Half-min", 10, 2)
+norm_diff2_halfmin_20pct <- norm_mean_diff(data_original_v2, halfmin_20pct_v2, "Half-min", 20, 2)
+norm_diff2_halfmin_30pct <- norm_mean_diff(data_original_v2, halfmin_30pct_v2, "Half-min", 30, 2)
+norm_diff2_halfmin_40pct <- norm_mean_diff(data_original_v2, halfmin_40pct_v2, "Half-min", 40, 2)
 
 #KNN
 #Visit 1
@@ -1531,4 +1531,103 @@ ggplot(nrmse_data2, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputa
   ylim(0,0.25)
 
 dev.off()
+
+# ------------------
+# TITLE: Ranking 
+# ------------------
+
+# -----------------------------
+# Step 1: Normalization Function
+# -----------------------------
+
+#function to defien ranking (0 = best, 1 = worst)
+normalize_min_max <- function(x) {
+  rng <- range(x, na.rm = TRUE)
+  if (diff(rng) == 0) return(rep(0, length(x)))
+  (x - rng[1]) / (rng[2] - rng[1])
+}
+
+# ----------------
+# Step 2: Setup
+# ----------------
+
+methods <- c("halfmin", "KNN", "RF", "QRILC")
+missingness_levels <- c(10, 20, 30, 40)
+visits <- c("Visit 1", "Visit 2")
+
+# --------------------------------------------
+# Step 3: Loop Over Visit, Missingness, Method
+# --------------------------------------------
+
+#dataframe to save output
+summary_metrics <- data.frame()
+
+#loop through each 
+for (visit in visits) {
+  visit_label <- ifelse(visit == "Visit 1", "1", "2")
+  
+  for (i in missingness_levels) {
+    for (method in methods) {
+      
+      nrmse_var <- paste0("nrmse_res", visit_label, "_", method, "_", i, "pct")
+      normdiff_var <- paste0("norm_diff", visit_label, "_", method, "_", i, "pct")
+      
+      if (exists(nrmse_var) && exists(normdiff_var)) {
+        nrmse_data <- get(nrmse_var)
+        norm_diff <- get(normdiff_var)
+        
+        #compute mean 
+        mean_nrmse <- mean(nrmse_data$Weighted_NRMSE, na.rm = TRUE)
+        mean_nmd <- mean(abs(norm_diff$Normalized_Difference), na.rm = TRUE)
+        
+        #add to dataframe
+        summary_metrics <- rbind(summary_metrics, data.frame(
+          Method = method,
+          Visit = visit,
+          Missingness = miss,
+          Weighted_NRMSE = mean_nrmse,
+          Mean_NMD = mean_nmd
+        ))
+      } else {
+        warning(paste("Missing data for:", visit, method, miss, "pct"))
+      }
+    }
+  }
+}
+
+# -----------------------------
+# Step 4: Normalize and Rank
+# -----------------------------
+
+#normalize 
+summary_normalized <- summary_metrics %>%
+  group_by(Visit, Missingness) %>%
+  mutate(
+    Weighted_NRMSE_norm = normalize_min_max(Weighted_NRMSE),
+    Mean_NMD_norm = normalize_min_max(Mean_NMD)
+  ) %>%
+  ungroup()
+
+#mean of normalized
+summary_ranked <- summary_normalized %>%
+  rowwise() %>%
+  mutate(
+    Final_Score = mean(c_across(ends_with("_norm")), na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+# -----------------------------
+# Step 5: Rank and Output
+# -----------------------------
+
+#output of ranking 
+ranking_output <- summary_ranked %>%
+  group_by(Visit, Missingness) %>%
+  mutate(Rank = rank(Final_Score, ties.method = "first")) %>%
+  ungroup() %>%
+  arrange(Visit, Missingness, Rank) %>%
+  select(Rank, Method, Visit, Missingness, Final_Score)
+
+
+
 
