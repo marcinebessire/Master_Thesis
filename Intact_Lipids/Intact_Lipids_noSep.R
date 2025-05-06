@@ -1336,38 +1336,70 @@ plot_whole_distribution <- function(original, imputed, method, percentage, visit
 }
 
 #call function to plot whole distribution
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Distr_Halfmin.pdf", width = 14, height = 10)
+
 #Halfmin
 #visit 1
 whole_dist1_Halfmin_10pct <- plot_whole_distribution(data_original_v1, halfmin_10pct_v1, "Half-min", 10, 1)
+whole_dist1_Halfmin_20pct <- plot_whole_distribution(data_original_v1, halfmin_20pct_v1, "Half-min", 20, 1)
+whole_dist1_Halfmin_30pct <- plot_whole_distribution(data_original_v1, halfmin_30pct_v1, "Half-min", 30, 1)
 whole_dist1_Halfmin_40pct <- plot_whole_distribution(data_original_v1, halfmin_40pct_v1, "Half-min", 40, 1)
 #visit 2
 whole_dist2_Halfmin_10pct <- plot_whole_distribution(data_original_v2, halfmin_10pct_v2, "Half-min", 10, 2)
+whole_dist2_Halfmin_20pct <- plot_whole_distribution(data_original_v2, halfmin_20pct_v2, "Half-min", 20, 2)
+whole_dist2_Halfmin_30pct <- plot_whole_distribution(data_original_v2, halfmin_30pct_v2, "Half-min", 30, 2)
 whole_dist2_Halfmin_40pct <- plot_whole_distribution(data_original_v2, halfmin_40pct_v2, "Half-min", 40, 2)
+
+dev.off()
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Distr_KNN.pdf", width = 14, height = 10)
 
 #KNN
 #visit 1
 whole_dist1_KNN_10pct <- plot_whole_distribution(data_original_v1, knn_10pct_v1, "KNN", 10, 1)
+whole_dist1_KNN_20pct <- plot_whole_distribution(data_original_v1, knn_20pct_v1, "KNN", 20, 1)
+whole_dist1_KNN_30pct <- plot_whole_distribution(data_original_v1, knn_30pct_v1, "KNN", 30, 1)
 whole_dist1_KNN_40pct <- plot_whole_distribution(data_original_v1, knn_40pct_v1, "KNN", 40, 1)
 #visit 2
 whole_dist2_KNN_10pct <- plot_whole_distribution(data_original_v2, knn_10pct_v2, "KNN", 10, 2)
+whole_dist2_KNN_20pct <- plot_whole_distribution(data_original_v2, knn_20pct_v2, "KNN", 20, 2)
+whole_dist2_KNN_30pct <- plot_whole_distribution(data_original_v2, knn_30pct_v2, "KNN", 30, 2)
 whole_dist2_KNN_40pct <- plot_whole_distribution(data_original_v2, knn_40pct_v2, "KNN", 40, 2)
+
+dev.off()
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Distr_RF.pdf", width = 14, height = 10)
 
 #RF
 #visit 1
 whole_dist1_RF_10pct <- plot_whole_distribution(data_original_v1, rf_10pct_v1, "RF", 10, 1)
+whole_dist1_RF_20pct <- plot_whole_distribution(data_original_v1, rf_20pct_v1, "RF", 20, 1)
+whole_dist1_RF_30pct <- plot_whole_distribution(data_original_v1, rf_30pct_v1, "RF", 30, 1)
 whole_dist1_RF_40pct <- plot_whole_distribution(data_original_v1, rf_40pct_v1, "RF", 40, 1)
 #visit 2
 whole_dist2_RF_10pct <- plot_whole_distribution(data_original_v2, rf_10pct_v2, "RF", 10, 2)
+whole_dist2_RF_20pct <- plot_whole_distribution(data_original_v2, rf_20pct_v2, "RF", 20, 2)
+whole_dist2_RF_30pct <- plot_whole_distribution(data_original_v2, rf_30pct_v2, "RF", 30, 2)
 whole_dist2_RF_40pct <- plot_whole_distribution(data_original_v2, rf_40pct_v2, "RF", 40, 2)
+
+dev.off()
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Distr_QRILC.pdf", width = 14, height = 10)
 
 #QRILC
 #visit 1
 whole_dist1_QRILC_10pct <- plot_whole_distribution(data_original_v1, qrilc_10pct_v1, "QRILC", 10, 1)
+whole_dist1_QRILC_20pct <- plot_whole_distribution(data_original_v1, qrilc_20pct_v1, "QRILC", 20, 1)
+whole_dist1_QRILC_30pct <- plot_whole_distribution(data_original_v1, qrilc_30pct_v1, "QRILC", 30, 1)
 whole_dist1_QRILC_40pct <- plot_whole_distribution(data_original_v1, qrilc_40pct_v1, "QRILC", 40, 1)
 #visit 2
 whole_dist2_QRILC_10pct <- plot_whole_distribution(data_original_v2, qrilc_10pct_v2, "QRILC", 10, 2)
+whole_dist2_QRILC_20pct <- plot_whole_distribution(data_original_v2, qrilc_20pct_v2, "QRILC", 20, 2)
+whole_dist2_QRILC_30pct <- plot_whole_distribution(data_original_v2, qrilc_30pct_v2, "QRILC", 30, 2)
 whole_dist2_QRILC_40pct <- plot_whole_distribution(data_original_v2, qrilc_40pct_v2, "QRILC", 40, 2)
 
+dev.off()
 
 # ------------------------------------
 # TITLE: ANOVA
@@ -1390,6 +1422,8 @@ summary(anova_visit2)
 # Part 1: Check Residuals and Normality for ANOVA result
 # -------------------------------------------------------
 
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/ANOVA_res.pdf", width = 14, height = 10)
+
 #check residuals for normality
 #histogram of residuals (extracts results from anova model)
 #residul look symmetry and a bit bell shaped then it suggests normalizy 
@@ -1397,13 +1431,13 @@ summary(anova_visit2)
 #visit 1
 ggplot(data.frame(residuals = residuals(anova_visit1)), aes(x = residuals)) +
   geom_histogram(binwidth = 0.05, fill = "blue", alpha = 0.7) +
-  labs(title = "Histogram of Residuals", x = "Residuals", y = "Frequency") +
+  labs(title = "Histogram of Residuals (Visit 1)", x = "Residuals", y = "Frequency") +
   theme_minimal()
 
 #visit 2
 ggplot(data.frame(residuals = residuals(anova_visit2)), aes(x = residuals)) +
   geom_histogram(binwidth = 0.05, fill = "blue", alpha = 0.7) +
-  labs(title = "Histogram of Residuals", x = "Residuals", y = "Frequency") +
+  labs(title = "Histogram of Residuals (Visit 2)", x = "Residuals", y = "Frequency") +
   theme_minimal()
 
 #Q-Q plot of residuals
@@ -1412,12 +1446,12 @@ ggplot(data.frame(residuals = residuals(anova_visit2)), aes(x = residuals)) +
 #S-shaped pattern = possibles skewness
 
 #visit 1
-qqnorm(residuals(anova_visit1), col = "blue")
+qqnorm(residuals(anova_visit1), col = "blue", main = "QQ-Plot of Residuals (Visit 1)")
 qqline(residuals(anova_visit1), col = "red")
 
 #visit 2
-qqnorm(residuals(anova_visit2), col = "blue")
-qqline(residuals(anova_visit2), col = "red")
+qqnorm(residuals(anova_visit1), col = "blue", main = "QQ-Plot of Residuals (Visit 2)")
+qqline(residuals(anova_visit1), col = "red")
 
 #Tukey-Anscombe plot to check residuals vs fitted values
 #x-axis = fitted values (predicted) and y-axis = residueals (error)
@@ -1425,23 +1459,17 @@ qqline(residuals(anova_visit2), col = "red")
 
 #visit 1
 plot(fitted(anova_visit1), resid(anova_visit1), 
-     main = "Tukey-Anscombe Plot", 
+     main = "Tukey-Anscombe Plot (Visit 1)", 
      col = "blue", 
      xlab = "Fitted Values (Predicted by ANOVA Model)", 
      ylab = "Residuals (Errors)")
-
-#run shapiro test on anova model
-shapiro.test(resid(anova_visit1))
 
 #visit 2
 plot(fitted(anova_visit2), resid(anova_visit2), 
-     main = "Tukey-Anscombe Plot", 
+     main = "Tukey-Anscombe Plot (Visit 2)", 
      col = "blue", 
      xlab = "Fitted Values (Predicted by ANOVA Model)", 
      ylab = "Residuals (Errors)")
-
-#run shapiro test on anova model
-shapiro.test(resid(anova_visit2))
 
 # ------------------------------------
 # Part 7: Kruskal-Wallis
@@ -1488,7 +1516,7 @@ print(v2_dunn_test)
 ggplot(nrmse_data1, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputation_Method)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title = "Pairwise Comparisons of Imputation Methods",
+  labs(title = "Pairwise Comparisons of Imputation Methods (Visit 1)",
        x = "Imputation Method",
        y = "Weighted NRMSE") +
   ylim(0,0.25)
@@ -1497,8 +1525,10 @@ ggplot(nrmse_data1, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputa
 ggplot(nrmse_data2, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputation_Method)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title = "Pairwise Comparisons of Imputation Methods",
+  labs(title = "Pairwise Comparisons of Imputation Methods (Visit 2)",
        x = "Imputation Method",
        y = "Weighted NRMSE") +
   ylim(0,0.25)
+
+dev.off()
 
