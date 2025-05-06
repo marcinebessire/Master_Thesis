@@ -1951,4 +1951,72 @@ ggplot(nrmse_data_v2, aes(x = CV, y = Weighted_NRMSE, fill = CV)) +
 dev.off()
 
 
+# -------------------
+# TITLE: Ranking
+# -------------------
+
+# -----------------------------
+# Step 1: Prepare NRMSE & NMD Data
+# -----------------------------
+
+#combine NRMSE results
+nrmse_all <- bind_rows(
+  nrmse_halfmin_v1, nrmse_knn_v1, nrmse_rf_v1, nrmse_qrilc_v1,
+  nrmse_halfmin_v2, nrmse_knn_v2, nrmse_rf_v2, nrmse_qrilc_v2
+)
+
+#mean per method/visit/cv/missingness
+nrmse_summary <- nrmse_all %>%
+  group_by(Imputation_Method, Visit, CV, Missingness) %>%
+  summarise(Weighted_NRMSE = mean(Weighted_NRMSE, na.rm = TRUE), .groups = "drop") %>%
+  rename(Method = Imputation_Method)
+
+#combine NMD results
+nmd_all <- bind_rows(
+  nmd_halfmin_v1, nmd_knn_v1, nmd_rf_v1, nmd_qrilc_v1,
+  nmd_halfmin_v2, nmd_knn_v2, nmd_rf_v2, nmd_qrilc_v2
+)
+
+#mean absolute difference
+nmd_summary <- nmd_all %>%
+  group_by(Method, Visit, CV, Missingness) %>%
+  summarise(Mean_NMD = mean(abs(Normalized_Difference), na.rm = TRUE), .groups = "drop")
+
+# -----------------------------
+# Step 2: Merge and Normalize
+# -----------------------------
+summary_all <- left_join(nrmse_summary, nmd_summary,
+                         by = c("Method", "Visit", "CV", "Missingness"))
+
+#normalize within each Visit + CV + Missingness group
+summary_normalized <- summary_all %>%
+  group_by(Visit, CV, Missingness) %>%
+  mutate(
+    Weighted_NRMSE_norm = normalize_min_max(Weighted_NRMSE),
+    Mean_NMD_norm = normalize_min_max(Mean_NMD)
+  ) %>%
+  ungroup()
+
+# -----------------------------
+# Step 3: Calculate Final Score and Rank
+# -----------------------------
+summary_ranked <- summary_normalized %>%
+  rowwise() %>%
+  mutate(
+    Final_Score = mean(c_across(ends_with("_norm")), na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  group_by(Visit, CV, Missingness) %>%
+  mutate(Rank = rank(Final_Score, ties.method = "first")) %>%
+  ungroup() %>%
+  arrange(Visit, CV, Missingness, Rank)
+
+# -----------------------------
+# Step 4: Final Output
+# -----------------------------
+ranking_output <- summary_ranked %>%
+  select(Rank, Method, Visit, CV, Missingness, Weighted_NRMSE, Mean_NMD, Final_Score)
+
+print(ranking_output)
+
 
