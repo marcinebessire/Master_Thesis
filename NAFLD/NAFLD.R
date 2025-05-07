@@ -1021,4 +1021,518 @@ summary_tests_mice <- results_mice_df %>%
     .groups = "drop"
   )
 
+#put all results together
+summary_tests_all <- bind_rows(
+  summary_tests_halfmin,
+  summary_tests_hknn,
+  summary_tests_RF,
+  summary_tests_QRILC,
+  summary_tests_mice
+)
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/T_Test_Wilcox.pdf", width = 14, height = 10)
+
+
+#plot t-test results
+ggplot(summary_tests_all, aes(x = factor(Missingness), y = TTest_Significant, fill = Condition)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ Method, ncol = 2) +
+  labs(
+    title = "Significant Lipids (T-test, BH-adjusted)",
+    x = "Missingness (%)",
+    y = "Number of Significant Lipids",
+    fill = "Condition"
+  ) +
+  theme_minimal(base_size = 14)
+
+#plot wilcoxon results
+ggplot(summary_tests_all, aes(x = factor(Missingness), y = Wilcox_Significant, fill = Condition)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~ Method, ncol = 2) +
+  labs(
+    title = "Significant Lipids (Wilcoxon-test, BH-adjusted)",
+    x = "Missingness (%)",
+    y = "Number of Significant Lipids",
+    fill = "Condition"
+  ) +
+  theme_minimal(base_size = 14)
+
+dev.off()
+
+# --------------------------
+# TITLE: NRMSE 
+# --------------------------
+
+# --------------------------
+# Prt 1: Calculate NRMSE 
+# --------------------------
+
+#function to calcualte NRMSE
+calculate_weighted_nrmse <- function(original, imputed, method, percentage){
+  #numeric columns 
+  numeric_col_names <- colnames(original)[6:ncol(original)]
+  
+  #calculate nrmse for each column
+  nrmse_values <- sapply(numeric_col_names, function(col){
+    actual_val <- original[[col]]
+    imputed_val <- imputed[[col]]
+    
+    #ensure no missing value 
+    valid_indices <- !is.na(actual_val) & !is.na(imputed_val)
+    
+    if (sum(valid_indices) > 2) { #if enough data
+      mse <- mean((actual_val[valid_indices] - imputed_val[valid_indices])^2) #mean squared error
+      rmse <- sqrt(mse) #root mean squared error
+      norm_factor <- max(actual_val[valid_indices], na.rm = TRUE) - min(actual_val[valid_indices], na.rm = TRUE)
+      
+      if (norm_factor > 0){
+        nrmse <- rmse / norm_factor
+        weighted_nrmse <- nrmse * percentage
+        return(weighted_nrmse)
+      } else {
+        return(NA)
+      }
+    } else {
+      return(NA)
+    }
+  })
+  
+  return(data.frame(
+    Lipid = numeric_col_names,
+    Imputation_Method = method,
+    MNAR_Proportion = (percentage * 100),
+    Weighted_NRMSE = nrmse_values
+  ))
+}
+
+#helper function to call if having a list of dataset 
+calculate_nrmse_for_list <- function(imputed_list, original_list, method_label) {
+  results <- lapply(names(imputed_list), function(name) {
+    original <- original_list[[name]]
+    imputed  <- imputed_list[[name]]
+    
+    #get missingness percentage from name (e.g. "NC_25" so get 0.25)
+    missing_pct <- as.numeric(gsub(".*_(\\d+)$", "\\1", name)) / 100
+    
+    #call NRMSE function
+    df <- calculate_weighted_nrmse(original, imputed, method = method_label, percentage = missing_pct)
+    
+    #and add condition label (e.g. NC etc)
+    df$Condition <- gsub("_\\d+$", "", name)
+    df$Dataset <- name
+    return(df)
+  })
+  
+  #cmbine all results
+  do.call(rbind, results)
+}
+
+#call NRMSE function and helper
+nrmse_halfmin <- calculate_nrmse_for_list(halfmin_datasets, original_datasets, method_label = "Half-min")
+nrmse_mice <- calculate_nrmse_for_list(mice_datasets, original_datasets, method_label = "mice")
+nrmse_knn <- calculate_nrmse_for_list(KNN_datasets, original_datasets, method_label = "KNN")
+nrmse_rf <- calculate_nrmse_for_list(RF_datasets, original_datasets, method_label = "RF")
+nrmse_qrilc <- calculate_nrmse_for_list(QRILC_datasets, original_datasets, method_label = "QRILC")
+
+# --------------------------
+# Part 2: Plot NRMSE 
+# --------------------------
+
+#combine all nrmse results 
+nrmse_all <- bind_rows(
+  nrmse_halfmin,
+  nrmse_knn,
+  nrmse_rf,
+  nrmse_qrilc,
+  nrmse_mice
+)
+
+#make sure MNAR proportion is a factor (for plotting)
+nrmse_all$MNAR_Proportion <- factor(nrmse_all$MNAR_Proportion)
+
+#list unique condition
+conditions <- unique(nrmse_all$Condition)
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/NRMSE.pdf", width = 14, height = 10)
+
+for (cond in conditions) {
+  data_subset <- subset(nrmse_all, Condition == cond)
+  
+  p <- ggplot(data_subset, aes(x = MNAR_proportion, y = Weighted_NRMSE, fill = Imputation_Method)) +
+    geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+    scale_fill_manual(values = c("lightblue", "orange", "blue", "magenta", "forestgreen")) +
+    labs(
+      title = paste("Weighted NRMSE for", cond, "across Imputation Methods"),
+      x = "MNAR Proportion (%)",
+      y = "Weighted NRMSE", 
+      fill = "Imputation Method"
+    ) +
+    theme_minimal() +
+    theme(
+      legend.position = "right",  
+      legend.title = element_text(size = 14),
+      legend.text = element_text(size = 12),
+      axis.title.x = element_text(size = 16),
+      axis.title.y = element_text(size = 16),
+      axis.text.x = element_text(size = 14),
+      axis.text.y = element_text(size = 14),
+      plot.title = element_text(size = 18, hjust = 0.5),
+      panel.grid.major = element_line(color = "gray85"),
+      panel.grid.minor = element_blank()
+    ) +
+    ylim(0, 0.4)
+  
+  print(p)
+}
+
+dev.off()
+
+
+# ---------------------------------------
+# TITLE: Normalized Mean Difference (NMD)
+# ---------------------------------------
+
+# ------------------------
+# Part 1: Calculate NMD
+# ------------------------
+
+#function to calculate normalized mean difference 
+norm_mean_diff <- function(original, imputed, method, percentage){
+  #numeric columns
+  numeric_original <- original[, 6:ncol(original)]
+  numeric_imputed <- imputed[, 6:ncol(imputed)]
+  
+  #mean before imputation
+  mean_before <- numeric_original %>%
+    summarise(across(everything(), mean, na.rm = TRUE)) %>%
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Mean_Before")
+  
+  #mean after imputation
+  mean_after <- numeric_imputed %>%
+    summarise(across(everything(), mean, na.rm = TRUE)) %>%
+    pivot_longer(cols = everything(), names_to = "Lipid", values_to = "Mean_After")
+  
+  #merge before and after
+  mean_comparison <- merge(mean_before, mean_after, by = "Lipid")
+  
+  #compute NMD
+  mean_comparison <- mean_comparison %>%
+    mutate(
+    Normalized_Difference = (Mean_After - Mean_Before) / Mean_Before,
+    Imputation_Method = method,
+    MNAR_Proportion = percentage * 100  
+  )
+  
+  
+  plot_title <- paste0("Normalized Difference with ", percentage, "% Missing Values using ", method, " Imputation ")
+  
+  
+  #plot the density of the normalized difference
+  plot <- ggplot(mean_comparison, aes(x = Normalized_Difference)) +
+    geom_density(fill = "blue", alpha = 0.4, color = "black") + 
+    theme_minimal() +
+    labs(title = plot_title,  
+         x = "Normalized Difference",
+         y = "Density") +
+    xlim(-0.2, 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "red")  
+  
+  print(plot)  
+  return(mean_comparison)  
+}
+
+#helper function to call if having a list of dataset 
+calculate_nmd_for_list <- function(imputed_list, original_list, method_label) {
+  results <- lapply(names(imputed_list), function(name) {
+    original <- original_list[[name]]
+    imputed  <- imputed_list[[name]]
+    
+    #get missingness percentage from name (e.g. "NC_25" so get 0.25)
+    missing_pct <- as.numeric(gsub(".*_(\\d+)$", "\\1", name)) / 100
+    
+    #call NRMSE function
+    df <- norm_mean_diff(original, imputed, method = method_label, percentage = missing_pct)
+    
+    #and add condition label (e.g. NC etc)
+    df$Condition <- gsub("_\\d+$", "", name)
+    df$Dataset <- name
+    return(df)
+  })
+  
+  #cmbine all results
+  do.call(rbind, results)
+}
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/NMD_separately.pdf", width = 14, height = 10)
+
+
+#call NRMSE function and helper
+nmd_halfmin <- calculate_nmd_for_list(halfmin_datasets, original_datasets, method_label = "Half-min")
+nmd_mice <- calculate_nmd_for_list(mice_datasets, original_datasets, method_label = "mice")
+nmd_knn <- calculate_nmd_for_list(KNN_datasets, original_datasets, method_label = "KNN")
+nmd_rf <- calculate_nmd_for_list(RF_datasets, original_datasets, method_label = "RF")
+nmd_qrilc <- calculate_nmd_for_list(QRILC_datasets, original_datasets, method_label = "QRILC")
+
+dev.off()
+
+
+# ------------------------
+# Part 2: Plot NMD
+# ------------------------
+
+#combine all
+nmd_all <- bind_rows(
+  nmd_halfmin,
+  nmd_knn,
+  nmd_rf,
+  nmd_qrilc,
+  nmd_mice
+)
+
+#make factor for plotting
+nmd_all <- nmd_all %>%
+  mutate(Percentage = paste0(round(MNAR_Proportion), "%"))
+
+#now make a plot
+plot_nmd_density_by_condition <- function(nmd_data, condition_label) {
+  data_subset <- nmd_data %>% filter(Condition == condition_label)
+  
+  ggplot(data_subset, aes(x = Normalized_Difference, fill = Percentage, color = Percentage)) +
+    geom_density(alpha = 0.3) +
+    facet_wrap(~ Imputation_Method, ncol = 2) +
+    theme_minimal() +
+    labs(
+      title = paste("Normalized Mean Difference (NMD) -", condition_label),
+      x = "Normalized Difference",
+      y = "Density"
+    ) +
+    xlim(-0.2, 0.2) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+    theme(
+      legend.title = element_blank(),
+      legend.position = "right",
+      strip.text = element_text(size = 14),
+      plot.title = element_text(size = 16, hjust = 0.5)
+    )
+}
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/NMD_overall.pdf", width = 14, height = 10)
+
+for (cond in unique(nmd_all$Condition)) {
+  print(plot_nmd_density_by_condition(nmd_all, cond))
+}
+
+dev.off()
+
+
+# ------------------------------------
+# TITLE: ANOVA
+# ------------------------------------
+
+#fit an ANOVA model with an interaction term between imputation method and missingness level 
+#apply log to normalize data
+
+#ensure that they are factor
+nrmse_all$Imputation_Method <- as.factor(nrmse_all$Imputation_Method)
+nrmse_all$Condition <- as.factor(nrmse_all$Condition)
+nrmse_all$MNAR_proportion <- as.numeric(nrmse_all$MNAR_proportion) 
+
+#log transform
+nrmse_all <- nrmse_all %>%
+  filter(Weighted_NRMSE > 0) %>%  # just in case
+  mutate(log_NRMSE = log(Weighted_NRMSE))
+
+
+#ANOVA with main effects only
+nrmse_aov <- aov(log_NRMSE ~ Imputation_Method + MNAR_proportion, data = nrmse_all)
+summary(nrmse_aov)
+
+#ANOVA with interaction term
+nrmse_aov2 <- aov(log_NRMSE ~ Imputation_Method * MNAR_proportion, data = nrmse_all)
+summary(nrmse_aov2)
+
+#full model with condition
+nrmse_aov3 <- aov(log_NRMSE ~ Imputation_Method * MNAR_proportion * Condition, data = nrmse_all)
+summary(nrmse_aov3)
+
+
+# --------------------------------------------------------
+# Part 1: Check Residuals and Normality for ANOVA result
+# -------------------------------------------------------
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/ANOVA_res.pdf", width = 14, height = 10)
+
+#check residuals for normality
+#histogram of residuals (extracts results from anova model)
+#residul look symmetry and a bit bell shaped then it suggests normalizy 
+
+#with interaction term 
+ggplot(data.frame(residuals = residuals(nrmse_aov2)), aes(x = residuals)) +
+  geom_histogram(binwidth = 0.05, fill = "blue", alpha = 0.7) +
+  labs(title = "Histogram of Residuals (with Interaction Term)", x = "Residuals", y = "Frequency") +
+  theme_minimal()
+
+#full with condition
+ggplot(data.frame(residuals = residuals(nrmse_aov3)), aes(x = residuals)) +
+  geom_histogram(binwidth = 0.05, fill = "blue", alpha = 0.7) +
+  labs(title = "Histogram of Residuals (With Condition)", x = "Residuals", y = "Frequency") +
+  theme_minimal()
+
+
+#Q-Q plot of residuals
+#plot residual against theoretical normal distirbutions
+#red line shows perfect normal distirbution
+#S-shaped pattern = possibles skewness
+
+#visit 1
+qqnorm(residuals(nrmse_aov2), col = "blue", main = "QQ-Plot of Residuals (With Interaction)")
+qqline(residuals(nrmse_aov2), col = "red")
+
+#visit 2
+qqnorm(residuals(nrmse_aov3), col = "blue", main = "QQ-Plot of Residuals (With Condition)")
+qqline(residuals(nrmse_aov3), col = "red")
+
+#Tukey-Anscombe plot to check residuals vs fitted values
+#x-axis = fitted values (predicted) and y-axis = residueals (error)
+#residuals should be evenly spread, if the points fan out or forma pattern the assumption of homoscedascity is violated 
+
+#visit 1
+plot(fitted(nrmse_aov2), resid(nrmse_aov2), 
+     main = "Tukey-Anscombe Plot (With Interaction)", 
+     col = "blue", 
+     xlab = "Fitted Values (Predicted by ANOVA Model)", 
+     ylab = "Residuals (Errors)")
+
+#visit 2
+plot(fitted(nrmse_aov3), resid(nrmse_aov3), 
+     main = "Tukey-Anscombe Plot (With Condition)", 
+     col = "blue", 
+     xlab = "Fitted Values (Predicted by ANOVA Model)", 
+     ylab = "Residuals (Errors)")
+
+# ------------------------------------
+# Part 7: Kruskal-Wallis
+# ------------------------------------
+
+#perform kruskal-wallis test across Imputation method
+kruskal.test(Weighted_NRMSE ~ Imputation_Method, data = nrmse_all)
+
+#kruskal test per missingness
+nrmse_all %>%
+  group_by(MNAR_proportion) %>%
+  summarise(p_value = kruskal.test(Weighted_NRMSE ~ Imputation_Method)$p.value)
+
+#test per condition
+nrmse_all %>%
+  group_by(Condition) %>%
+  summarise(p_value = kruskal.test(Weighted_NRMSE ~ Imputation_Method)$p.value)
+
+# ------------------------------------
+# Part 8: Dunn's Test for each imputation
+# ------------------------------------
+
+#perform Dunn's Test for pairwise comparison (BH correction for multiple testing)
+#visit 1
+dunnTest(Weighted_NRMSE ~ Imputation_Method, data = nrmse_all, method = "bh")
+
+#overall plot 
+ggplot(nrmse_all, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputation_Method)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+  theme_minimal() +
+  labs(
+    title = "Comparison of Imputation Methods (Weighted NRMSE)",
+    x = "Imputation Method",
+    y = "Weighted NRMSE"
+  ) +
+  ylim(0, 0.25)
+
+dev.off()
+
+
+# ------------------
+# TITLE: Ranking 
+# ------------------
+
+# -------------------------
+# Step 1: Normalize function
+# -------------------------
+
+normalize_min_max <- function(x) {
+  if (all(is.na(x))) return(rep(NA, length(x)))
+  rng <- range(x, na.rm = TRUE)
+  if (diff(rng) == 0) return(rep(0, length(x)))
+  (x - rng[1]) / diff(rng)
+}
+
+# -------------------------------
+# Step 2: Prepare data
+# -------------------------------
+
+#NRMSE
+nrmse_all <- nrmse_all %>%
+  mutate(MNAR_Proportion = as.numeric(as.character(MNAR_Proportion)))
+
+#NMD
+nmd_all <- nmd_all %>%
+  mutate(MNAR_Proportion = as.numeric(as.character(MNAR_Proportion)))
+
+# ------------------------------------------
+# Step 4: Mean NRMSE and Mean NMD
+# ------------------------------------------
+
+#mean NRMSE per group
+nrmse_summary <- nrmse_all %>%
+  group_by(Imputation_Method, Condition, MNAR_Proportion) %>%
+  summarise(
+    Mean_NRMSE = mean(Weighted_NRMSE, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+#mean absolute NMD per group
+nmd_summary <- nmd_all %>%
+  group_by(Imputation_Method, Condition, MNAR_Proportion) %>%
+  summarise(
+    Mean_NMD = mean(abs(Normalized_Difference), na.rm = TRUE),
+    .groups = "drop"
+  )
+
+#combine both metrics
+summary_metrics <- inner_join(
+  nrmse_summary,
+  nmd_summary,
+  by = c("Imputation_Method", "Condition", "MNAR_Proportion")
+)
+
+# -------------------------------------
+# Step 5: Normalize, Score, and Rank
+# -------------------------------------
+
+summary_ranked <- summary_metrics %>%
+  group_by(Condition, MNAR_Proportion) %>%
+  mutate(
+    NRMSE_norm = normalize_min_max(Mean_NRMSE),
+    NMD_norm   = normalize_min_max(Mean_NMD),
+    Final_Score = rowMeans(across(c(NRMSE_norm, NMD_norm)), na.rm = TRUE),
+    Rank = rank(Final_Score, ties.method = "first")
+  ) %>%
+  ungroup()
+
+# -------------------------------------
+# Step 6: Output Ranked Table
+# -------------------------------------
+
+ranking_output <- summary_ranked %>%
+  arrange(Condition, MNAR_Proportion, Rank) %>%
+  select(
+    Rank,
+    Imputation_Method,
+    Condition,
+    MNAR_Proportion,
+    Mean_NRMSE,
+    Mean_NMD,
+    Final_Score
+  )
+
+#write csv
+write.csv(ranking_output, "/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Ranking_table.csv", row.names = FALSE)
 
