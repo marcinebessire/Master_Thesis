@@ -45,6 +45,7 @@ data_whole <- data_whole[,-2]
 data_whole <- data_whole %>%
   mutate(across(3:ncol(.), as.numeric))
 
+#check if numeric conversion worked
 str(data_whole)
 
 # ----------------------------------------
@@ -1158,7 +1159,7 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/NRMSE.pdf", width = 14, h
 for (cond in conditions) {
   data_subset <- subset(nrmse_all, Condition == cond)
   
-  p <- ggplot(data_subset, aes(x = MNAR_proportion, y = Weighted_NRMSE, fill = Imputation_Method)) +
+  p <- ggplot(data_subset, aes(x = MNAR_Proportion, y = Weighted_NRMSE, fill = Imputation_Method)) +
     geom_boxplot(outlier.shape = NA, alpha = 0.7) +
     scale_fill_manual(values = c("lightblue", "orange", "blue", "magenta", "forestgreen")) +
     labs(
@@ -1335,7 +1336,7 @@ dev.off()
 #ensure that they are factor
 nrmse_all$Imputation_Method <- as.factor(nrmse_all$Imputation_Method)
 nrmse_all$Condition <- as.factor(nrmse_all$Condition)
-nrmse_all$MNAR_proportion <- as.numeric(nrmse_all$MNAR_proportion) 
+nrmse_all$MNAR_Proportion <- as.numeric(nrmse_all$MNAR_Proportion) 
 
 #log transform
 nrmse_all <- nrmse_all %>%
@@ -1344,15 +1345,15 @@ nrmse_all <- nrmse_all %>%
 
 
 #ANOVA with main effects only
-nrmse_aov <- aov(log_NRMSE ~ Imputation_Method + MNAR_proportion, data = nrmse_all)
+nrmse_aov <- aov(log_NRMSE ~ Imputation_Method + MNAR_Proportion, data = nrmse_all)
 summary(nrmse_aov)
 
 #ANOVA with interaction term
-nrmse_aov2 <- aov(log_NRMSE ~ Imputation_Method * MNAR_proportion, data = nrmse_all)
+nrmse_aov2 <- aov(log_NRMSE ~ Imputation_Method * MNAR_Proportion, data = nrmse_all)
 summary(nrmse_aov2)
 
 #full model with condition
-nrmse_aov3 <- aov(log_NRMSE ~ Imputation_Method * MNAR_proportion * Condition, data = nrmse_all)
+nrmse_aov3 <- aov(log_NRMSE ~ Imputation_Method * MNAR_Proportion * Condition, data = nrmse_all)
 summary(nrmse_aov3)
 
 
@@ -1419,7 +1420,7 @@ kruskal.test(Weighted_NRMSE ~ Imputation_Method, data = nrmse_all)
 
 #kruskal test per missingness
 nrmse_all %>%
-  group_by(MNAR_proportion) %>%
+  group_by(MNAR_Proportion) %>%
   summarise(p_value = kruskal.test(Weighted_NRMSE ~ Imputation_Method)$p.value)
 
 #test per condition
@@ -1535,4 +1536,143 @@ ranking_output <- summary_ranked %>%
 
 #write csv
 write.csv(ranking_output, "/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Ranking_table.csv", row.names = FALSE)
+
+
+# --------------------------------------
+# TITLE: Calculate CV after imputation
+# -------------------------------------
+
+# ---------------------
+# Part 1: Calculate CV
+# ---------------------
+
+#halfmin
+cv_halfmin_results <- lapply(names(halfmin_datasets), function(name) {
+  data <- halfmin_datasets[[name]]
+  cv_df <- calculate_cv_dataframe(data)
+  cv_df$Dataset <- name  
+  return(cv_df)
+})
+#KNN
+cv_KNN_results <- lapply(names(KNN_datasets), function(name) {
+  data <- KNN_datasets[[name]]
+  cv_df <- calculate_cv_dataframe(data)
+  cv_df$Dataset <- name  
+  return(cv_df)
+})
+#RF
+cv_RF_results <- lapply(names(RF_datasets), function(name) {
+  data <- RF_datasets[[name]]
+  cv_df <- calculate_cv_dataframe(data)
+  cv_df$Dataset <- name  
+  return(cv_df)
+})
+#QRILC
+cv_QRILC_results <- lapply(names(QRILC_datasets), function(name) {
+  data <- QRILC_datasets[[name]]
+  cv_df <- calculate_cv_dataframe(data)
+  cv_df$Dataset <- name  
+  return(cv_df)
+})
+#mice
+cv_mice_results <- lapply(names(mice_datasets), function(name) {
+  data <- mice_datasets[[name]]
+  cv_df <- calculate_cv_dataframe(data)
+  cv_df$Dataset <- name  
+  return(cv_df)
+})
+
+# ---------------------
+# Part 2: Compare CV
+# ---------------------
+
+#function to compare CV
+cv_deviation_from_original <- function(imputed_list, original_list) {
+  results <- lapply(names(imputed_list), function(name) {
+    #get contition and missingess 
+    split <- strsplit(name, "_")[[1]]
+    cond <- split[1]
+    miss <- as.numeric(split[2])
+    
+    #calculate CVs
+    imputed_cv <- calculate_cv_dataframe(imputed_list[[name]]) %>%
+      rename(CV_Imputed = CV)
+    
+    original_cv <- calculate_cv_dataframe(original_list[[name]]) %>%
+      rename(CV_Original = CV)
+    
+    #merge and compute % deviation from original (original is 100%)
+    merged <- left_join(imputed_cv, original_cv, by = "Column") %>%
+      mutate(
+        Condition = cond,
+        Missingness = miss,
+        Dataset = name,
+        CV_Deviation_Perc = abs((CV_Imputed / CV_Original * 100) - 100)
+      )
+    
+    return(merged)
+  })
+  
+  #combine all into one dataframe
+  bind_rows(results)
+}
+
+#named list of origial 
+original_datasets <- list(
+  NC_10 = data_NC, NC_15 = data_NC, NC_20 = data_NC, NC_25 = data_NC, NC_30 = data_NC, NC_40 = data_NC,
+  HO_10 = data_HO, HO_15 = data_HO, HO_20 = data_HO, HO_25 = data_HO, HO_30 = data_HO, HO_40 = data_HO,
+  NAFL_10 = data_NAFL, NAFL_15 = data_NAFL, NAFL_20 = data_NAFL, NAFL_25 = data_NAFL, NAFL_30 = data_NAFL, NAFL_40 = data_NAFL,
+  NASH_10 = data_NASH, NASH_15 = data_NASH, NASH_20 = data_NASH, NASH_25 = data_NASH, NASH_30 = data_NASH, NASH_40 = data_NASH
+)
+
+#call function for each method
+cv_halfmin <- cv_deviation_from_original(halfmin_datasets, original_datasets)
+cv_knn     <- cv_deviation_from_original(KNN_datasets, original_datasets)
+cv_mice    <- cv_deviation_from_original(mice_datasets, original_datasets)
+cv_rf      <- cv_deviation_from_original(RF_datasets, original_datasets)
+cv_qrilc   <- cv_deviation_from_original(QRILC_datasets, original_datasets)
+
+# ---------------------
+# Part 3: Plot
+# ---------------------
+
+cv_halfmin$Method <- "Half-min"
+cv_knn$Method <- "KNN"
+cv_mice$Method <- "MICE"
+cv_rf$Method <- "RF"
+cv_qrilc$Method <- "QRILC"
+
+cv_all <- bind_rows(cv_halfmin, cv_knn, cv_mice, cv_rf, cv_qrilc)
+
+
+#distirbtuion plot of CV deviation
+ggplot(cv_all, aes(x = CV_Deviation_Perc, fill = Method)) +
+  geom_density(alpha = 0.4) +
+  facet_grid(Condition ~ Missingness) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Distribution of CV Deviation",
+    x = "Deviation from Original CV (%)",
+    y = "Density"
+  ) +
+  xlim(-10,30)
+
+#mean deviation
+cv_summary_all <- cv_all %>%
+  group_by(Method, Condition, Missingness) %>%
+  summarise(Mean_Deviation = mean(CV_Deviation_Perc, na.rm = TRUE), .groups = "drop")
+
+#mean deviation plot
+ggplot(cv_summary_all, aes(x = Missingness, y = Mean_Deviation, color = Method)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  facet_wrap(~Condition) +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Mean CV Deviation by Method and Missingness",
+    x = "Missingness Level (%)",
+    y = "Mean Deviation from Original CV (%)"
+  ) + 
+  ylim(0,100)
+
 
