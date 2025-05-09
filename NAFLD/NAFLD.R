@@ -1039,7 +1039,7 @@ ggplot(summary_tests_all, aes(x = factor(Missingness), y = TTest_Significant, fi
   geom_bar(stat = "identity", position = "dodge") +
   facet_wrap(~ Method, ncol = 2) +
   labs(
-    title = "Significant Lipids (T-test, BH-adjusted)",
+    title = "Significant Lipids (T-tst, BH-adjusted)",
     x = "Missingness (%)",
     y = "Number of Significant Lipids",
     fill = "Condition"
@@ -1365,7 +1365,7 @@ pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/ANOVA_res.pdf", width = 1
 
 #check residuals for normality
 #histogram of residuals (extracts results from anova model)
-#residul look symmetry and a bit bell shaped then it suggests normalizy 
+#residuals look symmetry and a bit bell shaped then it suggests normality
 
 #with interaction term 
 ggplot(data.frame(residuals = residuals(nrmse_aov2)), aes(x = residuals)) +
@@ -1644,6 +1644,7 @@ cv_qrilc$Method <- "QRILC"
 
 cv_all <- bind_rows(cv_halfmin, cv_knn, cv_mice, cv_rf, cv_qrilc)
 
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/CV_res_zoomed.pdf", width = 14, height = 10)
 
 #distirbtuion plot of CV deviation
 ggplot(cv_all, aes(x = CV_Deviation_Perc, fill = Method)) +
@@ -1672,7 +1673,143 @@ ggplot(cv_summary_all, aes(x = Missingness, y = Mean_Deviation, color = Method))
     title = "Mean CV Deviation by Method and Missingness",
     x = "Missingness Level (%)",
     y = "Mean Deviation from Original CV (%)"
-  ) + 
+  ) +
   ylim(0,100)
+
+dev.off()
+
+# --------------------------------------
+# TITLE: Calculate SD after imputation
+# -------------------------------------
+
+# ---------------------
+# Part 1: Calculate SD
+# ---------------------
+
+#halfmin
+sd_halfmin_results <- lapply(names(halfmin_datasets), function(name) {
+  data <- halfmin_datasets[[name]]
+  sd_df <- calculate_sd_dataframe(data)
+  sd_df$Dataset <- name  
+  return(sd_df)
+})
+#KNN
+sd_KNN_results <- lapply(names(KNN_datasets), function(name) {
+  data <- KNN_datasets[[name]]
+  sd_df <- calculate_sd_dataframe(data)
+  sd_df$Dataset <- name  
+  return(sd_df)
+})
+#RF
+sd_RF_results <- lapply(names(RF_datasets), function(name) {
+  data <- RF_datasets[[name]]
+  sd_df <- calculate_sd_dataframe(data)
+  sd_df$Dataset <- name  
+  return(sd_df)
+})
+#QRILC
+sd_QRILC_results <- lapply(names(QRILC_datasets), function(name) {
+  data <- QRILC_datasets[[name]]
+  sd_df <- calculate_sd_dataframe(data)
+  sd_df$Dataset <- name  
+  return(sd_df)
+})
+#mice
+sd_mice_results <- lapply(names(mice_datasets), function(name) {
+  data <- mice_datasets[[name]]
+  sd_df <- calculate_sd_dataframe(data)
+  sd_df$Dataset <- name  
+  return(sd_df)
+})
+
+# ---------------------
+# Part 2: Compare SD
+# ---------------------
+
+#function to compare SD
+sd_deviation_from_original <- function(imputed_list, original_list) {
+  results <- lapply(names(imputed_list), function(name) {
+    #get contition and missingess 
+    split <- strsplit(name, "_")[[1]]
+    cond <- split[1]
+    miss <- as.numeric(split[2])
+    
+    #calculate CVs
+    imputed_sd <- calculate_sd_dataframe(imputed_list[[name]]) %>%
+      rename(SD_Imputed = SD)
+    
+    original_sd <- calculate_sd_dataframe(original_list[[name]]) %>%
+      rename(SD_Original = SD)
+    
+    #merge and compute % deviation from original (original is 100%)
+    merged <- left_join(imputed_sd, original_sd, by = "Column") %>%
+      mutate(
+        Condition = cond,
+        Missingness = miss,
+        Dataset = name,
+        SD_Deviation_Perc = abs((SD_Imputed / SD_Original * 100) - 100)
+      )
+    
+    return(merged)
+  })
+  
+  #combine all into one dataframe
+  bind_rows(results)
+}
+
+
+#call function for each method
+sd_halfmin <- sd_deviation_from_original(halfmin_datasets, original_datasets)
+sd_knn     <- sd_deviation_from_original(KNN_datasets, original_datasets)
+sd_mice    <- sd_deviation_from_original(mice_datasets, original_datasets)
+sd_rf      <- sd_deviation_from_original(RF_datasets, original_datasets)
+sd_qrilc   <- sd_deviation_from_original(QRILC_datasets, original_datasets)
+
+# ---------------------
+# Part 3: Plot
+# ---------------------
+
+sd_halfmin$Method <- "Half-min"
+sd_knn$Method <- "KNN"
+sd_mice$Method <- "MICE"
+sd_rf$Method <- "RF"
+sd_qrilc$Method <- "QRILC"
+
+sd_all <- bind_rows(sd_halfmin, sd_knn, sd_mice, sd_rf, sd_qrilc)
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/SD_res.pdf", width = 14, height = 10)
+
+#distirbtuion plot of SD deviation
+ggplot(sd_all, aes(x = SD_Deviation_Perc, fill = Method)) +
+  geom_density(alpha = 0.4) +
+  facet_grid(Condition ~ Missingness) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Distribution of SD Deviation",
+    x = "Deviation from Original SD (%)",
+    y = "Density"
+  ) +
+  xlim(-10,30)
+
+#mean deviation
+sd_summary_all <- sd_all %>%
+  group_by(Method, Condition, Missingness) %>%
+  summarise(Mean_Deviation = mean(SD_Deviation_Perc, na.rm = TRUE), .groups = "drop")
+
+
+#mean deviation plot
+ggplot(sd_summary_all, aes(x = Missingness, y = Mean_Deviation, color = Method)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  facet_wrap(~Condition) +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Mean SD Deviation by Method and Missingness",
+    x = "Missingness Level (%)",
+    y = "Mean Deviation from Original SD (%)"
+  )
+
+dev.off()
+
 
 
