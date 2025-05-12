@@ -10,6 +10,7 @@ library(missForest)
 library(imputeLCMD)
 library(FSA) #for Dunns test
 library(readxl)
+library(caTools)  # for trapz function
 
 #load data
 data_whole <- read_excel("/Users/marcinebessire/Desktop/Master_Thesis/Papers_Data/FattyLiver_Pauling/mmc1.xlsx")
@@ -1760,10 +1761,10 @@ sd_deviation_from_original <- function(imputed_list, original_list) {
 
 #call function for each method
 sd_halfmin <- sd_deviation_from_original(halfmin_datasets, original_datasets)
-sd_knn     <- sd_deviation_from_original(KNN_datasets, original_datasets)
-sd_mice    <- sd_deviation_from_original(mice_datasets, original_datasets)
-sd_rf      <- sd_deviation_from_original(RF_datasets, original_datasets)
-sd_qrilc   <- sd_deviation_from_original(QRILC_datasets, original_datasets)
+sd_knn <- sd_deviation_from_original(KNN_datasets, original_datasets)
+sd_mice <- sd_deviation_from_original(mice_datasets, original_datasets)
+sd_rf <- sd_deviation_from_original(RF_datasets, original_datasets)
+sd_qrilc <- sd_deviation_from_original(QRILC_datasets, original_datasets)
 
 # ---------------------
 # Part 3: Plot
@@ -1811,7 +1812,352 @@ ggplot(sd_summary_all, aes(x = Missingness, y = Mean_Deviation, color = Method))
 
 dev.off()
 
-# ----------------------------
-# TITLE: Comparing with Paper
-# ----------------------------
+# ---------------
+# TITLE: Density
+# ---------------
+
+# ---------------------------
+# Part 1: All MNAR percentage
+# ---------------------------
+
+density_imputation_all <- function(original_data, imputed_list, group_prefix, method_label) {
+  #numeric cols
+  orig_long <- original_data[, 3:ncol(original_data)] %>%
+    pivot_longer(everything(), names_to = "Lipid", values_to = "Value") %>%
+    mutate(Method = "Original", MissingPct = "0%")
+  
+  #prepare imputed datasets
+  imputed_long <- bind_rows(
+    lapply(names(imputed_list), function(name) {
+      if (startsWith(name, group_prefix)) {
+        pct <- gsub(".*_(\\d+)$", "\\1", name)  #get percent from name
+        df <- imputed_list[[name]]
+        df_long <- df[, 3:ncol(df)] %>%
+          pivot_longer(everything(), names_to = "Lipid", values_to = "Value") %>%
+          mutate(Method = method_label, MissingPct = paste0(pct, "%"))
+        return(df_long)
+      }
+      NULL
+    }),
+    .id = "Source"
+  ) %>% filter(!is.null(Source))
+  
+  #combine original and imputed
+  combined_df <- bind_rows(orig_long, imputed_long)
+  
+  #plot density with color by missing percent 
+  ggplot(combined_df, aes(x = Value, color = MissingPct)) +
+    geom_density(size = 0.9) +
+    facet_wrap(~ Lipid, scales = "free") +
+    theme_minimal() +
+    labs(title = paste("Density Plot per Lipid -", group_prefix, "-", method_label, "Imputation"),
+         x = "Value",
+         y = "Density",
+         color = "Missingness") +
+    theme(legend.position = "bottom")
+}
+
+
+# ---------------------------
+# Part 1: Separated MNAR percentage
+# ---------------------------
+
+density_imputation_by_mnar <- function(original_data, imputed_list, group_prefix, method_label) {
+  # Extract all available % levels from names like "NC_10", "NC_20"
+  levels <- unique(gsub(paste0(group_prefix, "_"), "", grep(paste0("^", group_prefix, "_"), names(imputed_list), value = TRUE)))
+  
+  for (pct in levels) {
+    # Original data (lipids only)
+    orig_long <- original_data[, 3:ncol(original_data)] %>%
+      pivot_longer(everything(), names_to = "Lipid", values_to = "Value") %>%
+      mutate(Method = "Original", MissingPct = paste0(pct, "%"))
+    
+    # Imputed data for current % level
+    imputed_name <- paste0(group_prefix, "_", pct)
+    imputed_df <- imputed_list[[imputed_name]]
+    
+    imputed_long <- imputed_df[, 3:ncol(imputed_df)] %>%
+      pivot_longer(everything(), names_to = "Lipid", values_to = "Value") %>%
+      mutate(Method = method_label, MissingPct = paste0(pct, "%"))
+    
+    # Combine
+    combined_df <- bind_rows(orig_long, imputed_long)
+    
+    # Plot
+    p <- ggplot(combined_df, aes(x = Value, color = Method)) +
+      geom_density(size = 1) +
+      facet_wrap(~ Lipid, scales = "free") +
+      theme_minimal() +
+      labs(
+        title = paste("Density Plot per Lipid -", group_prefix, "-", pct, "% Missingness -", method_label),
+        x = "Value", y = "Density", color = "Data Source"
+      ) +
+      theme(legend.position = "bottom")
+    
+    print(p)
+  }
+}
+
+#halfmin
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_halfmin.pdf", width = 14, height = 10)
+
+#call all mnar density function
+density_imputation_all(data_HO, halfmin_datasets, group_prefix = "HO", method_label = "Half-min")
+density_imputation_all(data_NC, halfmin_datasets, group_prefix = "NC", method_label = "Half-min")
+density_imputation_all(data_NAFL, halfmin_datasets, group_prefix = "NAFL", method_label = "Half-min")
+density_imputation_all(data_NASH, halfmin_datasets, group_prefix = "NASH", method_label = "Half-min")
+#call separate mnar density function
+density_imputation_by_mnar(data_HO, halfmin_datasets, group_prefix = "HO", method_label = "Half-min")
+density_imputation_by_mnar(data_NC, halfmin_datasets, group_prefix = "NC", method_label = "Half-min")
+density_imputation_by_mnar(data_NAFL, halfmin_datasets, group_prefix = "NAFL", method_label = "Half-min")
+density_imputation_by_mnar(data_NASH, halfmin_datasets, group_prefix = "NASH", method_label = "Half-min")
+
+dev.off()
+
+#KNN
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_KNN.pdf", width = 14, height = 10)
+
+#call all mnar density function
+density_imputation_all(data_HO, KNN_datasets, group_prefix = "HO", method_label = "KNN")
+density_imputation_all(data_NC, KNN_datasets, group_prefix = "NC", method_label = "KNN")
+density_imputation_all(data_NAFL, KNN_datasets, group_prefix = "NAFL", method_label = "KNN")
+density_imputation_all(data_NASH, KNN_datasets, group_prefix = "NASH", method_label = "KNN")
+#call separate mnar density function
+density_imputation_by_mnar(data_HO, KNN_datasets, group_prefix = "HO", method_label = "KNN")
+density_imputation_by_mnar(data_NC, KNN_datasets, group_prefix = "NC", method_label = "KNN")
+density_imputation_by_mnar(data_NAFL, KNN_datasets, group_prefix = "NAFL", method_label = "KNN")
+density_imputation_by_mnar(data_NASH, KNN_datasets, group_prefix = "NASH", method_label = "KNN")
+
+dev.off()
+
+#RF
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_RF.pdf", width = 14, height = 10)
+
+#call all mnar density function
+density_imputation_all(data_HO, RF_datasets, group_prefix = "HO", method_label = "RF")
+density_imputation_all(data_NC, RF_datasets, group_prefix = "NC", method_label = "RF")
+density_imputation_all(data_NAFL, RF_datasets, group_prefix = "NAFL", method_label = "RF")
+density_imputation_all(data_NASH, RF_datasets, group_prefix = "NASH", method_label = "RF")
+#call separate mnar density function
+density_imputation_by_mnar(data_HO, RF_datasets, group_prefix = "HO", method_label = "RF")
+density_imputation_by_mnar(data_NC, RF_datasets, group_prefix = "NC", method_label = "RF")
+density_imputation_by_mnar(data_NAFL, RF_datasets, group_prefix = "NAFL", method_label = "RF")
+density_imputation_by_mnar(data_NASH, RF_datasets, group_prefix = "NASH", method_label = "RF")
+
+dev.off()
+
+#QRILC
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_QRILC.pdf", width = 14, height = 10)
+
+#call all mnar density function
+density_imputation_all(data_HO, QRILC_datasets, group_prefix = "HO", method_label = "QRILC")
+density_imputation_all(data_NC, QRILC_datasets, group_prefix = "NC", method_label = "QRILC")
+density_imputation_all(data_NAFL, QRILC_datasets, group_prefix = "NAFL", method_label = "QRILC")
+density_imputation_all(data_NASH, QRILC_datasets, group_prefix = "NASH", method_label = "QRILC")
+#call separate mnar density function
+density_imputation_by_mnar(data_HO, QRILC_datasets, group_prefix = "HO", method_label = "QRILC")
+density_imputation_by_mnar(data_NC, QRILC_datasets, group_prefix = "NC", method_label = "QRILC")
+density_imputation_by_mnar(data_NAFL, QRILC_datasets, group_prefix = "NAFL", method_label = "QRILC")
+density_imputation_by_mnar(data_NASH, QRILC_datasets, group_prefix = "NASH", method_label = "QRILC")
+
+dev.off()
+
+#mice
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_mice.pdf", width = 14, height = 10)
+
+#call all mnar density function
+density_imputation_all(data_HO, mice_datasets, group_prefix = "HO", method_label = "mice")
+density_imputation_all(data_NC, mice_datasets, group_prefix = "NC", method_label = "mice")
+density_imputation_all(data_NAFL, mice_datasets, group_prefix = "NAFL", method_label = "mice")
+density_imputation_all(data_NASH, mice_datasets, group_prefix = "NASH", method_label = "mice")
+#call separate mnar density function
+density_imputation_by_mnar(data_HO, mice_datasets, group_prefix = "HO", method_label = "mice")
+density_imputation_by_mnar(data_NC, mice_datasets, group_prefix = "NC", method_label = "mice")
+density_imputation_by_mnar(data_NAFL, mice_datasets, group_prefix = "NAFL", method_label = "mice")
+density_imputation_by_mnar(data_NASH, mice_datasets, group_prefix = "NASH", method_label = "mice")
+
+dev.off()
+
+
+# --------------
+# TITLE: AUC
+# --------------
+
+# ------------------------
+# Part 1: AUC of original
+# ------------------------
+
+#function fo calculate AUC and density
+auc_original <- function(data, group_name = "Group") {
+  #select lipid columns
+  lipid_data <- data[, 3:ncol(data)]
+  
+  #AUC
+  auc_values <- sapply(lipid_data, function(col) trapz(1:length(col), col))
+  auc_df <- data.frame(
+    Lipid = names(auc_values),
+    AUC = as.numeric(auc_values)
+  )
+  
+  #AUC Bar plot
+  auc_plot <- ggplot(auc_df, aes(x = Lipid, y = AUC)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    theme_minimal() +
+    labs(title = paste("AUC for Each Lipid -", group_name),
+         x = "Lipid",
+         y = "AUC") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  print(auc_plot)
+  
+  #Density plot per lipid
+  long_df <- pivot_longer(lipid_data, cols = everything(), 
+                          names_to = "Lipid", values_to = "Value")
+  
+  density_plot <- ggplot(long_df, aes(x = Value)) +
+    geom_density(fill = "steelblue", alpha = 0.6) +
+    facet_wrap(~ Lipid, scales = "free") +
+    theme_minimal() +
+    labs(title = paste("Density Plot per Lipid -", group_name),
+         x = "Value",
+         y = "Density")
+  
+  print(density_plot)
+}
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_density_original.pdf", width = 14, height = 10)
+
+analyze_lipid_data(data_NC, group_name = "NC")
+analyze_lipid_data(data_HO, group_name = "HO")
+analyze_lipid_data(data_NAFL, group_name = "NAFL")
+analyze_lipid_data(data_NASH, group_name = "NASH")
+
+dev.off()
+
+# ------------------------
+# Part 1: AUC all
+# ------------------------
+
+#function to calculate AUC for original and imputed dataset
+calculate_auc <- function(original_data, imputed_list, group_prefix, method_label) {
+  auc_rows <- list()
+  
+  #original data AUC
+  original_lipids <- original_data[, 3:ncol(original_data)]
+  
+  #calculTE original auc
+  orig_auc <- sapply(original_lipids, function(col) trapz(1:length(col), col))
+  
+  auc_rows[[1]] <- data.frame(
+    Lipid = names(orig_auc),
+    AUC = as.numeric(orig_auc),
+    Missingness = "0%",
+    Method = "Original"
+  )
+  
+  #imputed datasets
+  for (name in names(imputed_list)) {
+    if (startsWith(name, group_prefix)) {
+      pct <- gsub(".*_(\\d+)$", "\\1", name) #percentage
+      df <- imputed_list[[name]]
+      lipids <- df[, 3:ncol(df)]
+      
+      #calcualte imputed auc
+      auc_vals <- sapply(lipids, function(col) trapz(1:length(col), col))
+      
+      auc_rows[[length(auc_rows) + 1]] <- data.frame(
+        Lipid = names(auc_vals),
+        AUC = as.numeric(auc_vals),
+        Missingness = paste0(pct, "%"),
+        Method = method_label
+      )
+    }
+  }
+  
+  bind_rows(auc_rows)
+}
+
+#function to plot auc original vs impputed
+plot_auc_comparison_by_mnar <- function(original_data, imputed_list, group_prefix, method_label) {
+  auc_df <- calculate_auc_df(original_data, imputed_list, group_prefix, method_label)
+  
+  #get missing levels
+  levels <- unique(auc_df$Missingness)
+  levels <- levels[levels != "0%"] #original not included
+  
+  for (level in levels) {
+    #filter for percentage
+    auc_subset <- auc_df %>% 
+      filter(Missingness %in% c("0%", level))
+    
+    #check that both methods are present
+    if (n_distinct(auc_subset$Method) < 2) next
+    
+    #plot auc bar plot
+    p <- ggplot(auc_subset, aes(x = Lipid, y = AUC, fill = Method)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      theme_minimal() +
+      labs(
+        title = paste("AUC per Lipid -", group_prefix, "-", level, "Missingness -", method_label),
+        x = "Lipid",
+        y = "AUC"
+      ) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+    print(p)
+  }
+}
+
+#call function to plot auc 
+
+#halfmin
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_halfmin.pdf", width = 14, height = 10)
+
+plot_auc_comparison_by_mnar(data_HO, halfmin_datasets, group_prefix = "HO", method_label = "Half-min")
+plot_auc_comparison_by_mnar(data_NC, halfmin_datasets, group_prefix = "NC", method_label = "Half-min")
+plot_auc_comparison_by_mnar(data_NAFL, halfmin_datasets, group_prefix = "NAFL", method_label = "Half-min")
+plot_auc_comparison_by_mnar(data_NASH, halfmin_datasets, group_prefix = "NASH", method_label = "Half-min")
+
+dev.off()
+
+
+#KNN
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_KNN.pdf", width = 14, height = 10)
+
+plot_auc_comparison_by_mnar(data_HO, halfmin_datasets, group_prefix = "HO", method_label = "KNN")
+plot_auc_comparison_by_mnar(data_NC, halfmin_datasets, group_prefix = "NC", method_label = "KNN")
+plot_auc_comparison_by_mnar(data_NAFL, halfmin_datasets, group_prefix = "NAFL", method_label = "KNN")
+plot_auc_comparison_by_mnar(data_NASH, halfmin_datasets, group_prefix = "NASH", method_label = "KNN")
+
+dev.off()
+
+#RF
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_RF.pdf", width = 14, height = 10)
+
+plot_auc_comparison_by_mnar(data_HO, RF_datasets, group_prefix = "HO", method_label = "RF")
+plot_auc_comparison_by_mnar(data_NC, RF_datasets, group_prefix = "NC", method_label = "RF")
+plot_auc_comparison_by_mnar(data_NAFL, RF_datasets, group_prefix = "NAFL", method_label = "RF")
+plot_auc_comparison_by_mnar(data_NASH, RF_datasets, group_prefix = "NASH", method_label = "RF")
+
+dev.off()
+
+#QRILC
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_QRILC.pdf", width = 14, height = 10)
+
+plot_auc_comparison_by_mnar(data_HO, QRILC_datasets, group_prefix = "HO", method_label = "QRILC")
+plot_auc_comparison_by_mnar(data_NC, QRILC_datasets, group_prefix = "NC", method_label = "QRILC")
+plot_auc_comparison_by_mnar(data_NAFL, QRILC_datasets, group_prefix = "NAFL", method_label = "QRILC")
+plot_auc_comparison_by_mnar(data_NASH, QRILC_datasets, group_prefix = "NASH", method_label = "QRILC")
+
+dev.off()
+
+#mice
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_mice.pdf", width = 14, height = 10)
+
+plot_auc_comparison_by_mnar(data_HO, mice_datasets, group_prefix = "HO", method_label = "mice")
+plot_auc_comparison_by_mnar(data_NC, mice_datasets, group_prefix = "NC", method_label = "mice")
+plot_auc_comparison_by_mnar(data_NAFL, mice_datasets, group_prefix = "NAFL", method_label = "mice")
+plot_auc_comparison_by_mnar(data_NASH, mice_datasets, group_prefix = "NASH", method_label = "mice")
+
+dev.off()
 
