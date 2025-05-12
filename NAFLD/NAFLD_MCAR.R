@@ -188,31 +188,31 @@ plot_overall_distribution(data_NASH, name = "NASH")
 # ---------------------------------
 
 # --------------------------
-# Part 1: Simulate MNAR
+# Part 1: Simulate MCAR
 # --------------------------
 
-#MNAR because missing values depend on the observed data (lowest measurements are more likely missing)
-#function to introduce MNAR missing values with balance across Visit 1 and Visit 2
-MNAR_simulation <- function(data, missing_percentage){
-  #copy dataset 
+#MCAR = Missing values occur completely at random
+MCAR_simulation <- function(data, missing_percentage) {
+  #copy
   data_copy <- data
   
-  #iterate through numeric cols
-  for (col in 3:ncol(data_copy)){
-    #skip non-numeric
+  #loop through numeric columns
+  for (col in 3:ncol(data_copy)) {
+    #skip non-numeric columns just in case
     if (!is.numeric(data_copy[[col]])) next
     
-    #number of NA to introduce based on missingness
-    num_mv <- round(nrow(data_copy) * missing_percentage)
+    #total values in the column
+    total_values <- sum(!is.na(data_copy[[col]]))
     
-    if (num_mv > 0){
-      col_data <- data_copy[[col]]
-      #find indices with lowest value
-      ordered_indices <- order(col_data, na.last = NA)
-      #select indices with lwoest value
-      missing_indices <- ordered_indices[1:min(num_mv, length(ordered_indices))]
+    #number of missing values to introduce
+    num_mv <- round(total_values * missing_percentage)
+    
+    if (num_mv > 0) {
+      #randomly select indices to be set to NA
+      candidate_indices <- which(!is.na(data_copy[[col]]))
+      missing_indices <- sample(candidate_indices, num_mv, replace = FALSE)
       
-      #set values to NA
+      #set selected values to NA
       data_copy[missing_indices, col] <- NA
     }
   }
@@ -220,35 +220,36 @@ MNAR_simulation <- function(data, missing_percentage){
   return(data_copy)
 }
 
-#call function to generate MNAR (evenly between visit 1 and visit 2)
+
+#call function to generate MCAR 
 #NC
-NC_10pct <- MNAR_simulation(data_NC, 0.10) #10% missing values (4 MV)
-NC_15pct <- MNAR_simulation(data_NC, 0.15) #15% missing values (7 MV)
-NC_20pct <- MNAR_simulation(data_NC, 0.20) #20% missing values (10 MV)
-NC_25pct <- MNAR_simulation(data_NC, 0.25) #25% missing values (12 MV)
-NC_30pct <- MNAR_simulation(data_NC, 0.30) #30% missing values (15 MV)
-NC_40pct <- MNAR_simulation(data_NC, 0.40) #40% missing values (20 MV)
+NC_10pct <- MCAR_simulation(data_NC, 0.10) #10% missing values (4 MV)
+NC_15pct <- MCAR_simulation(data_NC, 0.15) #15% missing values (7 MV)
+NC_20pct <- MCAR_simulation(data_NC, 0.20) #20% missing values (10 MV)
+NC_25pct <- MCAR_simulation(data_NC, 0.25) #25% missing values (12 MV)
+NC_30pct <- MCAR_simulation(data_NC, 0.30) #30% missing values (15 MV)
+NC_40pct <- MCAR_simulation(data_NC, 0.40) #40% missing values (20 MV)
 #HO
-HO_10pct <- MNAR_simulation(data_HO, 0.10) #10% missing values (5 MV)
-HO_15pct <- MNAR_simulation(data_HO, 0.15) #15% missing values (8 MV)
-HO_20pct <- MNAR_simulation(data_HO, 0.20) #20% missing values (10 MV)
-HO_25pct <- MNAR_simulation(data_HO, 0.25) #25% missing values (13 MV)
-HO_30pct <- MNAR_simulation(data_HO, 0.30) #30% missing values (15 MV)
-HO_40pct <- MNAR_simulation(data_HO, 0.40) #40% missing values (20 MV)
+HO_10pct <- MCAR_simulation(data_HO, 0.10) #10% missing values (5 MV)
+HO_15pct <- MCAR_simulation(data_HO, 0.15) #15% missing values (8 MV)
+HO_20pct <- MCAR_simulation(data_HO, 0.20) #20% missing values (10 MV)
+HO_25pct <- MCAR_simulation(data_HO, 0.25) #25% missing values (13 MV)
+HO_30pct <- MCAR_simulation(data_HO, 0.30) #30% missing values (15 MV)
+HO_40pct <- MCAR_simulation(data_HO, 0.40) #40% missing values (20 MV)
 #NAFL
-NAFL_10pct <- MNAR_simulation(data_NAFL, 0.10) #10% missing values (14 MV)
-NAFL_15pct <- MNAR_simulation(data_NAFL, 0.15) #15% missing values (21 MV)
-NAFL_20pct <- MNAR_simulation(data_NAFL, 0.20) #20% missing values (29 MV)
-NAFL_25pct <- MNAR_simulation(data_NAFL, 0.25) #25% missing values (36 MV)
-NAFL_30pct <- MNAR_simulation(data_NAFL, 0.30) #30% missing values (43 MV)
-NAFL_40pct <- MNAR_simulation(data_NAFL, 0.40) #40% missing values (57 MV)
+NAFL_10pct <- MCAR_simulation(data_NAFL, 0.10) #10% missing values (14 MV)
+NAFL_15pct <- MCAR_simulation(data_NAFL, 0.15) #15% missing values (21 MV)
+NAFL_20pct <- MCAR_simulation(data_NAFL, 0.20) #20% missing values (29 MV)
+NAFL_25pct <- MCAR_simulation(data_NAFL, 0.25) #25% missing values (36 MV)
+NAFL_30pct <- MCAR_simulation(data_NAFL, 0.30) #30% missing values (43 MV)
+NAFL_40pct <- MCAR_simulation(data_NAFL, 0.40) #40% missing values (57 MV)
 #NASH
-NASH_10pct <- MNAR_simulation(data_NASH, 0.10) #10% missing values (9 MV)
-NASH_15pct <- MNAR_simulation(data_NASH, 0.15) #15% missing values (14 MV)
-NASH_20pct <- MNAR_simulation(data_NASH, 0.20) #20% missing values (19 MV)
-NASH_25pct <- MNAR_simulation(data_NASH, 0.25) #25% missing values (24 MV)
-NASH_30pct <- MNAR_simulation(data_NASH, 0.30) #30% missing values (28 MV)
-NASH_40pct <- MNAR_simulation(data_NASH, 0.40) #40% missing values (38 MV)
+NASH_10pct <- MCAR_simulation(data_NASH, 0.10) #10% missing values (9 MV)
+NASH_15pct <- MCAR_simulation(data_NASH, 0.15) #15% missing values (14 MV)
+NASH_20pct <- MCAR_simulation(data_NASH, 0.20) #20% missing values (19 MV)
+NASH_25pct <- MCAR_simulation(data_NASH, 0.25) #25% missing values (24 MV)
+NASH_30pct <- MCAR_simulation(data_NASH, 0.30) #30% missing values (28 MV)
+NASH_40pct <- MCAR_simulation(data_NASH, 0.40) #40% missing values (38 MV)
 
 
 #to count NAs: 
@@ -487,6 +488,7 @@ RF_20pct_NASH <- rf_imputation(NASH_20pct)
 RF_25pct_NASH <- rf_imputation(NASH_25pct)
 RF_30pct_NASH <- rf_imputation(NASH_30pct)
 RF_40pct_NASH <- rf_imputation(NASH_40pct)
+
 #combined 
 RF_datasets <- list(
   NC_10 = RF_10pct_NC,
@@ -579,6 +581,7 @@ QRILC_20pct_NASH <- qrilc_imputation(NASH_20pct)
 QRILC_25pct_NASH <- qrilc_imputation(NASH_25pct)
 QRILC_30pct_NASH <- qrilc_imputation(NASH_30pct)
 QRILC_40pct_NASH <- qrilc_imputation(NASH_40pct)
+
 #combined 
 QRILC_datasets <- list(
   NC_10 = QRILC_10pct_NC,
@@ -737,6 +740,7 @@ shapiro_test <- function(data, label = "") {
 #call function for each data 
 #original 
 shapiro_orig_NC <- shapiro_test(data_NC, label = "Original") #34
+
 #Halfmin
 shapiro_res_halfmin <- lapply(names(halfmin_datasets), function(name) {
   res <- shapiro_test(halfmin_datasets[[name]], label = name)
@@ -783,7 +787,7 @@ shapiro_summary <- shapiro_summary %>%
     Condition = gsub("_(\\d+)$", "", Dataset)  # Extract 'NC', 'HO', etc.
   )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Shapiro.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Shapiro.pdf", width = 14, height = 10)
 
 #now plot 
 ggplot(shapiro_summary, aes(x = factor(Missingness), y = Non_Normal_Count, fill = Condition)) +
@@ -1035,7 +1039,7 @@ summary_tests_all <- bind_rows(
   summary_tests_mice
 )
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/T_Test_Wilcox.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/T_Test_Wilcox.pdf", width = 14, height = 10)
 
 
 #plot t-test results
@@ -1105,7 +1109,7 @@ calculate_weighted_nrmse <- function(original, imputed, method, percentage){
   return(data.frame(
     Lipid = numeric_col_names,
     Imputation_Method = method,
-    MNAR_Proportion = (percentage * 100),
+    MCAR_Proportion = (percentage * 100),
     Weighted_NRMSE = nrmse_values
   ))
 }
@@ -1153,22 +1157,22 @@ nrmse_all <- bind_rows(
 )
 
 #make sure MNAR proportion is a factor (for plotting)
-nrmse_all$MNAR_Proportion <- factor(nrmse_all$MNAR_Proportion)
+nrmse_all$MCAR_Proportion <- factor(nrmse_all$MCAR_Proportion)
 
 #list unique condition
 conditions <- unique(nrmse_all$Condition)
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/NRMSE.pdf", width = 14, height = 10)
 
 for (cond in conditions) {
   data_subset <- subset(nrmse_all, Condition == cond)
   
-  p <- ggplot(data_subset, aes(x = MNAR_Proportion, y = Weighted_NRMSE, fill = Imputation_Method)) +
+  p <- ggplot(data_subset, aes(x = MCAR_Proportion, y = Weighted_NRMSE, fill = Imputation_Method)) +
     geom_boxplot(outlier.shape = NA, alpha = 0.7) +
     scale_fill_manual(values = c("lightblue", "orange", "blue", "magenta", "forestgreen")) +
     labs(
       title = paste("Weighted NRMSE for", cond, "across Imputation Methods"),
-      x = "MNAR Proportion (%)",
+      x = "MCAR Proportion (%)",
       y = "Weighted NRMSE", 
       fill = "Imputation Method"
     ) +
@@ -1225,7 +1229,7 @@ norm_mean_diff <- function(original, imputed, method, percentage){
     mutate(
       Normalized_Difference = (Mean_After - Mean_Before) / Mean_Before,
       Imputation_Method = method,
-      MNAR_Proportion = percentage * 100  
+      MCAR_Proportion = percentage * 100  
     )
   
   
@@ -1239,7 +1243,7 @@ norm_mean_diff <- function(original, imputed, method, percentage){
     labs(title = plot_title,  
          x = "Normalized Difference",
          y = "Density") +
-    xlim(-0.2, 0.2) +
+    xlim(-0.5, 0.5) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "red")  
   
   print(plot)  
@@ -1268,7 +1272,7 @@ calculate_nmd_for_list <- function(imputed_list, original_list, method_label) {
   do.call(rbind, results)
 }
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/NMD_separately.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/NMD_separately.pdf", width = 14, height = 10)
 
 
 #call NRMSE function and helper
@@ -1296,7 +1300,7 @@ nmd_all <- bind_rows(
 
 #make factor for plotting
 nmd_all <- nmd_all %>%
-  mutate(Percentage = paste0(round(MNAR_Proportion), "%"))
+  mutate(Percentage = paste0(round(MCAR_Proportion), "%"))
 
 #now make a plot
 plot_nmd_density_by_condition <- function(nmd_data, condition_label) {
@@ -1311,7 +1315,7 @@ plot_nmd_density_by_condition <- function(nmd_data, condition_label) {
       x = "Normalized Difference",
       y = "Density"
     ) +
-    xlim(-0.2, 0.2) +
+    xlim(-0.5, 0.5) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
     theme(
       legend.title = element_blank(),
@@ -1321,7 +1325,7 @@ plot_nmd_density_by_condition <- function(nmd_data, condition_label) {
     )
 }
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/NMD_overall.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/NMD_overall.pdf", width = 14, height = 10)
 
 for (cond in unique(nmd_all$Condition)) {
   print(plot_nmd_density_by_condition(nmd_all, cond))
@@ -1340,24 +1344,24 @@ dev.off()
 #ensure that they are factor
 nrmse_all$Imputation_Method <- as.factor(nrmse_all$Imputation_Method)
 nrmse_all$Condition <- as.factor(nrmse_all$Condition)
-nrmse_all$MNAR_Proportion <- as.numeric(nrmse_all$MNAR_Proportion) 
+nrmse_all$MCAR_Proportion <- as.numeric(nrmse_all$MCAR_Proportion) 
 
 #log transform
 nrmse_all <- nrmse_all %>%
-  filter(Weighted_NRMSE > 0) %>%  # just in case
+  filter(Weighted_NRMSE > 0) %>%
   mutate(log_NRMSE = log(Weighted_NRMSE))
 
 
 #ANOVA with main effects only
-nrmse_aov <- aov(log_NRMSE ~ Imputation_Method + MNAR_Proportion, data = nrmse_all)
+nrmse_aov <- aov(log_NRMSE ~ Imputation_Method + MCAR_Proportion, data = nrmse_all)
 summary(nrmse_aov)
 
 #ANOVA with interaction term
-nrmse_aov2 <- aov(log_NRMSE ~ Imputation_Method * MNAR_Proportion, data = nrmse_all)
+nrmse_aov2 <- aov(log_NRMSE ~ Imputation_Method * MCAR_Proportion, data = nrmse_all)
 summary(nrmse_aov2)
 
 #full model with condition
-nrmse_aov3 <- aov(log_NRMSE ~ Imputation_Method * MNAR_Proportion * Condition, data = nrmse_all)
+nrmse_aov3 <- aov(log_NRMSE ~ Imputation_Method * MCAR_Proportion * Condition, data = nrmse_all)
 summary(nrmse_aov3)
 
 
@@ -1365,7 +1369,7 @@ summary(nrmse_aov3)
 # Part 1: Check Residuals and Normality for ANOVA result
 # -------------------------------------------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/ANOVA_res.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/ANOVA_res.pdf", width = 14, height = 10)
 
 #check residuals for normality
 #histogram of residuals (extracts results from anova model)
@@ -1424,7 +1428,7 @@ kruskal.test(Weighted_NRMSE ~ Imputation_Method, data = nrmse_all)
 
 #kruskal test per missingness
 nrmse_all %>%
-  group_by(MNAR_Proportion) %>%
+  group_by(MCAR_Proportion) %>%
   summarise(p_value = kruskal.test(Weighted_NRMSE ~ Imputation_Method)$p.value)
 
 #test per condition
@@ -1475,11 +1479,11 @@ normalize_min_max <- function(x) {
 
 #NRMSE
 nrmse_all <- nrmse_all %>%
-  mutate(MNAR_Proportion = as.numeric(as.character(MNAR_Proportion)))
+  mutate(MCAR_Proportion = as.numeric(as.character(MCAR_Proportion)))
 
 #NMD
 nmd_all <- nmd_all %>%
-  mutate(MNAR_Proportion = as.numeric(as.character(MNAR_Proportion)))
+  mutate(MCAR_Proportion = as.numeric(as.character(MCAR_Proportion)))
 
 # ------------------------------------------
 # Step 4: Mean NRMSE and Mean NMD
@@ -1487,7 +1491,7 @@ nmd_all <- nmd_all %>%
 
 #mean NRMSE per group
 nrmse_summary <- nrmse_all %>%
-  group_by(Imputation_Method, Condition, MNAR_Proportion) %>%
+  group_by(Imputation_Method, Condition, MCAR_Proportion) %>%
   summarise(
     Mean_NRMSE = mean(Weighted_NRMSE, na.rm = TRUE),
     .groups = "drop"
@@ -1495,7 +1499,7 @@ nrmse_summary <- nrmse_all %>%
 
 #mean absolute NMD per group
 nmd_summary <- nmd_all %>%
-  group_by(Imputation_Method, Condition, MNAR_Proportion) %>%
+  group_by(Imputation_Method, Condition, MCAR_Proportion) %>%
   summarise(
     Mean_NMD = mean(abs(Normalized_Difference), na.rm = TRUE),
     .groups = "drop"
@@ -1505,7 +1509,7 @@ nmd_summary <- nmd_all %>%
 summary_metrics <- inner_join(
   nrmse_summary,
   nmd_summary,
-  by = c("Imputation_Method", "Condition", "MNAR_Proportion")
+  by = c("Imputation_Method", "Condition", "MCAR_Proportion")
 )
 
 # -------------------------------------
@@ -1513,7 +1517,7 @@ summary_metrics <- inner_join(
 # -------------------------------------
 
 summary_ranked <- summary_metrics %>%
-  group_by(Condition, MNAR_Proportion) %>%
+  group_by(Condition, MCAR_Proportion) %>%
   mutate(
     NRMSE_norm = normalize_min_max(Mean_NRMSE),
     NMD_norm   = normalize_min_max(Mean_NMD),
@@ -1527,19 +1531,19 @@ summary_ranked <- summary_metrics %>%
 # -------------------------------------
 
 ranking_output <- summary_ranked %>%
-  arrange(Condition, MNAR_Proportion, Rank) %>%
+  arrange(Condition, MCAR_Proportion, Rank) %>%
   select(
     Rank,
     Imputation_Method,
     Condition,
-    MNAR_Proportion,
+    MCAR_Proportion,
     Mean_NRMSE,
     Mean_NMD,
     Final_Score
   )
 
 #write csv
-write.csv(ranking_output, "/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Ranking_table.csv", row.names = FALSE)
+write.csv(ranking_output, "/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Ranking_table.csv", row.names = FALSE)
 
 
 # --------------------------------------
@@ -1648,9 +1652,9 @@ cv_qrilc$Method <- "QRILC"
 
 cv_all <- bind_rows(cv_halfmin, cv_knn, cv_mice, cv_rf, cv_qrilc)
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/CV_res.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/CV_res.pdf", width = 14, height = 10)
 
-#distirbtuion plot of CV deviation
+#distribution plot of CV deviation
 ggplot(cv_all, aes(x = CV_Deviation_Perc, fill = Method)) +
   geom_density(alpha = 0.4) +
   facet_grid(Condition ~ Missingness) +
@@ -1781,7 +1785,7 @@ sd_qrilc$Method <- "QRILC"
 
 sd_all <- bind_rows(sd_halfmin, sd_knn, sd_mice, sd_rf, sd_qrilc)
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/SD_res.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/SD_res.pdf", width = 14, height = 10)
 
 #distirbtuion plot of SD deviation
 ggplot(sd_all, aes(x = SD_Deviation_Perc, fill = Method)) +
@@ -1820,7 +1824,7 @@ dev.off()
 # ---------------
 
 # ---------------------------
-# Part 1: All MNAR percentage
+# Part 1: All MCAR percentage
 # ---------------------------
 
 density_imputation_all <- function(original_data, imputed_list, group_prefix, method_label) {
@@ -1862,20 +1866,20 @@ density_imputation_all <- function(original_data, imputed_list, group_prefix, me
 
 
 # ---------------------------
-# Part 1: Separated MNAR percentage
+# Part 1: Separated MCAR percentage
 # ---------------------------
 
 density_imputation_by_mnar <- function(original_data, imputed_list, group_prefix, method_label) {
-  # Extract all available % levels from names like "NC_10", "NC_20"
+  #get all available % levels from names like "NC_10" = 10%
   levels <- unique(gsub(paste0(group_prefix, "_"), "", grep(paste0("^", group_prefix, "_"), names(imputed_list), value = TRUE)))
   
   for (pct in levels) {
-    # Original data (lipids only)
+    #original data
     orig_long <- original_data[, 3:ncol(original_data)] %>%
       pivot_longer(everything(), names_to = "Lipid", values_to = "Value") %>%
       mutate(Method = "Original", MissingPct = paste0(pct, "%"))
     
-    # Imputed data for current % level
+    #imputed data for current mcar level
     imputed_name <- paste0(group_prefix, "_", pct)
     imputed_df <- imputed_list[[imputed_name]]
     
@@ -1883,10 +1887,10 @@ density_imputation_by_mnar <- function(original_data, imputed_list, group_prefix
       pivot_longer(everything(), names_to = "Lipid", values_to = "Value") %>%
       mutate(Method = method_label, MissingPct = paste0(pct, "%"))
     
-    # Combine
+    #combine
     combined_df <- bind_rows(orig_long, imputed_long)
     
-    # Plot
+    #plot
     p <- ggplot(combined_df, aes(x = Value, color = Method)) +
       geom_density(size = 1) +
       facet_wrap(~ Lipid, scales = "free") +
@@ -1902,7 +1906,7 @@ density_imputation_by_mnar <- function(original_data, imputed_list, group_prefix
 }
 
 #halfmin
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_halfmin.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Density_halfmin.pdf", width = 14, height = 10)
 
 #call all mnar density function
 density_imputation_all(data_HO, halfmin_datasets, group_prefix = "HO", method_label = "Half-min")
@@ -1918,7 +1922,7 @@ density_imputation_by_mnar(data_NASH, halfmin_datasets, group_prefix = "NASH", m
 dev.off()
 
 #KNN
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_KNN.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Density_KNN.pdf", width = 14, height = 10)
 
 #call all mnar density function
 density_imputation_all(data_HO, KNN_datasets, group_prefix = "HO", method_label = "KNN")
@@ -1934,7 +1938,7 @@ density_imputation_by_mnar(data_NASH, KNN_datasets, group_prefix = "NASH", metho
 dev.off()
 
 #RF
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_RF.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Density_RF.pdf", width = 14, height = 10)
 
 #call all mnar density function
 density_imputation_all(data_HO, RF_datasets, group_prefix = "HO", method_label = "RF")
@@ -1950,7 +1954,7 @@ density_imputation_by_mnar(data_NASH, RF_datasets, group_prefix = "NASH", method
 dev.off()
 
 #QRILC
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_QRILC.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Density_QRILC.pdf", width = 14, height = 10)
 
 #call all mnar density function
 density_imputation_all(data_HO, QRILC_datasets, group_prefix = "HO", method_label = "QRILC")
@@ -1966,7 +1970,7 @@ density_imputation_by_mnar(data_NASH, QRILC_datasets, group_prefix = "NASH", met
 dev.off()
 
 #mice
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Density_mice.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Density_mice.pdf", width = 14, height = 10)
 
 #call all mnar density function
 density_imputation_all(data_HO, mice_datasets, group_prefix = "HO", method_label = "mice")
@@ -2028,7 +2032,7 @@ auc_original <- function(data, group_name = "Group") {
   print(density_plot)
 }
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_density_original.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/AUC_density_original.pdf", width = 14, height = 10)
 
 auc_original(data_NC, group_name = "NC")
 auc_original(data_HO, group_name = "HO")
@@ -2114,7 +2118,7 @@ plot_auc_comparison_by_mnar <- function(original_data, imputed_list, group_prefi
 #call function to plot auc 
 
 #halfmin
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_halfmin.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/AUC_barplot_halfmin.pdf", width = 14, height = 10)
 
 plot_auc_comparison_by_mnar(data_HO, halfmin_datasets, group_prefix = "HO", method_label = "Half-min")
 plot_auc_comparison_by_mnar(data_NC, halfmin_datasets, group_prefix = "NC", method_label = "Half-min")
@@ -2125,7 +2129,7 @@ dev.off()
 
 
 #KNN
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_KNN.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/AUC_barplot_KNN.pdf", width = 14, height = 10)
 
 plot_auc_comparison_by_mnar(data_HO, KNN_datasets, group_prefix = "HO", method_label = "KNN")
 plot_auc_comparison_by_mnar(data_NC, KNN_datasets, group_prefix = "NC", method_label = "KNN")
@@ -2135,7 +2139,7 @@ plot_auc_comparison_by_mnar(data_NASH, KNN_datasets, group_prefix = "NASH", meth
 dev.off()
 
 #RF
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_RF.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/AUC_barplot_RF.pdf", width = 14, height = 10)
 
 plot_auc_comparison_by_mnar(data_HO, RF_datasets, group_prefix = "HO", method_label = "RF")
 plot_auc_comparison_by_mnar(data_NC, RF_datasets, group_prefix = "NC", method_label = "RF")
@@ -2145,7 +2149,7 @@ plot_auc_comparison_by_mnar(data_NASH, RF_datasets, group_prefix = "NASH", metho
 dev.off()
 
 #QRILC
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_QRILC.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/AUC_barplot_QRILC.pdf", width = 14, height = 10)
 
 plot_auc_comparison_by_mnar(data_HO, QRILC_datasets, group_prefix = "HO", method_label = "QRILC")
 plot_auc_comparison_by_mnar(data_NC, QRILC_datasets, group_prefix = "NC", method_label = "QRILC")
@@ -2155,7 +2159,7 @@ plot_auc_comparison_by_mnar(data_NASH, QRILC_datasets, group_prefix = "NASH", me
 dev.off()
 
 #mice
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_mice.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/AUC_barplot_mice.pdf", width = 14, height = 10)
 
 plot_auc_comparison_by_mnar(data_HO, mice_datasets, group_prefix = "HO", method_label = "mice")
 plot_auc_comparison_by_mnar(data_NC, mice_datasets, group_prefix = "NC", method_label = "mice")
@@ -2232,7 +2236,7 @@ plot_auc_percent_bar <- function(percent_change_df, condition, method) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 }
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Change_in_AUC.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Change_in_AUC.pdf", width = 14, height = 10)
 
 #plot percentage change AUC
 #halfmin
@@ -2268,8 +2272,7 @@ dev.off()
 # ------------------------------------------
 
 #to asses how well imputation method fits original (AUC)
-
-calculate_r2_per_mnar <- function(original_data, imputed_list, group_prefix, method_label) {
+calculate_r2_per_mcar <- function(original_data, imputed_list, group_prefix, method_label) {
   auc_df <- calculate_auc_percent_change(original_data, imputed_list, group_prefix, method_label)
   
   #calucalte r^2
@@ -2289,27 +2292,28 @@ calculate_r2_per_mnar <- function(original_data, imputed_list, group_prefix, met
 
 #calculat R^2 per imputation method
 #halfmin
-r2_halfmin_HO <- calculate_r2_per_level(data_HO, halfmin_datasets, "HO", "Half-min")
-r2_halfmin_NC <- calculate_r2_per_level(data_NC, halfmin_datasets, "NC", "Half-min")
-r2_halfmin_NAFL <- calculate_r2_per_level(data_NAFL, halfmin_datasets, "NAFL", "Half-min")
-r2_halfmin_NASH <- calculate_r2_per_level(data_NASH, halfmin_datasets, "NASH", "Half-min")
+r2_halfmin_HO <- calculate_r2_per_mcar(data_HO, halfmin_datasets, "HO", "Half-min")
+r2_halfmin_NC <- calculate_r2_per_mcar(data_NC, halfmin_datasets, "NC", "Half-min")
+r2_halfmin_NAFL <- calculate_r2_per_mcar(data_NAFL, halfmin_datasets, "NAFL", "Half-min")
+r2_halfmin_NASH <- calculate_r2_per_mcar(data_NASH, halfmin_datasets, "NASH", "Half-min")
 #knn
-r2_KNN_HO <- calculate_r2_per_level(data_HO, KNN_datasets, "HO", "KNN")
-r2_KNN_NC <- calculate_r2_per_level(data_NC, KNN_datasets, "NC", "KNN")
-r2_KNN_NAFL <- calculate_r2_per_level(data_NAFL, KNN_datasets, "NAFL", "KNN")
-r2_KNN_NASH <- calculate_r2_per_level(data_NASH, KNN_datasets, "NASH", "KNN")
+r2_KNN_HO <- calculate_r2_per_mcar(data_HO, KNN_datasets, "HO", "KNN")
+r2_KNN_NC <- calculate_r2_per_mcar(data_NC, KNN_datasets, "NC", "KNN")
+r2_KNN_NAFL <- calculate_r2_per_mcar(data_NAFL, KNN_datasets, "NAFL", "KNN")
+r2_KNN_NASH <- calculate_r2_per_mcar(data_NASH, KNN_datasets, "NASH", "KNN")
 #RF
-r2_RF_HO <- calculate_r2_per_level(data_HO, RF_datasets, "HO", "RF")
-r2_RF_NC <- calculate_r2_per_level(data_NC, RF_datasets, "NC", "RF")
-r2_RF_NAFL <- calculate_r2_per_level(data_NAFL, RF_datasets, "NAFL", "RF")
-r2_RF_NASH <- calculate_r2_per_level(data_NASH, RF_datasets, "NASH", "RF")
+r2_RF_HO <- calculate_r2_per_mcar(data_HO, RF_datasets, "HO", "RF")
+r2_RF_NC <- calculate_r2_per_mcar(data_NC, RF_datasets, "NC", "RF")
+r2_RF_NAFL <- calculate_r2_per_mcar(data_NAFL, RF_datasets, "NAFL", "RF")
+r2_RF_NASH <- calculate_r2_per_mcar(data_NASH, RF_datasets, "NASH", "RF")
 #QRILC
-r2_QRILC_HO <- calculate_r2_per_level(data_HO, QRILC_datasets, "HO", "QRILC")
-r2_QRILC_NC <- calculate_r2_per_level(data_NC, QRILC_datasets, "NC", "QRILC")
-r2_QRILC_NAFL <- calculate_r2_per_level(data_NAFL, QRILC_datasets, "NAFL", "QRILC")
-r2_QRILC_NASH <- calculate_r2_per_level(data_NASH, QRILC_datasets, "NASH", "QRILC")
+r2_QRILC_HO <- calculate_r2_per_mcar(data_HO, QRILC_datasets, "HO", "QRILC")
+r2_QRILC_NC <- calculate_r2_per_mcar(data_NC, QRILC_datasets, "NC", "QRILC")
+r2_QRILC_NAFL <- calculate_r2_per_mcar(data_NAFL, QRILC_datasets, "NAFL", "QRILC")
+r2_QRILC_NASH <- calculate_r2_per_mcar(data_NASH, QRILC_datasets, "NASH", "QRILC")
 #mice
-r2_mice_HO <- calculate_r2_per_level(data_HO, mice_datasets, "HO", "mice")
-r2_mice_NC <- calculate_r2_per_level(data_NC, mice_datasets, "NC", "mice")
-r2_mice_NAFL <- calculate_r2_per_level(data_NAFL, mice_datasets, "NAFL", "mice")
-r2_mice_NASH <- calculate_r2_per_level(data_NASH, mice_datasets, "NASH", "mice")
+r2_mice_HO <- calculate_r2_per_mcar(data_HO, mice_datasets, "HO", "mice")
+r2_mice_NC <- calculate_r2_per_mcar(data_NC, mice_datasets, "NC", "mice")
+r2_mice_NAFL <- calculate_r2_per_mcar(data_NAFL, mice_datasets, "NAFL", "mice")
+r2_mice_NASH <- calculate_r2_per_mcar(data_NASH, mice_datasets, "NASH", "mice")
+

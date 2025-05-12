@@ -1340,11 +1340,10 @@ dev.off()
 #ensure that they are factor
 nrmse_all$Imputation_Method <- as.factor(nrmse_all$Imputation_Method)
 nrmse_all$Condition <- as.factor(nrmse_all$Condition)
-nrmse_all$MNAR_Proportion <- as.numeric(nrmse_all$MNAR_Proportion) 
 
 #log transform
 nrmse_all <- nrmse_all %>%
-  filter(Weighted_NRMSE > 0) %>%  # just in case
+  filter(Weighted_NRMSE > 0) %>%
   mutate(log_NRMSE = log(Weighted_NRMSE))
 
 
@@ -1449,7 +1448,7 @@ ggplot(nrmse_all, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputati
     x = "Imputation Method",
     y = "Weighted NRMSE"
   ) +
-  ylim(0, 0.25)
+  ylim(0, 0.1)
 
 dev.off()
 
@@ -2289,27 +2288,28 @@ calculate_r2_per_mnar <- function(original_data, imputed_list, group_prefix, met
 
 #calculat R^2 per imputation method
 #halfmin
-r2_halfmin_HO <- calculate_r2_per_level(data_HO, halfmin_datasets, "HO", "Half-min")
-r2_halfmin_NC <- calculate_r2_per_level(data_NC, halfmin_datasets, "NC", "Half-min")
-r2_halfmin_NAFL <- calculate_r2_per_level(data_NAFL, halfmin_datasets, "NAFL", "Half-min")
-r2_halfmin_NASH <- calculate_r2_per_level(data_NASH, halfmin_datasets, "NASH", "Half-min")
+r2_halfmin_HO <- calculate_r2_per_mnar(data_HO, halfmin_datasets, "HO", "Half-min")
+r2_halfmin_NC <- calculate_r2_per_mnar(data_NC, halfmin_datasets, "NC", "Half-min")
+r2_halfmin_NAFL <- calculate_r2_per_mnar(data_NAFL, halfmin_datasets, "NAFL", "Half-min")
+r2_halfmin_NASH <- calculate_r2_per_mnar(data_NASH, halfmin_datasets, "NASH", "Half-min")
 #knn
-r2_KNN_HO <- calculate_r2_per_level(data_HO, KNN_datasets, "HO", "KNN")
-r2_KNN_NC <- calculate_r2_per_level(data_NC, KNN_datasets, "NC", "KNN")
-r2_KNN_NAFL <- calculate_r2_per_level(data_NAFL, KNN_datasets, "NAFL", "KNN")
-r2_KNN_NASH <- calculate_r2_per_level(data_NASH, KNN_datasets, "NASH", "KNN")
+r2_KNN_HO <- calculate_r2_per_mnar(data_HO, KNN_datasets, "HO", "KNN")
+r2_KNN_NC <- calculate_r2_per_mnar(data_NC, KNN_datasets, "NC", "KNN")
+r2_KNN_NAFL <- calculate_r2_per_mnar(data_NAFL, KNN_datasets, "NAFL", "KNN")
+r2_KNN_NASH <- calculate_r2_per_mnar(data_NASH, KNN_datasets, "NASH", "KNN")
 #RF
-r2_RF_HO <- calculate_r2_per_level(data_HO, RF_datasets, "HO", "RF")
-r2_RF_NC <- calculate_r2_per_level(data_NC, RF_datasets, "NC", "RF")
-r2_RF_NAFL <- calculate_r2_per_level(data_NAFL, RF_datasets, "NAFL", "RF")
-r2_RF_NASH <- calculate_r2_per_level(data_NASH, RF_datasets, "NASH", "RF")
+r2_RF_HO <- calculate_r2_per_mnar(data_HO, RF_datasets, "HO", "RF")
+r2_RF_NC <- calculate_r2_per_mnar(data_NC, RF_datasets, "NC", "RF")
+r2_RF_NAFL <- calculate_r2_per_mnar(data_NAFL, RF_datasets, "NAFL", "RF")
+r2_RF_NASH <- calculate_r2_per_mnar(data_NASH, RF_datasets, "NASH", "RF")
 #QRILC
-r2_QRILC_HO <- calculate_r2_per_level(data_HO, QRILC_datasets, "HO", "QRILC")
-r2_QRILC_NC <- calculate_r2_per_level(data_NC, QRILC_datasets, "NC", "QRILC")
-r2_QRILC_NAFL <- calculate_r2_per_level(data_NAFL, QRILC_datasets, "NAFL", "QRILC")
-r2_QRILC_NASH <- calculate_r2_per_level(data_NASH, QRILC_datasets, "NASH", "QRILC")
+r2_QRILC_HO <- calculate_r2_per_mnar(data_HO, QRILC_datasets, "HO", "QRILC")
+r2_QRILC_NC <- calculate_r2_per_mnar(data_NC, QRILC_datasets, "NC", "QRILC")
+r2_QRILC_NAFL <- calculate_r2_per_mnar(data_NAFL, QRILC_datasets, "NAFL", "QRILC")
+r2_QRILC_NASH <- calculate_r2_per_mnar(data_NASH, QRILC_datasets, "NASH", "QRILC")
 #mice
-r2_mice_HO <- calculate_r2_per_level(data_HO, mice_datasets, "HO", "mice")
-r2_mice_NC <- calculate_r2_per_level(data_NC, mice_datasets, "NC", "mice")
-r2_mice_NAFL <- calculate_r2_per_level(data_NAFL, mice_datasets, "NAFL", "mice")
-r2_mice_NASH <- calculate_r2_per_level(data_NASH, mice_datasets, "NASH", "mice")
+r2_mice_HO <- calculate_r2_per_mnar(data_HO, mice_datasets, "HO", "mice")
+r2_mice_NC <- calculate_r2_per_mnar(data_NC, mice_datasets, "NC", "mice")
+r2_mice_NAFL <- calculate_r2_per_mnar(data_NAFL, mice_datasets, "NAFL", "mice")
+r2_mice_NASH <- calculate_r2_per_mnar(data_NASH, mice_datasets, "NASH", "mice")
+
