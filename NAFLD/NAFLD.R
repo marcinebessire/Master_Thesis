@@ -2229,6 +2229,8 @@ plot_auc_percent_bar <- function(percent_change_df, condition, method) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 }
 
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/Change_in_AUC.pdf", width = 14, height = 10)
+
 #plot percentage change AUC
 #halfmin
 plot_auc_percent_bar(change_auc_halfmin_HO, condition = "HO", method = "Half-min")
@@ -2255,4 +2257,7 @@ plot_auc_percent_bar(change_auc_mice_HO, condition = "HO", method = "mice")
 plot_auc_percent_bar(change_auc_mice_NC, condition = "NC", method = "mice")
 plot_auc_percent_bar(change_auc_mice_NAFL, condition = "NAFL", method = "mice")
 plot_auc_percent_bar(change_auc_mice_NASH, condition = "NASH", method = "mice")
+
+dev.off()
+
 
