@@ -1344,7 +1344,7 @@ dev.off()
 #ensure that they are factor
 nrmse_all$Imputation_Method <- as.factor(nrmse_all$Imputation_Method)
 nrmse_all$Condition <- as.factor(nrmse_all$Condition)
-nrmse_all$MCAR_Proportion <- as.numeric(nrmse_all$MCAR_Proportion) 
+
 
 #log transform
 nrmse_all <- nrmse_all %>%
@@ -1453,7 +1453,7 @@ ggplot(nrmse_all, aes(x = Imputation_Method, y = Weighted_NRMSE, fill = Imputati
     x = "Imputation Method",
     y = "Weighted NRMSE"
   ) +
-  ylim(0, 0.25)
+  ylim(0, 0.15)
 
 dev.off()
 
