@@ -10,6 +10,7 @@ library(missForest)
 library(imputeLCMD)
 library(FSA) #for Dunns test
 library(readxl)
+library(VIM) #for knn
 library(caTools)  # for trapz function
 
 #load data
@@ -351,25 +352,27 @@ halfmin_datasets <- list(
 # --------------------------
 
 #function for KNN imputation
-knn_imputation <- function(data){
+knn_imputation <- function(data, k = 10) {
   data_copy <- data
   
   #metadata
   metadata <- data_copy[, 1:2]
-  
-  #numeric 
   num_data <- data_copy[, 3:ncol(data_copy)]
   
-  #first transfrom into matrix and perform knn
-  imputed_data <- impute.knn(as.matrix(t(num_data)), rowmax = 0.5, colmax = 1)
+  #combine numeric data and dummy ID (required by VIM::kNN to preserve structure)
+  num_data$ID_temp__ <- 1:nrow(num_data)
   
-  #transform back into dataframe
-  imputed_df <- as.data.frame(t(imputed_data$data))
+  #apply KNN imputation
+  imputed_data <- kNN(num_data, variable = colnames(num_data)[1:(ncol(num_data)-1)], 
+                      k = k, imp_var = FALSE)
   
-  final_data <- cbind(metadata, imputed_df)
+  #rm temporary ID
+  imputed_data$ID_temp__ <- NULL
+  
+  #combine back with metadata
+  final_data <- cbind(metadata, imputed_data)
   
   return(final_data)
-  
 }
 
 #call function for KNN
@@ -620,7 +623,7 @@ mice_imputation <- function(data,  m = 5, seed = 123){
   
   #metadata
   meta_data <- data_copy[, 1:2]
-
+  
   #impute with mice (m = 5 nr of multiple imputation, pmm =  Predictive mean matching, seed to make it reproducible)
   imputed <- mice(numeric_data, m = m, method = 'pmm', seed = seed)
   
@@ -1040,7 +1043,7 @@ ggplot(summary_tests_all, aes(x = factor(Missingness), y = TTest_Significant, fi
   geom_bar(stat = "identity", position = "dodge") +
   facet_wrap(~ Method, ncol = 2) +
   labs(
-    title = "Significant Lipids (T-tst, BH-adjusted)",
+    title = "Significant Lipids (T-test, BH-adjusted)",
     x = "Missingness (%)",
     y = "Number of Significant Lipids",
     fill = "Condition"
@@ -1182,7 +1185,7 @@ for (cond in conditions) {
       panel.grid.major = element_line(color = "gray85"),
       panel.grid.minor = element_blank()
     ) +
-    ylim(0, 0.4)
+    ylim(0, 0.1)
   
   print(p)
 }
@@ -1220,10 +1223,10 @@ norm_mean_diff <- function(original, imputed, method, percentage){
   #compute NMD
   mean_comparison <- mean_comparison %>%
     mutate(
-    Normalized_Difference = (Mean_After - Mean_Before) / Mean_Before,
-    Imputation_Method = method,
-    MNAR_Proportion = percentage * 100  
-  )
+      Normalized_Difference = (Mean_After - Mean_Before) / Mean_Before,
+      Imputation_Method = method,
+      MNAR_Proportion = percentage * 100  
+    )
   
   
   plot_title <- paste0("Normalized Difference with ", percentage, "% Missing Values using ", method, " Imputation ")
@@ -1628,10 +1631,10 @@ original_datasets <- list(
 
 #call function for each method
 cv_halfmin <- cv_deviation_from_original(halfmin_datasets, original_datasets)
-cv_knn     <- cv_deviation_from_original(KNN_datasets, original_datasets)
-cv_mice    <- cv_deviation_from_original(mice_datasets, original_datasets)
-cv_rf      <- cv_deviation_from_original(RF_datasets, original_datasets)
-cv_qrilc   <- cv_deviation_from_original(QRILC_datasets, original_datasets)
+cv_knn <- cv_deviation_from_original(KNN_datasets, original_datasets)
+cv_mice <- cv_deviation_from_original(mice_datasets, original_datasets)
+cv_rf <- cv_deviation_from_original(RF_datasets, original_datasets)
+cv_qrilc <- cv_deviation_from_original(QRILC_datasets, original_datasets)
 
 # ---------------------
 # Part 3: Plot
@@ -1645,7 +1648,7 @@ cv_qrilc$Method <- "QRILC"
 
 cv_all <- bind_rows(cv_halfmin, cv_knn, cv_mice, cv_rf, cv_qrilc)
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/CV_res_zoomed.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/CV_res.pdf", width = 14, height = 10)
 
 #distirbtuion plot of CV deviation
 ggplot(cv_all, aes(x = CV_Deviation_Perc, fill = Method)) +
@@ -1675,7 +1678,7 @@ ggplot(cv_summary_all, aes(x = Missingness, y = Mean_Deviation, color = Method))
     x = "Missingness Level (%)",
     y = "Mean Deviation from Original CV (%)"
   ) +
-  ylim(0,100)
+  ylim(0,50)
 
 dev.off()
 
@@ -2260,4 +2263,53 @@ plot_auc_percent_bar(change_auc_mice_NASH, condition = "NASH", method = "mice")
 
 dev.off()
 
+# ------------------------------------------
+# TITLE: R^2 (coefficient of determination)
+# ------------------------------------------
 
+#to asses how well imputation method fits original (AUC)
+
+calculate_r2_per_mnar <- function(original_data, imputed_list, group_prefix, method_label) {
+  auc_df <- calculate_auc_percent_change(original_data, imputed_list, group_prefix, method_label)
+  
+  #calucalte r^2
+  r2_results <- auc_df %>%
+    group_by(Missingness) %>%
+    summarise(
+      R2 = 1 - sum((OriginalAUC - AUC)^2) / sum((OriginalAUC - mean(OriginalAUC))^2),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      Group = group_prefix,
+      Method = method_label
+    )
+  
+  return(r2_results)
+}
+
+#calculat R^2 per imputation method
+#halfmin
+r2_halfmin_HO <- calculate_r2_per_level(data_HO, halfmin_datasets, "HO", "Half-min")
+r2_halfmin_NC <- calculate_r2_per_level(data_NC, halfmin_datasets, "NC", "Half-min")
+r2_halfmin_NAFL <- calculate_r2_per_level(data_NAFL, halfmin_datasets, "NAFL", "Half-min")
+r2_halfmin_NASH <- calculate_r2_per_level(data_NASH, halfmin_datasets, "NASH", "Half-min")
+#knn
+r2_KNN_HO <- calculate_r2_per_level(data_HO, KNN_datasets, "HO", "KNN")
+r2_KNN_NC <- calculate_r2_per_level(data_NC, KNN_datasets, "NC", "KNN")
+r2_KNN_NAFL <- calculate_r2_per_level(data_NAFL, KNN_datasets, "NAFL", "KNN")
+r2_KNN_NASH <- calculate_r2_per_level(data_NASH, KNN_datasets, "NASH", "KNN")
+#RF
+r2_RF_HO <- calculate_r2_per_level(data_HO, RF_datasets, "HO", "RF")
+r2_RF_NC <- calculate_r2_per_level(data_NC, RF_datasets, "NC", "RF")
+r2_RF_NAFL <- calculate_r2_per_level(data_NAFL, RF_datasets, "NAFL", "RF")
+r2_RF_NASH <- calculate_r2_per_level(data_NASH, RF_datasets, "NASH", "RF")
+#QRILC
+r2_QRILC_HO <- calculate_r2_per_level(data_HO, QRILC_datasets, "HO", "QRILC")
+r2_QRILC_NC <- calculate_r2_per_level(data_NC, QRILC_datasets, "NC", "QRILC")
+r2_QRILC_NAFL <- calculate_r2_per_level(data_NAFL, QRILC_datasets, "NAFL", "QRILC")
+r2_QRILC_NASH <- calculate_r2_per_level(data_NASH, QRILC_datasets, "NASH", "QRILC")
+#mice
+r2_mice_HO <- calculate_r2_per_level(data_HO, mice_datasets, "HO", "mice")
+r2_mice_NC <- calculate_r2_per_level(data_NC, mice_datasets, "NC", "mice")
+r2_mice_NAFL <- calculate_r2_per_level(data_NAFL, mice_datasets, "NAFL", "mice")
+r2_mice_NASH <- calculate_r2_per_level(data_NASH, mice_datasets, "NASH", "mice")
