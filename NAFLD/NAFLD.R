@@ -2027,15 +2027,15 @@ auc_original <- function(data, group_name = "Group") {
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_density_original.pdf", width = 14, height = 10)
 
-analyze_lipid_data(data_NC, group_name = "NC")
-analyze_lipid_data(data_HO, group_name = "HO")
-analyze_lipid_data(data_NAFL, group_name = "NAFL")
-analyze_lipid_data(data_NASH, group_name = "NASH")
+auc_original(data_NC, group_name = "NC")
+auc_original(data_HO, group_name = "HO")
+auc_original(data_NAFL, group_name = "NAFL")
+auc_original(data_NASH, group_name = "NASH")
 
 dev.off()
 
 # ------------------------
-# Part 1: AUC all
+# Part 2: AUC all
 # ------------------------
 
 #function to calculate AUC for original and imputed dataset
@@ -2079,7 +2079,7 @@ calculate_auc <- function(original_data, imputed_list, group_prefix, method_labe
 
 #function to plot auc original vs impputed
 plot_auc_comparison_by_mnar <- function(original_data, imputed_list, group_prefix, method_label) {
-  auc_df <- calculate_auc_df(original_data, imputed_list, group_prefix, method_label)
+  auc_df <- calculate_auc(original_data, imputed_list, group_prefix, method_label)
   
   #get missing levels
   levels <- unique(auc_df$Missingness)
@@ -2124,10 +2124,10 @@ dev.off()
 #KNN
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/AUC_barplot_KNN.pdf", width = 14, height = 10)
 
-plot_auc_comparison_by_mnar(data_HO, halfmin_datasets, group_prefix = "HO", method_label = "KNN")
-plot_auc_comparison_by_mnar(data_NC, halfmin_datasets, group_prefix = "NC", method_label = "KNN")
-plot_auc_comparison_by_mnar(data_NAFL, halfmin_datasets, group_prefix = "NAFL", method_label = "KNN")
-plot_auc_comparison_by_mnar(data_NASH, halfmin_datasets, group_prefix = "NASH", method_label = "KNN")
+plot_auc_comparison_by_mnar(data_HO, KNN_datasets, group_prefix = "HO", method_label = "KNN")
+plot_auc_comparison_by_mnar(data_NC, KNN_datasets, group_prefix = "NC", method_label = "KNN")
+plot_auc_comparison_by_mnar(data_NAFL, KNN_datasets, group_prefix = "NAFL", method_label = "KNN")
+plot_auc_comparison_by_mnar(data_NASH, KNN_datasets, group_prefix = "NASH", method_label = "KNN")
 
 dev.off()
 
@@ -2160,4 +2160,99 @@ plot_auc_comparison_by_mnar(data_NAFL, mice_datasets, group_prefix = "NAFL", met
 plot_auc_comparison_by_mnar(data_NASH, mice_datasets, group_prefix = "NASH", method_label = "mice")
 
 dev.off()
+
+# ------------------------
+# Part 3: Change in AUC 
+# ------------------------
+
+#function to calculate percent change
+calculate_auc_percent_change <- function(original_data, imputed_list, group_prefix, method_label) {
+  #calculate AUC for both
+  auc_df <- calculate_auc(original_data, imputed_list, group_prefix, method_label)
+  
+  #split into original and imputed
+  original_auc <- auc_df %>% filter(Missingness == "0%") %>%
+    select(Lipid, OriginalAUC = AUC)
+  
+  imputed_auc <- auc_df %>%
+    filter(Missingness != "0%") %>%
+    select(Lipid, AUC, Missingness, Method)
+  
+  #join based on Lipid
+  merged_df <- imputed_auc %>%
+    left_join(original_auc, by = "Lipid") %>%
+    mutate(
+      PercentChange = ((AUC - OriginalAUC) / OriginalAUC) * 100,
+      Group = group_prefix
+    )
+  
+  return(merged_df)
+}
+
+#call function to calculate auc 
+#halfmin
+change_auc_halfmin_HO <- calculate_auc_percent_change(data_HO, halfmin_datasets, group_prefix = "HO", method_label = "Half-min")
+change_auc_halfmin_NC <- calculate_auc_percent_change(data_NC, halfmin_datasets, group_prefix = "NC", method_label = "Half-min")
+change_auc_halfmin_NAFL <- calculate_auc_percent_change(data_NAFL, halfmin_datasets, group_prefix = "NAFL", method_label = "Half-min")
+change_auc_halfmin_NASH <- calculate_auc_percent_change(data_NASH, halfmin_datasets, group_prefix = "NASH", method_label = "Half-min")
+#KNN
+change_auc_KNN_HO <- calculate_auc_percent_change(data_HO, KNN_datasets, group_prefix = "HO", method_label = "KNN")
+change_auc_KNN_NC <- calculate_auc_percent_change(data_NC, KNN_datasets, group_prefix = "NC", method_label = "KNN")
+change_auc_KNN_NAFL <- calculate_auc_percent_change(data_NAFL, KNN_datasets, group_prefix = "NAFL", method_label = "KNN")
+change_auc_KNN_NASH <- calculate_auc_percent_change(data_NASH, KNN_datasets, group_prefix = "NASH", method_label = "KNN")
+#RF
+change_auc_RF_HO <- calculate_auc_percent_change(data_HO, RF_datasets, group_prefix = "HO", method_label = "RF")
+change_auc_RF_NC <- calculate_auc_percent_change(data_NC, RF_datasets, group_prefix = "NC", method_label = "RF")
+change_auc_RF_NAFL <- calculate_auc_percent_change(data_NAFL, RF_datasets, group_prefix = "NAFL", method_label = "RF")
+change_auc_RF_NASH <- calculate_auc_percent_change(data_NASH, RF_datasets, group_prefix = "NASH", method_label = "RF")
+#QRILC
+change_auc_QRILC_HO <- calculate_auc_percent_change(data_HO, QRILC_datasets, group_prefix = "HO", method_label = "QRILC")
+change_auc_QRILC_NC <- calculate_auc_percent_change(data_NC, QRILC_datasets, group_prefix = "NC", method_label = "QRILC")
+change_auc_QRILC_NAFL <- calculate_auc_percent_change(data_NAFL, QRILC_datasets, group_prefix = "NAFL", method_label = "QRILC")
+change_auc_QRILC_NASH <- calculate_auc_percent_change(data_NASH, QRILC_datasets, group_prefix = "NASH", method_label = "QRILC")
+#mice
+change_auc_mice_HO <- calculate_auc_percent_change(data_HO, mice_datasets, group_prefix = "HO", method_label = "mice")
+change_auc_mice_NC <- calculate_auc_percent_change(data_NC, mice_datasets, group_prefix = "NC", method_label = "mice")
+change_auc_mice_NAFL <- calculate_auc_percent_change(data_NAFL, mice_datasets, group_prefix = "NAFL", method_label = "mice")
+change_auc_mice_NASH <- calculate_auc_percent_change(data_NASH, mice_datasets, group_prefix = "NASH", method_label = "mice")
+
+#make a bor plot of the percentage of change in auc 
+plot_auc_percent_bar <- function(percent_change_df, condition, method) {
+  ggplot(percent_change_df, aes(x = Lipid, y = PercentChange, fill = Missingness)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme_minimal() +
+    labs(
+      title = paste("Percent Change in AUC per Lipid (", condition, " - ", method, ")", sep = ""),
+      x = "Lipid",
+      y = "Percent Change (%)"
+    ) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+#plot percentage change AUC
+#halfmin
+plot_auc_percent_bar(change_auc_halfmin_HO, condition = "HO", method = "Half-min")
+plot_auc_percent_bar(change_auc_halfmin_NC, condition = "NC", method = "Half-min")
+plot_auc_percent_bar(change_auc_halfmin_NAFL, condition = "NAFL", method = "Half-min")
+plot_auc_percent_bar(change_auc_halfmin_NASH, condition = "NASH", method = "Half-min")
+#KNN
+plot_auc_percent_bar(change_auc_KNN_HO, condition = "HO", method = "KNN")
+plot_auc_percent_bar(change_auc_KNN_NC, condition = "NC", method = "KNN")
+plot_auc_percent_bar(change_auc_KNN_NAFL, condition = "NAFL", method = "KNN")
+plot_auc_percent_bar(change_auc_KNN_NASH, condition = "NASH", method = "KNN")
+#RF
+plot_auc_percent_bar(change_auc_RF_HO, condition = "HO", method = "RF")
+plot_auc_percent_bar(change_auc_RF_NC, condition = "NC", method = "RF")
+plot_auc_percent_bar(change_auc_RF_NAFL, condition = "NAFL", method = "RF")
+plot_auc_percent_bar(change_auc_RF_NASH, condition = "NASH", method = "RF")
+#QRILC
+plot_auc_percent_bar(change_auc_QRILC_HO, condition = "HO", method = "QRILC")
+plot_auc_percent_bar(change_auc_QRILC_NC, condition = "NC", method = "QRILC")
+plot_auc_percent_bar(change_auc_QRILC_NAFL, condition = "NAFL", method = "QRILC")
+plot_auc_percent_bar(change_auc_QRILC_NASH, condition = "NASH", method = "QRILC")
+#mice
+plot_auc_percent_bar(change_auc_mice_HO, condition = "HO", method = "mice")
+plot_auc_percent_bar(change_auc_mice_NC, condition = "NC", method = "mice")
+plot_auc_percent_bar(change_auc_mice_NAFL, condition = "NAFL", method = "mice")
+plot_auc_percent_bar(change_auc_mice_NASH, condition = "NASH", method = "mice")
 
