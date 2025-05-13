@@ -2272,7 +2272,7 @@ dev.off()
 # ------------------------------------------
 
 #to asses how well imputation method fits original (AUC)
-calculate_r2_per_mcar <- function(original_data, imputed_list, group_prefix, method_label) {
+calculate_r2_per_mnar <- function(original_data, imputed_list, group_prefix, method_label) {
   auc_df <- calculate_auc_percent_change(original_data, imputed_list, group_prefix, method_label)
   
   #calucalte r^2
@@ -2292,28 +2292,370 @@ calculate_r2_per_mcar <- function(original_data, imputed_list, group_prefix, met
 
 #calculat R^2 per imputation method
 #halfmin
-r2_halfmin_HO <- calculate_r2_per_mcar(data_HO, halfmin_datasets, "HO", "Half-min")
-r2_halfmin_NC <- calculate_r2_per_mcar(data_NC, halfmin_datasets, "NC", "Half-min")
-r2_halfmin_NAFL <- calculate_r2_per_mcar(data_NAFL, halfmin_datasets, "NAFL", "Half-min")
-r2_halfmin_NASH <- calculate_r2_per_mcar(data_NASH, halfmin_datasets, "NASH", "Half-min")
+r2_halfmin_HO <- calculate_r2_per_mnar(data_HO, halfmin_datasets, "HO", "Half-min")
+r2_halfmin_NC <- calculate_r2_per_mnar(data_NC, halfmin_datasets, "NC", "Half-min")
+r2_halfmin_NAFL <- calculate_r2_per_mnar(data_NAFL, halfmin_datasets, "NAFL", "Half-min")
+r2_halfmin_NASH <- calculate_r2_per_mnar(data_NASH, halfmin_datasets, "NASH", "Half-min")
 #knn
-r2_KNN_HO <- calculate_r2_per_mcar(data_HO, KNN_datasets, "HO", "KNN")
-r2_KNN_NC <- calculate_r2_per_mcar(data_NC, KNN_datasets, "NC", "KNN")
-r2_KNN_NAFL <- calculate_r2_per_mcar(data_NAFL, KNN_datasets, "NAFL", "KNN")
-r2_KNN_NASH <- calculate_r2_per_mcar(data_NASH, KNN_datasets, "NASH", "KNN")
+r2_KNN_HO <- calculate_r2_per_mnar(data_HO, KNN_datasets, "HO", "KNN")
+r2_KNN_NC <- calculate_r2_per_mnar(data_NC, KNN_datasets, "NC", "KNN")
+r2_KNN_NAFL <- calculate_r2_per_mnar(data_NAFL, KNN_datasets, "NAFL", "KNN")
+r2_KNN_NASH <- calculate_r2_per_mnar(data_NASH, KNN_datasets, "NASH", "KNN")
 #RF
-r2_RF_HO <- calculate_r2_per_mcar(data_HO, RF_datasets, "HO", "RF")
-r2_RF_NC <- calculate_r2_per_mcar(data_NC, RF_datasets, "NC", "RF")
-r2_RF_NAFL <- calculate_r2_per_mcar(data_NAFL, RF_datasets, "NAFL", "RF")
-r2_RF_NASH <- calculate_r2_per_mcar(data_NASH, RF_datasets, "NASH", "RF")
+r2_RF_HO <- calculate_r2_per_mnar(data_HO, RF_datasets, "HO", "RF")
+r2_RF_NC <- calculate_r2_per_mnar(data_NC, RF_datasets, "NC", "RF")
+r2_RF_NAFL <- calculate_r2_per_mnar(data_NAFL, RF_datasets, "NAFL", "RF")
+r2_RF_NASH <- calculate_r2_per_mnar(data_NASH, RF_datasets, "NASH", "RF")
 #QRILC
-r2_QRILC_HO <- calculate_r2_per_mcar(data_HO, QRILC_datasets, "HO", "QRILC")
-r2_QRILC_NC <- calculate_r2_per_mcar(data_NC, QRILC_datasets, "NC", "QRILC")
-r2_QRILC_NAFL <- calculate_r2_per_mcar(data_NAFL, QRILC_datasets, "NAFL", "QRILC")
-r2_QRILC_NASH <- calculate_r2_per_mcar(data_NASH, QRILC_datasets, "NASH", "QRILC")
+r2_QRILC_HO <- calculate_r2_per_mnar(data_HO, QRILC_datasets, "HO", "QRILC")
+r2_QRILC_NC <- calculate_r2_per_mnar(data_NC, QRILC_datasets, "NC", "QRILC")
+r2_QRILC_NAFL <- calculate_r2_per_mnar(data_NAFL, QRILC_datasets, "NAFL", "QRILC")
+r2_QRILC_NASH <- calculate_r2_per_mnar(data_NASH, QRILC_datasets, "NASH", "QRILC")
 #mice
-r2_mice_HO <- calculate_r2_per_mcar(data_HO, mice_datasets, "HO", "mice")
-r2_mice_NC <- calculate_r2_per_mcar(data_NC, mice_datasets, "NC", "mice")
-r2_mice_NAFL <- calculate_r2_per_mcar(data_NAFL, mice_datasets, "NAFL", "mice")
-r2_mice_NASH <- calculate_r2_per_mcar(data_NASH, mice_datasets, "NASH", "mice")
+r2_mice_HO <- calculate_r2_per_mnar(data_HO, mice_datasets, "HO", "mice")
+r2_mice_NC <- calculate_r2_per_mnar(data_NC, mice_datasets, "NC", "mice")
+r2_mice_NAFL <- calculate_r2_per_mnar(data_NAFL, mice_datasets, "NAFL", "mice")
+r2_mice_NASH <- calculate_r2_per_mnar(data_NASH, mice_datasets, "NASH", "mice")
 
+#comine results 
+#halfmin
+r2_halfmin <- bind_rows(
+  r2_halfmin_HO,
+  r2_halfmin_NC,
+  r2_halfmin_NAFL,
+  r2_halfmin_NASH
+)
+#KNN
+r2_KNN <- bind_rows(
+  r2_KNN_HO,
+  r2_KNN_NC,
+  r2_KNN_NAFL,
+  r2_KNN_NASH
+)
+#RF
+r2_RF <- bind_rows(
+  r2_RF_HO,
+  r2_RF_NC,
+  r2_RF_NAFL,
+  r2_RF_NASH
+)
+#QRILC
+r2_QRILC <- bind_rows(
+  r2_QRILC_HO,
+  r2_QRILC_NC,
+  r2_QRILC_NAFL,
+  r2_QRILC_NASH
+)
+#mice
+r2_mice <- bind_rows(
+  r2_mice_HO,
+  r2_mice_NC,
+  r2_mice_NAFL,
+  r2_mice_NASH
+)
+
+#combine all 
+r2_all <- bind_rows(
+  r2_halfmin,
+  r2_KNN,
+  r2_RF,
+  r2_QRILC,
+  r2_mice
+)
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/R2_of_AUC.pdf", width = 14, height = 10)
+
+
+#plot R^2
+ggplot(r2_all, aes(x = Missingness, y = R2, color = Method, group = Method)) +
+  geom_line(size = 1) +          #connect dots
+  geom_point(size = 2) +         
+  facet_wrap(~Group) +           #one panel per condition
+  theme_minimal(base_size = 14) +
+  labs(
+    title = expression("R² of AUC Recovery by Method and Condition"),
+    x = "Missingness Level (%)",
+    y = expression("R² (1 - SSR / SST)") #SSR = Sum of Squared Residuals (aka Error) & SST = Total Sum of Squares
+    
+  ) +
+  ylim(0.7, 1)
+
+dev.off()
+
+# --------------
+# TITLE: PCA
+# --------------
+
+# ---------------------
+# Part 1: Calculate PCA
+# ---------------------
+
+#function to run PCA
+run_pca_on_dataset <- function(data) {
+  #numeric lipid data (assume cols 3 onward)
+  pca_data <- data[, 3:ncol(data)]
+  pca_res <- prcomp(pca_data, center = TRUE, scale. = TRUE)
+  return(pca_res)
+}
+
+#run pca
+original_pca_results <- lapply(original_datasets, run_pca_on_dataset)
+halfmin_pca_results <- lapply(halfmin_datasets, run_pca_on_dataset)
+knn_pca_results <- lapply(KNN_datasets, run_pca_on_dataset)
+rf_pca_results <- lapply(RF_datasets, run_pca_on_dataset)
+qrilc_pca_results <- lapply(QRILC_datasets, run_pca_on_dataset)
+mice_pca_results <- lapply(mice_datasets, run_pca_on_dataset)
+
+# ---------------------
+# Part 2: Plot PCA
+# ---------------------
+
+#pca function
+plot_pca_overlay <- function(orig_pca, imp_pca, metadata_orig, metadata_imp, dataset_name, method_name = "Half-min") {
+  orig_df <- as.data.frame(orig_pca$x[, 1:2])
+  imp_df  <- as.data.frame(imp_pca$x[, 1:2])
+  
+  orig_df$Set <- "Original"
+  imp_df$Set <- method_name
+  
+  orig_df$Condition <- metadata_orig$Condition
+  imp_df$Condition  <- metadata_imp$Condition
+  
+  combined <- rbind(orig_df, imp_df)
+  
+  ggplot(combined, aes(x = PC1, y = PC2, color = Set, shape = Condition)) +
+    geom_point(size = 2, alpha = 0.8) +
+    theme_minimal(base_size = 14) +
+    labs(
+      title = paste("PCA Overlay:", dataset_name, "-", method_name),
+      x = "PC1",
+      y = "PC2"
+    )
+}
+
+#function to generate plot
+generate_overlay_plots <- function(orig_pca_list, imputed_pca_list, orig_data_list, imputed_data_list, method_name) {
+  plots <- list()
+  
+  for (dataset_name in names(imputed_pca_list)) {
+    orig_pca <- orig_pca_list[[dataset_name]]
+    imp_pca  <- imputed_pca_list[[dataset_name]]
+    
+    orig_meta <- orig_data_list[[dataset_name]]
+    imp_meta  <- imputed_data_list[[dataset_name]]
+    
+    if (!is.null(orig_pca) && !is.null(imp_pca) && !is.null(orig_meta) && !is.null(imp_meta)) {
+      plot <- tryCatch({
+        plot_pca_overlay(orig_pca, imp_pca, orig_meta, imp_meta, dataset_name, method_name)
+      }, error = function(e) {
+        message("Error in ", dataset_name, ": ", e$message)
+        return(NULL)
+      })
+      
+      plots[[paste(method_name, dataset_name, sep = "_")]] <- plot
+    }
+  }
+  
+  return(plots)
+}
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/PCA_halfmin.pdf", width = 14, height = 10)
+
+generate_overlay_plots(original_pca_results, halfmin_pca_results, original_datasets, halfmin_datasets, "Half-min")
+
+dev.off()
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/PCA_KNN.pdf", width = 14, height = 10)
+
+generate_overlay_plots(original_pca_results, knn_pca_results, original_datasets, KNN_datasets, "KNN")
+
+dev.off()
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/PCA_RF.pdf", width = 14, height = 10)
+
+generate_overlay_plots(original_pca_results, rf_pca_results, original_datasets, RF_datasets, "RF")
+
+dev.off()
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/PCA_QRILC.pdf", width = 14, height = 10)
+
+generate_overlay_plots(original_pca_results, qrilc_pca_results, original_datasets, QRILC_datasets, "QRILC")
+
+dev.off()
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/PCA_mice.pdf", width = 14, height = 10)
+
+generate_overlay_plots(original_pca_results, mice_pca_results, original_datasets, mice_datasets, "MICE")
+
+dev.off()
+
+# -----------------------------
+# TITLE: Procrustes Analysis
+# -----------------------------
+
+# -----------------------------
+# Part 1: Run Procrustes 
+# -----------------------------
+
+run_procrustes_analysis <- function(orig_pca, imp_pca) {
+  #first two PCs
+  orig_coords <- orig_pca$x[, 1:2]
+  imp_coords  <- imp_pca$x[, 1:2]
+  
+  #both have same number of rows
+  if (nrow(orig_coords) != nrow(imp_coords)) {
+    stop("Mismatch in number of observations between PCA outputs")
+  }
+  
+  #Procrustes
+  proc_result <- procrustes(orig_coords, imp_coords, symmetric = TRUE)
+  return(proc_result)
+}
+
+#function to run procrustes for all 
+run_procrustes_all <- function(orig_pca_list, imp_pca_list, method_name) {
+  procrustes_results <- list()
+  
+  for (dataset_name in names(imp_pca_list)) {
+    orig_pca <- orig_pca_list[[dataset_name]]
+    imp_pca  <- imp_pca_list[[dataset_name]]
+    
+    if (!is.null(orig_pca) && !is.null(imp_pca)) {
+      result <- tryCatch({
+        run_procrustes_analysis(orig_pca, imp_pca)
+      }, error = function(e) {
+        message("Error in ", dataset_name, ": ", e$message)
+        return(NULL)
+      })
+      
+      procrustes_results[[paste(method_name, dataset_name, sep = "_")]] <- result
+    }
+  }
+  
+  return(procrustes_results)
+}
+
+#call funciton to run procrustes
+halfmin_procrustes <- run_procrustes_all(original_pca_results, halfmin_pca_results, "Halfmin")
+knn_procrustes <- run_procrustes_all(original_pca_results, knn_pca_results, "KNN")
+rf_procrustes <- run_procrustes_all(original_pca_results, rf_pca_results, "RF")
+qrilc_procrustes <- run_procrustes_all(original_pca_results, qrilc_pca_results, "QRILC")
+mice_procrustes <- run_procrustes_all(original_pca_results, mice_pca_results, "MICE")
+
+# -----------------------------
+# Part 2: Summarize Procrustes 
+# -----------------------------
+
+#function to extract summary
+extract_procrustes_metrics <- function(proc_result) {
+  if (is.null(proc_result)) return(NULL)
+  list(
+    m12 = proc_result$ss,  #sum of squares (aka m12)
+    correlation = cor(proc_result$X, proc_result$Yrot)
+  )
+}
+
+#create table
+summary_table_halfmin <- lapply(halfmin_procrustes, extract_procrustes_metrics)
+summary_table_knn <- lapply(knn_procrustes, extract_procrustes_metrics)
+summary_table_qrilc <- lapply(qrilc_procrustes, extract_procrustes_metrics)
+summary_table_rf <- lapply(rf_procrustes, extract_procrustes_metrics)
+summary_table_mice <- lapply(mice_procrustes, extract_procrustes_metrics)
+
+#get summary 
+summary_procr_halfmin <- do.call(rbind, lapply(names(summary_table_halfmin), function(name) {
+  res <- summary_table_halfmin[[name]]
+  if (!is.null(res)) {
+    data.frame(
+      Dataset = name,
+      Procrustes_SS = res$m12,
+      Correlation = res$correlation[1]  #pc1 correlation
+    )
+  }
+}))
+
+summary_procr_knn <- do.call(rbind, lapply(names(summary_table_knn), function(name) {
+  res <- summary_table_knn[[name]]
+  if (!is.null(res)) {
+    data.frame(
+      Dataset = name,
+      Procrustes_SS = res$m12,
+      Correlation = res$correlation[1]  #pc1 correlation
+    )
+  }
+}))
+
+summary_procr_qrilc <- do.call(rbind, lapply(names(summary_table_qrilc), function(name) {
+  res <- summary_table_qrilc[[name]]
+  if (!is.null(res)) {
+    data.frame(
+      Dataset = name,
+      Procrustes_SS = res$m12,
+      Correlation = res$correlation[1]  #pc1 correlation
+    )
+  }
+}))
+
+summary_procr_rf <- do.call(rbind, lapply(names(summary_table_rf), function(name) {
+  res <- summary_table_rf[[name]]
+  if (!is.null(res)) {
+    data.frame(
+      Dataset = name,
+      Procrustes_SS = res$m12,
+      Correlation = res$correlation[1]  #pc1 correlation
+    )
+  }
+}))
+
+summary_procr_mice <- do.call(rbind, lapply(names(summary_table_mice), function(name) {
+  res <- summary_table_mice[[name]]
+  if (!is.null(res)) {
+    data.frame(
+      Dataset = name,
+      Procrustes_SS = res$m12,
+      Correlation = res$correlation[1]  #pc1 correlation
+    )
+  }
+}))
+
+#comibne all 
+summary_procr_tot <- rbind(
+  summary_procr_halfmin,
+  summary_procr_knn,
+  summary_procr_rf,
+  summary_procr_qrilc,
+  summary_procr_mice
+)
+
+#add a column for method 
+summary_procr_tot <- summary_procr_tot %>%
+  mutate(Method = sub("_.*", "", Dataset),
+         Dataset = sub(".*?_", "", Dataset))
+
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MCAR/Procrustes.pdf", width = 14, height = 10)
+
+#barplot: Procrustes SS
+ggplot(summary_procr_tot, aes(x = Dataset, y = Procrustes_SS, fill = Method)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Procrustes Dissimilarity (Sum of Squares)",
+    y = "Procrustes SS (lower = more similar)",
+    x = "Dataset"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#dot plot with lines
+ggplot(summary_procr_tot, aes(x = Dataset, y = Correlation, color = Method, group = Method)) +
+  geom_line(aes(group = Method), position = position_dodge(width = 0.5), linewidth = 1) +
+  geom_point(size = 4, position = position_dodge(width = 0.5)) +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Procrustes Correlation Between Imputed and Original PCAs",
+    y = "Correlation (higher = more similar)",
+    x = "Dataset"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ylim(0.8, 1)
+
+dev.off()

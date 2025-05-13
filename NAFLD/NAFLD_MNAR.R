@@ -2465,25 +2465,25 @@ dev.off()
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MNAR/PCA_KNN.pdf", width = 14, height = 10)
 
-generate_overlay_plots(original_pca_results, knn_pca_results,     original_datasets, KNN_datasets,     "KNN")
+generate_overlay_plots(original_pca_results, knn_pca_results, original_datasets, KNN_datasets, "KNN")
 
 dev.off()
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MNAR/PCA_RF.pdf", width = 14, height = 10)
 
-generate_overlay_plots(original_pca_results, rf_pca_results,      original_datasets, RF_datasets,      "RF")
+generate_overlay_plots(original_pca_results, rf_pca_results, original_datasets, RF_datasets, "RF")
 
 dev.off()
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MNAR/PCA_QRILC.pdf", width = 14, height = 10)
 
-generate_overlay_plots(original_pca_results, qrilc_pca_results,   original_datasets, QRILC_datasets,   "QRILC")
+generate_overlay_plots(original_pca_results, qrilc_pca_results, original_datasets, QRILC_datasets, "QRILC")
 
 dev.off()
 
 pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MNAR/PCA_mice.pdf", width = 14, height = 10)
 
-generate_overlay_plots(original_pca_results, mice_pca_results,    original_datasets, mice_datasets,    "MICE")
+generate_overlay_plots(original_pca_results, mice_pca_results, original_datasets, mice_datasets, "MICE")
 
 dev.off()
 
@@ -2630,6 +2630,8 @@ summary_procr_tot <- summary_procr_tot %>%
   mutate(Method = sub("_.*", "", Dataset),
          Dataset = sub(".*?_", "", Dataset))
 
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/NAFLD/MNAR/Procrustes.pdf", width = 14, height = 10)
+
 #barplot: Procrustes SS
 ggplot(summary_procr_tot, aes(x = Dataset, y = Procrustes_SS, fill = Method)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
@@ -2653,3 +2655,5 @@ ggplot(summary_procr_tot, aes(x = Dataset, y = Correlation, color = Method, grou
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   ylim(0.8, 1)
+
+dev.off()
