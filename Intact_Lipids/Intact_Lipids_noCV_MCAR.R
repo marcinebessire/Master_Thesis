@@ -982,7 +982,7 @@ ggplot(nrmse_data2, aes(x = MCAR_proportion, y = Weighted_NRMSE, fill = Imputati
   geom_boxplot(outlier.shape = NA, alpha = 0.7) + #boxplot w/o outliers and transparency
   scale_fill_manual(values = c("lightblue", "orange", "blue", "magenta")) +
   labs(
-    title = "Weighted NRMSE across Imputation Method and MCAR Proportions (Visit 1)",
+    title = "Weighted NRMSE across Imputation Method and MCAR Proportions (Visit 2)",
     x = "MCAR Proportion (%)",
     y = "Weigthed NRMSE", 
     fill = "Imputation Method"

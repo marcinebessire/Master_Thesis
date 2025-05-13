@@ -961,7 +961,7 @@ ggplot(nrmse_data1, aes(x = MNAR_proportion, y = Weighted_NRMSE, fill = Imputati
     panel.grid.major = element_line(color = "gray85"),  #light gray grid
     panel.grid.minor = element_blank()  #remove minor grid
   ) +
-  ylim(0,0.4)
+  ylim(0,0.2)
 
 #visit 2
 nrmse_data2 <- bind_rows(
@@ -987,7 +987,7 @@ ggplot(nrmse_data2, aes(x = MNAR_proportion, y = Weighted_NRMSE, fill = Imputati
   geom_boxplot(outlier.shape = NA, alpha = 0.7) + #boxplot w/o outliers and transparency
   scale_fill_manual(values = c("lightblue", "orange", "blue", "magenta")) +
   labs(
-    title = "Weighted NRMSE across Imputation Method and MNAR Proportions (Visit 1)",
+    title = "Weighted NRMSE across Imputation Method and MNAR Proportions (Visit 2)",
     x = "MNAR Proportion (%)",
     y = "Weigthed NRMSE", 
     fill = "Imputation Method"
@@ -1005,7 +1005,7 @@ ggplot(nrmse_data2, aes(x = MNAR_proportion, y = Weighted_NRMSE, fill = Imputati
     panel.grid.major = element_line(color = "gray85"),  #light gray grid
     panel.grid.minor = element_blank()  #remove minor grid
   ) +
-  ylim(0,0.4)
+  ylim(0,0.2)
 
 dev.off()
 
