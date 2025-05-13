@@ -9,6 +9,8 @@ library(gtools) #for mixedsort
 library(missForest)
 library(imputeLCMD)
 library(FSA) #for Dunns test
+library(VIM) #for knn
+
 
 #open data 
 data_full <- read.csv("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids_data.csv", check.names = FALSE)
@@ -208,7 +210,7 @@ lipids <- unique(data_long$Lipid)
 lipid_groups <- split(lipids, ceiling(seq_along(lipids) / 26))
 
 #open pdf device
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Lipid_Comparison_Boxplots.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/Lipid_Comparison_Boxplots.pdf", width = 14, height = 10)
 
 #generate boxplot for each lipid 
 # Loop through each group and generate a plot
@@ -282,7 +284,7 @@ halfmin_40pct_v2 <- half_min_imputation(data_40pct_v2)
 # --------------------------
 
 #function for KNN imputation
-knn_imputation <- function(data){
+knn_imputation <- function(data, k = 10){
   data_copy <- data
   
   #metadata
@@ -291,16 +293,17 @@ knn_imputation <- function(data){
   #numeric 
   num_data <- data_copy[, 6:ncol(data_copy)]
   
-  #first transfrom into matrix and perform knn
-  imputed_data <- impute.knn(as.matrix(t(num_data)), rowmax = 0.5, colmax = 1)
+  #apply KNN imputation
+  imputed_data <- kNN(num_data, variable = colnames(num_data)[1:(ncol(num_data)-1)], 
+                      k = k, imp_var = FALSE)
   
-  #transform back into dataframe
-  imputed_df <- as.data.frame(t(imputed_data$data))
+  #rm temporary ID
+  imputed_data$ID_temp__ <- NULL
   
-  final_data <- cbind(metadata, imputed_df)
+  #combine back with metadata
+  final_data <- cbind(metadata, imputed_data)
   
   return(final_data)
-  
 }
 
 #call function for KNN
@@ -502,41 +505,41 @@ shapiro2_halfmin40 <- shapiro_test(halfmin_40pct_v2) #6/274
 
 #knn
 #visit 1
-shapiro1_knn10 <- shapiro_test(knn_10pct_v1) #96/274
-shapiro1_knn20 <- shapiro_test(knn_20pct_v1) #109/274
-shapiro1_knn30 <- shapiro_test(knn_30pct_v1) #162/274
-shapiro1_knn40 <- shapiro_test(knn_40pct_v1) #179/274
+shapiro1_knn10 <- shapiro_test(knn_10pct_v1) #70/274
+shapiro1_knn20 <- shapiro_test(knn_20pct_v1) #96/274
+shapiro1_knn30 <- shapiro_test(knn_30pct_v1) #122/274
+shapiro1_knn40 <- shapiro_test(knn_40pct_v1) #200/274
 #visit 2
-shapiro2_knn10 <- shapiro_test(knn_10pct_v2) #83/274
-shapiro2_knn20 <- shapiro_test(knn_20pct_v2) #103/274
-shapiro2_knn30 <- shapiro_test(knn_30pct_v2) #108/274
-shapiro2_knn40 <- shapiro_test(knn_40pct_v2) #122/274
+shapiro2_knn10 <- shapiro_test(knn_10pct_v2) #20/274
+shapiro2_knn20 <- shapiro_test(knn_20pct_v2) #64/274
+shapiro2_knn30 <- shapiro_test(knn_30pct_v2) #148/274
+shapiro2_knn40 <- shapiro_test(knn_40pct_v2) #227/274
 
 #RF
 #visit 1
-shaprio1_rf10 <- shapiro_test(rf_10pct_v1) #61/274
+shaprio1_rf10 <- shapiro_test(rf_10pct_v1) #57/274
 shaprio1_rf20 <- shapiro_test(rf_20pct_v1) #72/274
 shaprio1_rf30 <- shapiro_test(rf_30pct_v1) #106/274
-shaprio1_rf40 <- shapiro_test(rf_40pct_v1) #119/274
+shaprio1_rf40 <- shapiro_test(rf_40pct_v1) #121/274
 #visit 2
-shaprio2_rf10 <- shapiro_test(rf_10pct_v2) #43/274
-shaprio2_rf20 <- shapiro_test(rf_20pct_v2) #78/274
-shaprio2_rf30 <- shapiro_test(rf_30pct_v2) #71/274
-shaprio2_rf40 <- shapiro_test(rf_40pct_v2) #67/274
+shaprio2_rf10 <- shapiro_test(rf_10pct_v2) #44/274
+shaprio2_rf20 <- shapiro_test(rf_20pct_v2) #79/274
+shaprio2_rf30 <- shapiro_test(rf_30pct_v2) #75/274
+shaprio2_rf40 <- shapiro_test(rf_40pct_v2) #66/274
 
 #QRILC
 #visit1
 shapiro1_qrilc10 <- shapiro_test(qrilc_10pct_v1) #7/274
-shapiro1_qrilc20 <- shapiro_test(qrilc_20pct_v1) #38/174
-shapiro1_qrilc30 <- shapiro_test(qrilc_30pct_v1) #19/274
-shapiro1_qrilc40 <- shapiro_test(qrilc_40pct_v1) #63/274
+shapiro1_qrilc20 <- shapiro_test(qrilc_20pct_v1) #43/174
+shapiro1_qrilc30 <- shapiro_test(qrilc_30pct_v1) #34/274
+shapiro1_qrilc40 <- shapiro_test(qrilc_40pct_v1) #31/274
 #visit2
 shapiro2_qrilc10 <- shapiro_test(qrilc_10pct_v2) #3/274
 shapiro2_qrilc20 <- shapiro_test(qrilc_20pct_v2) #3/174
-shapiro2_qrilc30 <- shapiro_test(qrilc_30pct_v2) #3/274
-shapiro2_qrilc40 <- shapiro_test(qrilc_40pct_v2) #0/274
+shapiro2_qrilc30 <- shapiro_test(qrilc_30pct_v2) #2/274
+shapiro2_qrilc40 <- shapiro_test(qrilc_40pct_v2) #4/274
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Shapiro_Wilk.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/Shapiro_Wilk.pdf", width = 14, height = 10)
 
 #combine all data visit 1
 shapiro_summary1 <- data.frame(
@@ -559,9 +562,9 @@ shapiro_summary1 <- data.frame(
     7, #original
     
     5, 2, 2, 5,  #Halfmin
-    96, 109, 162, 179,     #knn
-    61, 72, 106, 119,     #RF
-    7, 38, 19, 63     #QRILC
+    70, 96, 122, 200,     #knn
+    57, 72, 106, 121,     #RF
+    7, 43, 34, 31     #QRILC
   )
 )
 
@@ -623,9 +626,9 @@ shapiro_summary2 <- data.frame(
     3, #original
     
     3, 3, 6, 6,  #Halfmin
-    83, 103, 108, 122,     #knn
-    43, 78, 71, 67,     #RF
-    3, 3, 3, 0     #QRILC
+    20, 54, 148, 227,     #knn
+    44, 79, 75, 66,     #RF
+    3, 3, 2, 4     #QRILC
   )
 )
 
@@ -748,20 +751,20 @@ visit_Halfmin20pct_res <- visit_statistical_tests(halfmin_20pct_tot) #0 and 0
 visit_Halfmin30pct_res <- visit_statistical_tests(halfmin_30pct_tot) #0 and 0
 visit_Halfmin40pct_res <- visit_statistical_tests(halfmin_40pct_tot) #0 and 0
 #KNN
-visit_KNN10pct_res <- visit_statistical_tests(knn_10pct_tot) #0 W and 5 T
-visit_KNN20pct_res <- visit_statistical_tests(knn_20pct_tot) #0 W and 5 T
-visit_KNN30pct_res <- visit_statistical_tests(knn_30pct_tot) #0 W and 14 T
-visit_KNN40pct_res <- visit_statistical_tests(knn_40pct_tot) #0 W and 5 T
+visit_KNN10pct_res <- visit_statistical_tests(knn_10pct_tot) #0 W and 6 T
+visit_KNN20pct_res <- visit_statistical_tests(knn_20pct_tot) #0 W and 27 T
+visit_KNN30pct_res <- visit_statistical_tests(knn_30pct_tot) #0 W and 50 T
+visit_KNN40pct_res <- visit_statistical_tests(knn_40pct_tot) #55 W and 87 T
 #RF
 visit_RF10pct_res <- visit_statistical_tests(rf_10pct_tot) #0 W and 6 T
 visit_RF20pct_res <- visit_statistical_tests(rf_20pct_tot) #0 W and 27 T
-visit_RF30pct_res <- visit_statistical_tests(rf_30pct_tot) #0 W and 50 T
-visit_RF40pct_res <- visit_statistical_tests(rf_40pct_tot) #50 W and 67 T
+visit_RF30pct_res <- visit_statistical_tests(rf_30pct_tot) #0 W and 51 T
+visit_RF40pct_res <- visit_statistical_tests(rf_40pct_tot) #49 W and 64 T
 #QRILC
 visit_QRILC10pct_res <- visit_statistical_tests(qrilc_10pct_tot) #0 and 0
 visit_QRILC20pct_res <- visit_statistical_tests(qrilc_20pct_tot) #0 and 0
-visit_QRILC30pct_res <- visit_statistical_tests(qrilc_30pct_tot) #0 and 14
-visit_QRILC40pct_res <- visit_statistical_tests(qrilc_40pct_tot) #0 and 19
+visit_QRILC30pct_res <- visit_statistical_tests(qrilc_30pct_tot) #0 and 12
+visit_QRILC40pct_res <- visit_statistical_tests(qrilc_40pct_tot) #0 and 18
 
 #create data frame for number of significant metabolites
 stats_overall <- data.frame(
@@ -774,13 +777,13 @@ stats_overall <- data.frame(
                  "Original", "10%", "20%", "30%", "40%",
                  "Original", "10%", "20%", "30%", "40%"),
   Wilcoxon = c(0, 0, 0, 0, 0,   
-               0, 0, 0, 0, 0,
-               0, 0, 0, 0, 50,  
+               0, 0, 0, 0, 55,
+               0, 0, 0, 0, 49,  
                0, 0, 0, 0, 0),  
   TTest = c(0, 0, 0, 0, 0,  
-            0, 5, 5, 14, 5,  
-            0, 6, 27, 50, 67,  
-            0, 0, 0, 14, 19)  
+            0, 6, 27, 50, 87,  
+            0, 6, 27, 51, 64,  
+            0, 0, 0, 12, 18)  
 )
 
 #convert percentage to factor 
@@ -792,7 +795,7 @@ stats_long <- stats_overall %>%
   pivot_longer(cols = c("Wilcoxon", "TTest"), names_to = "Test", values_to = "Significant_Lipids")
 
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/T_Test_Wilcox.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/T_Test_Wilcox.pdf", width = 14, height = 10)
 
 #ceate grouped bar plot
 ggplot(stats_long, aes(x = Percentage, y = Significant_Lipids, fill = Test)) +
@@ -914,7 +917,7 @@ nrmse_res2_QRILC_40pct <- calculate_weighted_nrmse(data_original_v2, qrilc_40pct
 # Part 1: NRMSE Plot 
 # --------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/NRMSE.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/NRMSE.pdf", width = 14, height = 10)
 
 #combine all nrmse results in one dataframe
 #visit 1
@@ -1176,7 +1179,7 @@ plot_density <- function(data, method, visit) {
     theme(legend.title = element_blank(), legend.position = "right")
 }
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/NMD.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/NMD.pdf", width = 14, height = 10)
 
 #generate plots
 plot_halfmin1 <- plot_density(halfmin_data1, "Half-min", 1)
@@ -1337,7 +1340,7 @@ plot_whole_distribution <- function(original, imputed, method, percentage, visit
 
 #call function to plot whole distribution
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Distr_Halfmin.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/Distr_Halfmin.pdf", width = 14, height = 10)
 
 #Halfmin
 #visit 1
@@ -1353,7 +1356,7 @@ whole_dist2_Halfmin_40pct <- plot_whole_distribution(data_original_v2, halfmin_4
 
 dev.off()
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Distr_KNN.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/Distr_KNN.pdf", width = 14, height = 10)
 
 #KNN
 #visit 1
@@ -1369,7 +1372,7 @@ whole_dist2_KNN_40pct <- plot_whole_distribution(data_original_v2, knn_40pct_v2,
 
 dev.off()
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Distr_RF.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/Distr_RF.pdf", width = 14, height = 10)
 
 #RF
 #visit 1
@@ -1385,7 +1388,7 @@ whole_dist2_RF_40pct <- plot_whole_distribution(data_original_v2, rf_40pct_v2, "
 
 dev.off()
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/Distr_QRILC.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/Distr_QRILC.pdf", width = 14, height = 10)
 
 #QRILC
 #visit 1
@@ -1407,14 +1410,21 @@ dev.off()
 
 #fit an ANOVA model with an interaction term between imputation method and missingness level 
 #apply log to normalize data
+epsilon <- 1e-6  #small positive value (because negative values)
+
+nrmse_data1 <- nrmse_data1 %>%
+  mutate(log_NRMSE = log(Weighted_NRMSE + epsilon))
+
+nrmse_data2 <- nrmse_data2 %>%
+  mutate(log_NRMSE = log(Weighted_NRMSE + epsilon))
 
 #ANOVA for Visit 1 and VIisit 2 (effect of imputation and mcar proportion)
 #Visit 1
-anova_visit1 <- aov(log(Weighted_NRMSE) ~ Imputation_Method * MNAR_proportion, data = nrmse_data1)
+anova_visit1 <- aov(log_NRMSE ~ Imputation_Method * MNAR_proportion, data = nrmse_data1)
 summary(anova_visit1)  
 
 #ANOVA for Visit 2
-anova_visit2 <- aov(log(Weighted_NRMSE) ~ Imputation_Method * MNAR_proportion, data = nrmse_data2)
+anova_visit2 <- aov(log_NRMSE ~ Imputation_Method * MNAR_proportion, data = nrmse_data2)
 summary(anova_visit2)  
 
 
@@ -1422,7 +1432,7 @@ summary(anova_visit2)
 # Part 1: Check Residuals and Normality for ANOVA result
 # -------------------------------------------------------
 
-pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/ANOVA_res.pdf", width = 14, height = 10)
+pdf("/Users/marcinebessire/Desktop/Master_Thesis/Intact_Lipids/no_CV/MNAR/ANOVA_res.pdf", width = 14, height = 10)
 
 #check residuals for normality
 #histogram of residuals (extracts results from anova model)
@@ -1566,11 +1576,11 @@ summary_metrics <- data.frame()
 for (visit in visits) {
   visit_label <- ifelse(visit == "Visit 1", "1", "2")
   
-  for (i in missingness_levels) {
+  for (miss in missingness_levels) {
     for (method in methods) {
       
-      nrmse_var <- paste0("nrmse_res", visit_label, "_", method, "_", i, "pct")
-      normdiff_var <- paste0("norm_diff", visit_label, "_", method, "_", i, "pct")
+      nrmse_var <- paste0("nrmse_res", visit_label, "_", method, "_", miss, "pct")
+      normdiff_var <- paste0("norm_diff", visit_label, "_", method, "_", miss, "pct")
       
       if (exists(nrmse_var) && exists(normdiff_var)) {
         nrmse_data <- get(nrmse_var)
