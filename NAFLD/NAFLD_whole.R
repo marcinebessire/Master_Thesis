@@ -218,5 +218,3 @@ pca_qrilc <- pca_func(data_qrilc)
 
 
 
-
-
